@@ -21,8 +21,8 @@ Manage your locally installed [Ollama](https://ollama.ai) models directly from V
 
 ## Commands
 
-- `Ollama: Refresh`: Refresh the model list.
-- `Ollama: Pull Model`: Download a new model.
+- `ollama-view: Refresh`: Refresh the model list.
+- `ollama-view: Pull Model`: Download a new model.
 
 ## Known Issues
 

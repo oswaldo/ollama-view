@@ -54,6 +54,8 @@ export function activate(context: vscode.ExtensionContext) {
                     },
                 );
                 vscode.window.showInformationMessage(`Stopped ${node.model.name}`);
+                // Add a small delay to allow Ollama to update its internal state
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 ollamaProvider.refresh();
             } catch (err: any) {
                 vscode.window.showErrorMessage(`Failed to stop ${node.model.name}: ${err.message}`);
@@ -142,4 +144,4 @@ async function pullModel(name: string, provider: OllamaProvider) {
     );
 }
 
-export function deactivate() {}
+export function deactivate() { }

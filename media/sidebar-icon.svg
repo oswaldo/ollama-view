@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="24"
+   height="24"
+   viewBox="0 0 24 24"
+   fill="none"
+   version="1.1"
+   id="svg9"
+   sodipodi:docname="sidebar-icon.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs9" />
+  <sodipodi:namedview
+     id="namedview9"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="48.46"
+     inkscape:cx="11.999587"
+     inkscape:cy="11.978952"
+     inkscape:window-width="3440"
+     inkscape:window-height="1371"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g1" />
+  <!-- Window Frame -->
+  <!-- Window "Buttons" (dots) -->
+  <!-- Chip (Central Element) -->
+  <g
+     id="g9"
+     inkscape:label="window">
+    <path
+       id="rect1"
+       style="stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round"
+       d="M 8.3367726,22 H 4 C 2.892,22 2,21.108 2,20 V 4 C 2,2.892 2.892,2 4,2 h 16 c 1.108,0 2,0.892 2,2 v 6.709863"
+       sodipodi:nodetypes="cssssssc" />
+    <path
+       d="M2 8H22"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="path1" />
+    <circle
+       cx="6"
+       cy="5"
+       r="1"
+       fill="currentColor"
+       id="circle1" />
+    <circle
+       cx="9"
+       cy="5"
+       r="1"
+       fill="currentColor"
+       id="circle2" />
+  </g>
+  <!-- Chip Legs -->
+  <g
+     id="g1"
+     inkscape:label="modelchip">
+    <g
+       id="g10"
+       transform="matrix(1.0030142,0,0,0.95536688,2.9353526,1.9695381)"
+       inkscape:label="chip">
+      <rect
+         x="7"
+         y="11"
+         width="10"
+         height="8"
+         rx="1"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linejoin="round"
+         id="rect2" />
+      <path
+         d="M 7,13 H 5"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path2" />
+      <path
+         d="M 7,17 H 5"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path3" />
+      <path
+         d="M 19,13 H 17"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path4" />
+      <path
+         d="M 19,17 H 17"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path5" />
+      <path
+         d="m 10,19 v 2"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path6" />
+      <path
+         d="m 14,19 v 2"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path7" />
+      <path
+         d="M 10,11 V 9"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path8" />
+      <path
+         d="M 14,11 V 9"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         id="path9" />
+    </g>
+    <g
+       id="g11"
+       inkscape:label="model"
+       transform="translate(-0.013044,-0.08084958)">
+      <circle
+         cx="13.474206"
+         cy="15.020636"
+         r="1"
+         fill="currentColor"
+         id="circle1-4" />
+      <circle
+         cx="16.474205"
+         cy="15.020636"
+         r="1"
+         fill="currentColor"
+         id="circle2-6" />
+      <path
+         d="m 16.575695,17.460113 c -1.120116,0.445231 -2.172048,0.379081 -3.182256,0"
+         stroke="currentColor"
+         stroke-width="1.9578"
+         stroke-linecap="round"
+         id="path2-8"
+         sodipodi:nodetypes="cc" />
+    </g>
+  </g>
+</svg>

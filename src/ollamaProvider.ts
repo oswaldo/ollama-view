@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { OllamaApi, OllamaModel } from './ollamaApi';
 
 export class OllamaModelItem extends vscode.TreeItem {
@@ -23,10 +24,22 @@ export class OllamaModelItem extends vscode.TreeItem {
         // Actually, let's use standard icons that convey meaning.
         // 'pass' (check) for running, 'circle-outline' or 'stop' for stopped?
         if (isRunning) {
-            this.iconPath = new vscode.ThemeIcon('vm-running', new vscode.ThemeColor('testing.iconPassed'));
+            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-running.svg'));
         } else {
-            this.iconPath = new vscode.ThemeIcon('vm', new vscode.ThemeColor('disabledForeground')); // or charts.red
+            this.iconPath = {
+                light: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-light.svg')),
+                dark: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-dark.svg'))
+            };
         }
+
+        // Since we are using a raw SVG, we can't easily rely on ThemeColor for status (green/red)
+        // without defining separate SVGs or using a mask.
+        // For now, let's keep it simple as requested. The description 'Running'/'Stopped' handles the status text.
+        // If we want color:
+        // this.iconPath = {
+        //    light: iconPath,
+        //    dark: iconPath 
+        // };
     }
 }
 
