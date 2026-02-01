@@ -3,6 +3,10 @@
   "displayName": "ollama-view",
   "description": "Manage local Ollama models",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oswaldo/ollama-view.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -25,7 +29,8 @@
       "ollama-view-container": [
         {
           "id": "ollama-models-view",
-          "name": "Models"
+          "name": "Models",
+          "icon": "media/sidebar-icon.svg"
         }
       ]
     },
@@ -33,26 +38,31 @@
       {
         "command": "ollamaView.refresh",
         "title": "Refresh",
+        "category": "ollama-view",
         "icon": "$(refresh)"
       },
       {
         "command": "ollamaView.pull",
         "title": "Pull Model",
+        "category": "ollama-view",
         "icon": "$(cloud-download)"
       },
       {
         "command": "ollamaView.start",
         "title": "Start",
+        "category": "ollama-view",
         "icon": "$(play)"
       },
       {
         "command": "ollamaView.stop",
         "title": "Stop",
+        "category": "ollama-view",
         "icon": "$(stop)"
       },
       {
         "command": "ollamaView.delete",
         "title": "Delete",
+        "category": "ollama-view",
         "icon": "$(trash)"
       }
     ],

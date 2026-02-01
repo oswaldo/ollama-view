@@ -14,62 +14,108 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.refresh', () => ollamaProvider.refresh()));
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('ollamaView.start', async (node: OllamaModelItem) => {
-            if (!node) {
-                return;
+        vscode.commands.registerCommand('ollamaView.start', async (node?: OllamaModelItem) => {
+            let modelName = node?.model.name;
+            if (!modelName) {
+                const api = ollamaProvider.getApi();
+                const [allModels, runningModels] = await Promise.all([api.listModels(), api.listRunning()]);
+                const runningSet = new Set(runningModels.map((r) => r.model));
+                const stoppedModels = allModels.filter((m) => !runningSet.has(m.name));
+
+                if (stoppedModels.length === 0) {
+                    vscode.window.showInformationMessage('No stopped models found.');
+                    return;
+                }
+
+                const selected = await vscode.window.showQuickPick(stoppedModels.map(m => m.name), {
+                    placeHolder: 'Select a model to start'
+                });
+                if (!selected) { return; }
+                modelName = selected;
             }
+
             try {
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
-                        title: `Starting ${node.model.name}...`,
+                        title: `Starting ${modelName}...`,
                         cancellable: false,
                     },
                     async () => {
-                        await ollamaProvider.getApi().startModel(node.model.name);
+                        await ollamaProvider.getApi().startModel(modelName!);
                     },
                 );
-                vscode.window.showInformationMessage(`Started ${node.model.name}`);
+                vscode.window.showInformationMessage(`Started ${modelName}`);
                 ollamaProvider.refresh();
             } catch (err: any) {
-                vscode.window.showErrorMessage(`Failed to start ${node.model.name}: ${err.message}`);
+                vscode.window.showErrorMessage(`Failed to start ${modelName}: ${err.message}`);
             }
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('ollamaView.stop', async (node: OllamaModelItem) => {
-            if (!node) {
-                return;
+        vscode.commands.registerCommand('ollamaView.stop', async (node?: OllamaModelItem) => {
+            let modelName = node?.model.name;
+
+            if (!modelName) {
+                const api = ollamaProvider.getApi();
+                const runningModels = await api.listRunning();
+
+                if (runningModels.length === 0) {
+                    vscode.window.showInformationMessage('No running models found.');
+                    return;
+                }
+
+                const selected = await vscode.window.showQuickPick(runningModels.map(m => m.model), {
+                    placeHolder: 'Select a model to stop'
+                });
+                if (!selected) { return; }
+                modelName = selected;
             }
+
             try {
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
-                        title: `Stopping ${node.model.name}...`,
+                        title: `Stopping ${modelName}...`,
                         cancellable: false,
                     },
                     async () => {
-                        await ollamaProvider.getApi().stopModel(node.model.name);
+                        await ollamaProvider.getApi().stopModel(modelName!);
                     },
                 );
-                vscode.window.showInformationMessage(`Stopped ${node.model.name}`);
+                vscode.window.showInformationMessage(`Stopped ${modelName}`);
                 // Add a small delay to allow Ollama to update its internal state
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 ollamaProvider.refresh();
             } catch (err: any) {
-                vscode.window.showErrorMessage(`Failed to stop ${node.model.name}: ${err.message}`);
+                vscode.window.showErrorMessage(`Failed to stop ${modelName}: ${err.message}`);
             }
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('ollamaView.delete', async (node: OllamaModelItem) => {
-            if (!node) {
-                return;
+        vscode.commands.registerCommand('ollamaView.delete', async (node?: OllamaModelItem) => {
+            let modelName = node?.model.name;
+
+            if (!modelName) {
+                const api = ollamaProvider.getApi();
+                const allModels = await api.listModels();
+
+                if (allModels.length === 0) {
+                    vscode.window.showInformationMessage('No models found.');
+                    return;
+                }
+
+                const selected = await vscode.window.showQuickPick(allModels.map(m => m.name), {
+                    placeHolder: 'Select a model to delete'
+                });
+                if (!selected) { return; }
+                modelName = selected;
             }
+
             const confirm = await vscode.window.showWarningMessage(
-                `Are you sure you want to delete ${node.model.name}?`,
+                `Are you sure you want to delete ${modelName}?`,
                 { modal: true },
                 'Delete',
             );
@@ -79,15 +125,15 @@ export function activate(context: vscode.ExtensionContext) {
                     await vscode.window.withProgress(
                         {
                             location: vscode.ProgressLocation.Notification,
-                            title: `Deleting ${node.model.name}...`,
+                            title: `Deleting ${modelName}...`,
                             cancellable: false,
                         },
                         async () => {
-                            await ollamaProvider.getApi().deleteModel(node.model.name);
+                            await ollamaProvider.getApi().deleteModel(modelName!);
                         },
                     );
                     ollamaProvider.refresh();
-                    vscode.window.showInformationMessage(`Deleted ${node.model.name}`);
+                    vscode.window.showInformationMessage(`Deleted ${modelName}`);
                 } catch (err: any) {
                     vscode.window.showErrorMessage(`Failed to delete: ${err.message}`);
                 }

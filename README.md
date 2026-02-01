@@ -1,18 +1,22 @@
-# Ollama View for VS Code
+<div align="center">
+    <img src="media/logo.png" width="128" height="128" />
+    <h1>Ollama View for VS Code</h1>
+</div>
 
 Manage your locally installed [Ollama](https://ollama.ai) models directly from Visual Studio Code.
 
-![Ollama View Screenshot](https://raw.githubusercontent.com/placeholder/screenshot.png)
+![Ollama View Screenshot](media/screenshot.png)
 
 ## Features
 
 - **Dashboard View**: See all your pulled models in the sidebar.
-- **Status Indicators**: Instantly see which models are loaded (Green) or stopped (Grey).
+- **Status Indicators**: Custom indicators show which models are loaded or stopped.
 - **Controls**:
     - **Start**: Load a model into memory.
     - **Stop**: Unload a model to free up RAM.
     - **Delete**: Remove a model from your disk (with confirmation).
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
+- **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
 ## Requirements
 
@@ -23,6 +27,9 @@ Manage your locally installed [Ollama](https://ollama.ai) models directly from V
 
 - `ollama-view: Refresh`: Refresh the model list.
 - `ollama-view: Pull Model`: Download a new model.
+- `ollama-view: Start`: Start a model (context-aware).
+- `ollama-view: Stop`: Stop a running model (context-aware).
+- `ollama-view: Delete`: Delete a model (context-aware).
 
 ## Known Issues
 
