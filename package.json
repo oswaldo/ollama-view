@@ -1,0 +1,114 @@
+{
+    "name": "ollama-view",
+    "displayName": "Ollama View",
+    "description": "Manage local Ollama models",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "ollama-view-container",
+                    "title": "Ollama",
+                    "icon": "$(server-process)"
+                }
+            ]
+        },
+        "views": {
+            "ollama-view-container": [
+                {
+                    "id": "ollama-models-view",
+                    "name": "Models"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "ollamaView.refresh",
+                "title": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "ollamaView.pull",
+                "title": "Pull Model",
+                "icon": "$(cloud-download)"
+            },
+            {
+                "command": "ollamaView.start",
+                "title": "Start",
+                "icon": "$(play)"
+            },
+            {
+                "command": "ollamaView.stop",
+                "title": "Stop",
+                "icon": "$(stop)"
+            },
+            {
+                "command": "ollamaView.delete",
+                "title": "Delete",
+                "icon": "$(trash)"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "ollamaView.refresh",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ollamaView.pull",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "ollamaView.start",
+                    "when": "viewItem == variable-stopped",
+                    "group": "inline"
+                },
+                {
+                    "command": "ollamaView.stop",
+                    "when": "viewItem == variable-running",
+                    "group": "inline"
+                },
+                {
+                    "command": "ollamaView.delete",
+                    "group": "inline"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "package": "tsc -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./dist/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/mocha": "^10.0.10",
+        "@types/node": "18.x",
+        "@types/sinon": "^21.0.0",
+        "@types/vscode": "^1.85.0",
+        "@typescript-eslint/eslint-plugin": "^8.54.0",
+        "@typescript-eslint/parser": "^8.54.0",
+        "eslint": "^8.56.0",
+        "fast-glob": "^3.3.3",
+        "mocha": "^11.7.5",
+        "prettier": "^3.8.1",
+        "sinon": "^21.0.1",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.3.3",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4"
+    }
+}
