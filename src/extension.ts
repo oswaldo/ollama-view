@@ -120,11 +120,17 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.deleteChat', async (node: OllamaChatItem) => {
         if (!node) { return; }
         const confirm = await vscode.window.showWarningMessage(
-            `Delete chat "${node.chat.name || 'New Chat'}"?`,
+            `Delete chat "${node.chat.name || 'New Chat'}"? This action cannot be undone.`,
             { modal: true },
             'Delete'
         );
         if (confirm === 'Delete') {
+            // Close panel if open
+            const panel = ChatPanel.panels.get(node.chat.id);
+            if (panel) {
+                panel.dispose();
+            }
+
             await chatService.deleteChat(node.chat.id);
             ollamaProvider.refresh();
         }
