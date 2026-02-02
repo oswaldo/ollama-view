@@ -26,9 +26,10 @@ export class OllamaModelItem extends vscode.TreeItem {
     constructor(
         public readonly model: OllamaModel,
         public readonly isRunning: boolean,
+        public readonly hasChildren: boolean
     ) {
         // Collapsible to show chats
-        super(model.name, vscode.TreeItemCollapsibleState.Collapsed);
+        super(model.name, hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 
         this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB\nRunning: ${isRunning}`;
         this.description = isRunning ? 'Running' : 'Stopped';
@@ -89,7 +90,8 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
 
         return models.map((m) => {
             const isRun = this.runningModels.has(m.name);
-            return new OllamaModelItem(m, isRun);
+            const hasChildren = this.chatService.getChatsForModel(m.name).length > 0;
+            return new OllamaModelItem(m, isRun, hasChildren);
         });
     }
 
