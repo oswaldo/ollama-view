@@ -3,6 +3,7 @@
   "displayName": "ollama-view",
   "description": "Manage local Ollama models",
   "version": "0.0.1",
+  "publisher": "OswaldoDantas",
   "license": "MIT",
   "repository": {
     "type": "git",
