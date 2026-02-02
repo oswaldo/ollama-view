@@ -1,11 +1,22 @@
 <div align="center">
     <img src="media/logo.png" width="128" height="128" />
     <h1>Ollama View for VS Code</h1>
+
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/OswaldoDantas.ollama-view?style=flat&label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)
+
 </div>
 
 Manage your locally installed [Ollama](https://ollama.ai) models directly from Visual Studio Code.
 
 ![Ollama View Screenshot](media/screenshot.png)
+
+## Installation
+
+You can install this extension from the following sources:
+
+- **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)**: Official release.
+- ~~**Open VSX Registry**: For Codium and other editors~~ (coming soon).
+- **[GitHub Releases](https://github.com/oswaldo/ollama-view/releases)**: Download the `.vsix` file manually.
 
 ## Features
 
