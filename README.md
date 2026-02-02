@@ -23,6 +23,8 @@ Manage your locally installed [Ollama](https://ollama.ai) models directly from V
 - [Ollama](https://ollama.ai) must be installed and running locally.
 - By default, it connects to `http://127.0.0.1:11434`.
 
+> **Note**: This version (v0.0.1) has been tested primarily on **Linux**. It assumes [Ollama](https://ollama.ai) is already installed and running correctly on your system. Compatibility with other OSs is expected but not yet verified.
+
 ## Commands
 
 - `ollama-view: Refresh`: Refresh the model list.
