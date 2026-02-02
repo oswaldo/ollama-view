@@ -130,4 +130,47 @@ export class ChatService {
         await this.saveChats(chats);
         return newChat;
     }
+
+    async deleteMessagesFrom(chatId: string, index: number): Promise<Chat | undefined> {
+        const chats = this.getAllChats();
+        const chatIndex = chats.findIndex(c => c.id === chatId);
+        if (chatIndex === -1) {
+            return undefined;
+        }
+
+        const chat = chats[chatIndex];
+        // Remove message at index and all subsequent
+        chat.messages = chat.messages.slice(0, index);
+
+        chats[chatIndex] = chat;
+        await this.saveChats(chats);
+        return chat;
+    }
+
+    async forkChatFrom(chatId: string, index: number): Promise<Chat | undefined> {
+        const sourceChat = this.getChat(chatId);
+        if (!sourceChat) {
+            return undefined;
+        }
+
+        // We want to keep messages up to index (exclusive)
+        // If we fork at index 1 (assistant response), we want message 0 (user prompt).
+        const messagesToKeep = sourceChat.messages.slice(0, index);
+
+        // Ensure the last message is a user message (sanity check, though not strictly required by logic, it makes sense for a chat flow)
+        // For now, simple slice is enough.
+
+        const newChat: Chat = {
+            id: uuidv4(),
+            modelName: sourceChat.modelName,
+            name: sourceChat.name + ' (Fork)', // Or better naming strategy?
+            messages: messagesToKeep, // Clone? Slice returns new array
+            createdAt: Date.now(),
+        };
+
+        const chats = this.getAllChats();
+        chats.push(newChat);
+        await this.saveChats(chats);
+        return newChat;
+    }
 }

@@ -115,4 +115,35 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(originalChat!.messages.length, 3);
         assert.strictEqual(originalChat!.messages[2].content, 'Msg 2');
     });
+
+    test('deleteMessagesFrom should remove subsequent messages', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        // Delete from index 1 (Response 1). Should keep Msg 1 (index 0).
+        const updatedChat = await chatService.deleteMessagesFrom(chat.id, 1);
+
+        assert.ok(updatedChat);
+        assert.strictEqual(updatedChat!.messages.length, 1);
+        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+    });
+
+    test('forkChatFrom should create new chat branch from index', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        // Fork from index 1 (Response 1). Should keep Msg 1 (index 0) in new chat.
+        const newChat = await chatService.forkChatFrom(chat.id, 1);
+
+        assert.ok(newChat);
+        assert.notStrictEqual(newChat!.id, chat.id);
+
+        assert.strictEqual(newChat!.messages.length, 1);
+        assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
+        assert.ok(newChat!.name.endsWith('(Fork)'), 'Name should indicate fork');
+    });
 });

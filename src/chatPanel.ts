@@ -65,6 +65,12 @@ export class ChatPanel {
                     case 'requestTruncate':
                         await this._handleRequestTruncate(message.index, message.content);
                         return;
+                    case 'requestRegenerate':
+                        await this._handleRequestRegenerate(message.index);
+                        return;
+                    case 'requestForkAssistant':
+                        await this._handleRequestForkAssistant(message.index);
+                        return;
                 }
             },
             null,
@@ -185,6 +191,56 @@ export class ChatPanel {
         }
     }
 
+    private async _handleRequestRegenerate(index: number) {
+        // If it's not the last message, confirm truncation
+        if (index < this._chat.messages.length - 1) {
+            const answer = await vscode.window.showWarningMessage(
+                'Regenerating this message will remove all subsequent messages in this chat. Are you sure?',
+                { modal: true },
+                'Regenerate'
+            );
+            if (answer !== 'Regenerate') {
+                return;
+            }
+        }
+
+        // Truncate at the assistant message index (exclusive? no, we want to remove the assistant message too and regenerate it)
+        // Wait, if we want to regenerate, we need to keep context UP TO the user message BEFORE this assistant message.
+        // So we delete messages from 'index'. 
+        // Example: 0:User, 1:Assistant. Regenerate 1. Delete 1. New chat ends at 0. Generate response for 0.
+
+        const updatedChat = await this._chatService.deleteMessagesFrom(this._chat.id, index);
+        if (updatedChat) {
+            this._chat = updatedChat;
+            this._update(); // complete refresh
+            await this._generateResponse();
+        }
+    }
+
+    private async _handleRequestForkAssistant(index: number) {
+        // Fork from index. We want to keep info UP TO index.
+        // Example: 0:User, 1:Assistant. Fork 1.
+        // Ideally "Fork" on assistant message means: Create new chat with [0:User], and generate new response.
+        // So we want context up to 0. 
+        // index is 1. forkChatFrom(id, 1) keeps 0. Correct.
+
+        const newChat = await this._chatService.forkChatFrom(this._chat.id, index);
+        if (newChat) {
+            // Switch to new chat
+            const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._api, this._onStateChange);
+
+            // Signal tree view to refresh so the new chat appears
+            if (this._onStateChange) {
+                this._onStateChange();
+            }
+
+            // Trigger inference in the new panel
+            if (newPanel) {
+                await newPanel._generateResponse();
+            }
+        }
+    }
+
     private _update() {
         this._panel.webview.html = this._getHtmlForWebview();
     }
@@ -230,18 +286,25 @@ export class ChatPanel {
 
         /* Hover Buttons */
         .buttons-container {
-            position: absolute;
+            position: sticky;
             top: -10px;
             right: 0;
-            display: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
             gap: 5px;
             background: var(--vscode-editor-background);
             padding: 2px;
             border-radius: 4px;
             border: 1px solid var(--vscode-widget-border);
+            align-self: flex-end;
+            margin-bottom: -28px; /* Overlay to avoid taking space */
+            z-index: 10;
+            display: flex;
         }
         .message-wrapper:hover .buttons-container {
-            display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
         .icon-btn {
             background: transparent;
@@ -284,6 +347,24 @@ export class ChatPanel {
             background: var(--vscode-menu-selectionBackground);
             color: var(--vscode-menu-selectionForeground);
         }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: var(--vscode-editorHoverWidget-background);
+            color: var(--vscode-editorHoverWidget-foreground);
+            border: 1px solid var(--vscode-editorHoverWidget-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+        .tooltip.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -322,6 +403,24 @@ export class ChatPanel {
             });
         }
 
+        // Tooltip Helper
+        function showTooltip(target, text) {
+            let tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = text;
+            document.body.appendChild(tooltip);
+
+            const rect = target.getBoundingClientRect();
+            tooltip.style.left = rect.left + 'px';
+            tooltip.style.top = (rect.top - 30) + 'px';
+            tooltip.classList.add('visible');
+
+            setTimeout(() => {
+                tooltip.classList.remove('visible');
+                setTimeout(() => tooltip.remove(), 300);
+            }, 1500);
+        }
+
         function renderMessages() {
             messagesDiv.innerHTML = '';
             messages.forEach((m, i) => addMessageToDom(m.role, m.content, m.timestamp, i));
@@ -339,8 +438,9 @@ export class ChatPanel {
             const div = document.createElement('div');
             div.className = 'message';
             
-            // Buttons Container for User messages
-            if (role === 'user' && typeof index === 'number') {
+            // Buttons Container for ALL messages (user and assistant)
+            // But only if we have a valid index (streaming messages might not have index yet? existing code passes index)
+            if (typeof index === 'number') {
                 const btns = document.createElement('div');
                 btns.className = 'buttons-container';
                 
@@ -352,7 +452,7 @@ export class ChatPanel {
                 copyBtn.onclick = (e) => {
                     e.stopPropagation();
                     navigator.clipboard.writeText(content);
-                    // Could show tooltip "Copied!"
+                    showTooltip(e.currentTarget, 'Copied!');
                 };
                 btns.appendChild(copyBtn);
 
@@ -363,7 +463,8 @@ export class ChatPanel {
                 optsBtn.innerHTML = MoreIcon;
                 optsBtn.onclick = (e) => {
                     e.stopPropagation();
-                    toggleDropdown(e, index, content);
+                    console.log('toggleDropdown', index, role);
+                    toggleDropdown(e, index, content, role);
                 };
                 btns.appendChild(optsBtn);
 
@@ -388,7 +489,7 @@ export class ChatPanel {
             return div;
         }
 
-        function toggleDropdown(e, index, content) {
+        function toggleDropdown(e, index, content, role) {
             // Remove existing dropdown if any
             closeDropdown();
             
@@ -398,28 +499,59 @@ export class ChatPanel {
             const menu = document.createElement('div');
             menu.className = 'dropdown-menu';
             
-            const itemTruncate = document.createElement('div');
-            itemTruncate.className = 'dropdown-item';
-            itemTruncate.textContent = 'Edit / Truncate';
-            itemTruncate.onclick = () => {
-                // Request confirmation from extension
-                vscode.postMessage({ 
-                    command: 'requestTruncate', 
-                    index, 
-                    content 
-                });
-                closeDropdown();
-            };
-            menu.appendChild(itemTruncate);
-            
-            const itemFork = document.createElement('div');
-            itemFork.className = 'dropdown-item';
-            itemFork.textContent = 'Edit / Fork';
-            itemFork.onclick = () => {
-                 enterEditMode('fork', index, content);
-                 closeDropdown();
-            };
-            menu.appendChild(itemFork);
+            if (role === 'user') {
+                const itemTruncate = document.createElement('div');
+                itemTruncate.className = 'dropdown-item';
+                itemTruncate.textContent = 'Edit / Truncate';
+                itemTruncate.onclick = () => {
+                    vscode.postMessage({ 
+                        command: 'requestTruncate', 
+                        index, 
+                        content 
+                    });
+                    closeDropdown();
+                };
+                menu.appendChild(itemTruncate);
+                
+                const itemFork = document.createElement('div');
+                itemFork.className = 'dropdown-item';
+                itemFork.textContent = 'Edit / Fork';
+                itemFork.onclick = () => {
+                     enterEditMode('fork', index, content);
+                     closeDropdown();
+                };
+                menu.appendChild(itemFork);
+            } else if (role === 'assistant') {
+                // Regenerate
+                const itemRegen = document.createElement('div');
+                itemRegen.className = 'dropdown-item';
+                
+                // Check if it's the last message
+                const isLast = index === messages.length - 1;
+                itemRegen.textContent = isLast ? 'Regenerate' : 'Regenerate (Truncate)';
+                
+                itemRegen.onclick = () => {
+                     vscode.postMessage({
+                         command: 'requestRegenerate',
+                         index
+                     });
+                     closeDropdown();
+                };
+                menu.appendChild(itemRegen);
+
+                // Fork
+                const itemFork = document.createElement('div');
+                itemFork.className = 'dropdown-item';
+                itemFork.textContent = 'Fork';
+                itemFork.onclick = () => {
+                     vscode.postMessage({
+                         command: 'requestForkAssistant',
+                         index
+                     });
+                     closeDropdown();
+                };
+                menu.appendChild(itemFork);
+            }
             
             parent.appendChild(menu);
             menu.style.display = 'block';

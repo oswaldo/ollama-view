@@ -35,6 +35,10 @@ You can install this extension from the following sources:
 - **Message Editing**: Hover over user messages to **copy** content or access **edit options**:
   - **Edit / Truncate**: Edit a message and remove all subsequent history (rewriting the conversation path).
   - **Edit / Fork**: Edit a message and create a new chat branch, preserving the original conversation.
+- **Model Actions**: Hover over model responses to:
+  - **Copy**: Copy response content to clipboard.
+  - **Regenerate**: Re-generate the answer. If it's not the last message, this will truncate the conversation.
+  - **Fork**: Create a new chat branching from this point.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
 ## Requirements
