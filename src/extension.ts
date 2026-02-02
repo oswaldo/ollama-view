@@ -45,6 +45,78 @@ export function activate(context: vscode.ExtensionContext) {
         ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.startChat', async () => {
+        // 1. Select Model
+        const api = ollamaProvider.getApi();
+        const allModels = await api.listModels();
+        if (allModels.length === 0) {
+            vscode.window.showInformationMessage('No models found. Please pull a model first.');
+            return;
+        }
+
+        const modelName = await vscode.window.showQuickPick(allModels.map(m => m.name), {
+            placeHolder: 'Select a model to chat with'
+        });
+        if (!modelName) { return; }
+
+        // 2. Enter Prompt
+        const prompt = await vscode.window.showInputBox({
+            placeHolder: 'Enter your message',
+            prompt: 'What would you like to ask?'
+        });
+        if (!prompt) { return; }
+
+        // 3. Ensure Model is Running
+        const runningModels = await api.listRunning();
+        const isRunning = runningModels.some(r => r.model === modelName);
+
+        if (!isRunning) {
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Starting ${modelName}...`,
+                    cancellable: false,
+                },
+                async () => {
+                    await api.startModel(modelName);
+                }
+            );
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 4. Create Chat
+        const chat = await chatService.createChat(modelName);
+        ollamaProvider.refresh();
+
+        // 5. Open Panel and Send Message
+        ChatPanel.createOrShow(context.extensionUri, chat, chatService, api, () => ollamaProvider.refresh());
+
+        // Wait for webview to be ready? The ChatPanel handles message queuing? 
+        // Our ChatPanel implementation listens for messages from the webview.
+        // But we want to send a message TO the webview/service programmatically.
+        // We can use the ChatPanel instance to simulate a user message.
+
+        // We need access to the panel instance we just created? 
+        // The createOrShow is static. We can lookup by ID.
+        setTimeout(async () => {
+            const panel = ChatPanel.panels.get(chat.id);
+            if (panel) {
+                // We need a public method on ChatPanel to send a user message?
+                // Or just use webview.postMessage? 
+                // Actually, the ChatPanel handles "sendMessage" from UI.
+                // We want to simulate that.
+                // Let's modify ChatPanel to allow programmatic sending or just use internal _handleMessage
+                // We can cast to any for now or add a public method.
+                // Ideally add `handleUserMessage` public method.
+
+                // For now, let's just use the internal private method via cast or send a message to webview?
+                // No, we need to trigger the full flow (save to db, call API).
+                // Accessing private _handleMessage via any:
+                await (panel as any)._handleMessage(prompt);
+            }
+        }, 1000); // Small delay to ensure webview is loaded
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.deleteChat', async (node: OllamaChatItem) => {
         if (!node) { return; }
         const confirm = await vscode.window.showWarningMessage(

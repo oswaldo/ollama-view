@@ -8,39 +8,38 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 
 ### 1. User Interface
 
-- **Sidebar Panel**: A dedicated view in the VS Code sidebar (e.g., in the Explorer or a custom Activity Bar icon).
-- **Model List**: A list displaying all locally pulled Ollama models.
+- **Sidebar Panel**: A dedicated view in the VS Code sidebar.
+- **Tree View**:
+    - **Models**: Top-level nodes.
+    - **Chats**: Child nodes under each model (Persisted).
 - **Status Indicators**:
-    - **Running**: Indicated by a **Green** icon. (Model is loaded in memory).
-    - **Stopped**: Indicated by a **Red** icon. (Model is present but unloaded).
+    - **Running**: Green icon.
+    - **Stopped**: Red icon.
 
 ### 2. Interactions
 
-- **Context Menu (Right-Click on a Model)**:
-    - **Start**: Available when the model is Stopped. Triggers the model to load or run.
-    - **Stop**: Available when the model is Running. Unloads the model.
-    - **Delete**: available always. Removes the model from the local system.
-        - **Confirmation**: A confirmation dialog must appear before deletion: "Are you sure you want to delete [Model Name]?"
-    - **Pull Model**: A button or command to pull a new model.
-        - **Input**: User types model name.
-        - **Autocomplete**: As user types, show top ~10 matching models (requires a source for model names).
+- **Context Menu**:
+    - **Start/Stop/Delete Model**.
+    - **Delete Chat**.
+- **Chat Management**:
+    - **New Chat**: Button (+) on model item.
+    - **Open Chat**: Click on chat item.
+- **Pull Model**: Command to download new models.
 
 ### 3. Backend Integration
 
-- **Command Line / API**: Interaction with the locally installed `ollama` CLI or HTTP API (default port 11434).
-- **Operations**:
-    - List: `ollama list`
-    - Check Status: `ollama ps`
-    - Run/Load: `ollama run` (or API generate/chat request to preload)
-    - Stop: Unload via API (e.g., set keep_alive to 0) or `ollama stop` if available.
-    - Delete: `ollama rm`
+- **API**: Interaction with `ollama` HTTP API.
+- **Streaming**: Real-time token streaming for chat responses.
+- **Persistence**: Chat history stored in VS Code `globalState`.
 
-## Open Questions
+## Completed Features (Antigravity)
 
-1. **Start Behavior**: Should "Start" open a terminal with `ollama run` for user interaction, or just load the model into memory (via API) so it shows as green?
-2. **Stop Behavior**: Strict unloading of the model from memory?
-3. **Delete Behavior**: allow deleting running models? (Force delete or stop first?)
-4. **Model Source for Autocomplete**: Where to get the list of available models for autocomplete? (Web scraping ollama.com or a static list?)
+1.  [x] **Model List**: Tree view with running status.
+2.  [x] **Persistent Chats**: History saved per chat.
+3.  [x] **Chat Interface**: Webview with streaming.
+4.  [x] **Multiple Tabs**: Support for simultaneous chats.
+5.  [x] **Auto-Start**: Chatting starts model automatically.
+6.  [x] **UI Polish**: Timestamps, Sender labels.
 
 ## Suggestions (Antigravity)
 

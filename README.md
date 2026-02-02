@@ -20,12 +20,17 @@ You can install this extension from the following sources:
 
 ## Features
 
-- **Dashboard View**: See all your pulled models in the sidebar.
-- **Status Indicators**: Custom indicators show which models are loaded or stopped.
-- **Controls**:
-    - **Start**: Load a model into memory.
-    - **Stop**: Unload a model to free up RAM.
-    - **Delete**: Remove a model from your disk (with confirmation).
+### Sidepanel View
+- **Model List**: View all your local Ollama models in a tree view.
+- **Status Indication**: Visual indicators for Running (Green) and Stopped (Red) models.
+- **Persistent Chats**: Create and manage multiple persistent chats for each model.
+- **Context Menu**: Right-click to Start, Stop, or Delete models and chats.
+
+### Chat Interface
+- **Rich Chat**: Interactive chat interface with streaming responses.
+- **Concurrent Chats**: Open multiple chat tabs simultaneously.
+- **History**: Chat history is automatically saved and persists across VS Code sessions.
+- **Auto-Start**: Sending a message to a stopped model continuously starts it.
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 

@@ -44,6 +44,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "ollamaView.startChat",
+        "title": "Start Chat",
+        "category": "ollama-view"
+      },
+      {
         "command": "ollamaView.pull",
         "title": "Pull Model",
         "category": "ollama-view",
@@ -126,23 +131,26 @@
     "watch": "tsc -watch -p ./",
     "package": "tsc -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
     "test": "node ./dist/test/runTest.js"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "18.x",
     "@types/sinon": "^21.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
-    "eslint": "^8.56.0",
+    "eslint": "^9.39.2",
     "fast-glob": "^3.3.3",
-    "mocha": "^11.7.5",
+    "mocha": "^11.3.0",
     "prettier": "^3.8.1",
     "sinon": "^21.0.1",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.54.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
