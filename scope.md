@@ -18,13 +18,13 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 
 ### 2. Interactions
 
+
 - **Context Menu**:
     - **Start/Stop/Delete Model**.
     - **Delete Chat**.
 - **Chat Management**:
     - **New Chat**: Button (+) on model item.
     - **Open Chat**: Click on chat item.
-- **Pull Model**: Command to download new models.
 
 ### 3. Backend Integration
 
@@ -40,6 +40,7 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 4.  [x] **Multiple Tabs**: Support for simultaneous chats.
 5.  [x] **Auto-Start**: Chatting starts model automatically.
 6.  [x] **UI Polish**: Timestamps, Sender labels.
+7.  [x] **Message Editing**: Edit user messages to Truncate (overwrite future history) or Fork (create new chat branch).
 
 ## Suggestions (Antigravity)
 

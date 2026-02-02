@@ -76,4 +76,43 @@ suite('ChatService Test Suite', () => {
         const found = chatService.getChat(chat.id);
         assert.strictEqual(found, undefined);
     });
+    test('truncateChat should truncate and update chat', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 2');
+
+        // Edit "Msg 2" (index 2) -> "Msg 2 Edited"
+        // This should keep Msg 1, Response 1, and add Msg 2 Edited. Response 2 should be gone.
+        const updatedChat = await chatService.truncateChat(chat.id, 2, 'Msg 2 Edited');
+
+        assert.ok(updatedChat);
+        assert.strictEqual(updatedChat!.messages.length, 3);
+        assert.strictEqual(updatedChat!.messages[2].content, 'Msg 2 Edited');
+        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+    });
+
+    test('forkChat should create new chat branch', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        // Fork at "Msg 2" (index 2) -> "Msg 2 Forked"
+        const newChat = await chatService.forkChat(chat.id, 2, 'Msg 2 Forked');
+
+        assert.ok(newChat);
+        assert.notStrictEqual(newChat!.id, chat.id);
+
+        // New chat should have Msg 1, Response 1, Msg 2 Forked
+        assert.strictEqual(newChat!.messages.length, 3);
+        assert.strictEqual(newChat!.messages[2].content, 'Msg 2 Forked');
+        assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
+
+        // Original chat should be unchanged
+        const originalChat = chatService.getChat(chat.id);
+        assert.strictEqual(originalChat!.messages.length, 3);
+        assert.strictEqual(originalChat!.messages[2].content, 'Msg 2');
+    });
 });

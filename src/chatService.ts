@@ -80,4 +80,54 @@ export class ChatService {
         await this.saveChats(chats);
         return chat;
     }
+    async truncateChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+        const chats = this.getAllChats();
+        const chatIndex = chats.findIndex(c => c.id === chatId);
+        if (chatIndex === -1) {
+            return undefined;
+        }
+
+        const chat = chats[chatIndex];
+        // Keep messages up to the index (exclusive of the one being edited, as we will replace it/add new one)
+        // Actually, if we are editing message at index N, we want to keep 0..N-1, and then add the new message.
+        // Wait, the UI will likely send the index of the message being edited.
+        // If I edit message 2, I want message 0 and 1 to stay, message 2 to be replaced by new content, and 3+ to be removed.
+        chat.messages = chat.messages.slice(0, messageIndex);
+
+        chat.messages.push({
+            role: 'user',
+            content: newContent,
+            timestamp: Date.now(),
+        });
+
+        chats[chatIndex] = chat;
+        await this.saveChats(chats);
+        return chat;
+    }
+
+    async forkChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+        const sourceChat = this.getChat(chatId);
+        if (!sourceChat) {
+            return undefined;
+        }
+
+        const newChat: Chat = {
+            id: uuidv4(),
+            modelName: sourceChat.modelName,
+            name: newContent.slice(0, 30) + (newContent.length > 30 ? '...' : ''),
+            messages: sourceChat.messages.slice(0, messageIndex),
+            createdAt: Date.now(),
+        };
+
+        newChat.messages.push({
+            role: 'user',
+            content: newContent,
+            timestamp: Date.now(), // New timestamp for the new message
+        });
+
+        const chats = this.getAllChats();
+        chats.push(newChat);
+        await this.saveChats(chats);
+        return newChat;
+    }
 }

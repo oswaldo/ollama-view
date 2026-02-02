@@ -23,8 +23,9 @@ export class ChatPanel {
 
         // Check if we already have a panel for this chat
         if (ChatPanel.panels.has(chat.id)) {
-            ChatPanel.panels.get(chat.id)?._panel.reveal(column);
-            return;
+            const existing = ChatPanel.panels.get(chat.id)!;
+            existing._panel.reveal(column);
+            return existing;
         }
 
         // Otherwise, create a new panel.
@@ -40,6 +41,7 @@ export class ChatPanel {
 
         const chatPanel = new ChatPanel(panel, extensionUri, chat, chatService, api, onStateChange);
         ChatPanel.panels.set(chat.id, chatPanel);
+        return chatPanel;
     }
 
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, api: OllamaApi, onStateChange?: () => void) {
@@ -58,7 +60,10 @@ export class ChatPanel {
             async message => {
                 switch (message.command) {
                     case 'sendMessage':
-                        await this._handleMessage(message.text);
+                        await this._handleMessage(message.text, message.editOptions);
+                        return;
+                    case 'requestTruncate':
+                        await this._handleRequestTruncate(message.index, message.content);
                         return;
                 }
             },
@@ -85,15 +90,52 @@ export class ChatPanel {
         }
     }
 
-    private async _handleMessage(text: string) {
-        // 1. Save user message
-        await this._chatService.addMessage(this._chat.id, 'user', text);
-        this._chat = this._chatService.getChat(this._chat.id) || this._chat; // Refresh chat state
+    private async _handleMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
+        // 1. Save user message (handling edits)
+        let messageProcessed = false;
 
-        // 2. Update UI with user message
-        this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: text });
+        if (editOptions) {
+            if (editOptions.mode === 'truncate') {
+                const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, text);
+                if (updatedChat) {
+                    this._chat = updatedChat;
+                    // We need to refresh the UI completely here because history changed
+                    this._update();
+                    messageProcessed = true;
+                }
+            } else if (editOptions.mode === 'fork') {
+                const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, text);
+                if (newChat) {
+                    // Switch to new chat
+                    const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._api, this._onStateChange);
+
+                    // Signal tree view to refresh so the new chat appears
+                    if (this._onStateChange) {
+                        this._onStateChange();
+                    }
+
+                    // Trigger inference in the new panel
+                    if (newPanel) {
+                        await newPanel._generateResponse();
+                    }
+
+                    return; // Stop processing in this panel
+                }
+            }
+        }
+
+        if (!messageProcessed) {
+            await this._chatService.addMessage(this._chat.id, 'user', text);
+            this._chat = this._chatService.getChat(this._chat.id) || this._chat; // Refresh chat state
+            // 2. Update UI with user message
+            this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: text });
+        }
 
         // 3. Call Ollama API
+        await this._generateResponse();
+    }
+
+    private async _generateResponse() {
         const messages = this._chat.messages.map(m => ({ role: m.role, content: m.content }));
         let fullResponse = '';
 
@@ -126,6 +168,23 @@ export class ChatPanel {
         }
     }
 
+    private async _handleRequestTruncate(index: number, content: string) {
+        const answer = await vscode.window.showWarningMessage(
+            'Are you sure? Editing this message will remove all subsequent messages in this chat.',
+            { modal: true },
+            'Edit & Truncate'
+        );
+
+        if (answer === 'Edit & Truncate') {
+            this._panel.webview.postMessage({
+                command: 'enterEditMode',
+                mode: 'truncate',
+                index,
+                content
+            });
+        }
+    }
+
     private _update() {
         this._panel.webview.html = this._getHtmlForWebview();
     }
@@ -141,28 +200,97 @@ export class ChatPanel {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
     <style>
-        body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscode-editor-foreground); background-color: var(--vscode-editor-background); }
-        .message-wrapper { margin-bottom: 15px; display: flex; flex-direction: column; }
+        body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscode-editor-foreground); background-color: var(--vscode-editor-background); margin: 0; }
+        .message-wrapper { margin-bottom: 15px; display: flex; flex-direction: column; position: relative; }
         .message-header { font-size: 0.8em; margin-bottom: 2px; color: var(--vscode-descriptionForeground); font-weight: bold; }
-        .message { padding: 10px; border-radius: 5px; position: relative; }
-        .user { align-self: flex-end; }
+        .message { padding: 10px; border-radius: 5px; position: relative; max-width: 90%; word-wrap: break-word; }
+        .user { align-self: flex-end; align-items: flex-end; }
         .user .message { background-color: var(--vscode-textBlockQuote-background); border-left: 2px solid var(--vscode-textBlockQuote-border); }
         .assistant .message { background-color: var(--vscode-editor-inactiveSelectionBackground); }
         .timestamp { font-size: 0.7em; color: var(--vscode-descriptionForeground); text-align: right; margin-top: 5px; opacity: 0.8; }
-        .input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex;}
+        
+        .input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; }
         #messageInput { flex-grow: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
         #sendBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
-        .messages-container { margin-bottom: 60px; overflow-y: auto; height: calc(100vh - 80px); display: flex; flex-direction: column; }
+        #sendBtn:hover { background: var(--vscode-button-hoverBackground); }
+        
+        .input-area.editing #sendBtn {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+        .input-area.editing #sendBtn:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+
+        .messages-container { margin-bottom: 60px; overflow-y: auto; height: calc(100vh - 80px); display: flex; flex-direction: column; padding-bottom: 20px; }
         pre { background: var(--vscode-textCodeBlock-background); padding: 5px; overflow-x: auto; }
         code { font-family: var(--vscode-editor-font-family); }
+
+        /* Hover Buttons */
+        .buttons-container {
+            position: absolute;
+            top: -10px;
+            right: 0;
+            display: none;
+            gap: 5px;
+            background: var(--vscode-editor-background);
+            padding: 2px;
+            border-radius: 4px;
+            border: 1px solid var(--vscode-widget-border);
+        }
+        .message-wrapper:hover .buttons-container {
+            display: flex;
+        }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--vscode-descriptionForeground);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+            color: var(--vscode-editor-foreground);
+        }
+        
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--vscode-menu-background);
+            color: var(--vscode-menu-foreground);
+            border: 1px solid var(--vscode-menu-border);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
+            min-width: 140px;
+            margin-top: 2px;
+        }
+        .dropdown-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: block;
+        }
+        .dropdown-item:hover {
+            background: var(--vscode-menu-selectionBackground);
+            color: var(--vscode-menu-selectionForeground);
+        }
     </style>
 </head>
 <body>
     <div class="messages-container" id="messages"></div>
     
-    <div class="input-area">
-        <input type="text" id="messageInput" placeholder="Type a message..." />
+    <div class="input-area" id="inputArea">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
         <button id="sendBtn">Send</button>
     </div>
 
@@ -171,11 +299,18 @@ export class ChatPanel {
         const messagesDiv = document.getElementById('messages');
         const input = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
+        const inputArea = document.getElementById('inputArea');
         const modelName = "${this._chat.modelName}";
         
         // Initial state
         let messages = ${initialMessages};
+        let editState = null; // { mode: 'truncate'|'fork', index: number } || null
+        let activeDropdown = null; // Element reference
+        let truncatedMessagesBackup = null; // To restore on cancel
         
+        const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
+
         function formatTime(ts) {
             if (!ts) return '';
             return new Date(ts).toLocaleString(undefined, { 
@@ -189,10 +324,10 @@ export class ChatPanel {
 
         function renderMessages() {
             messagesDiv.innerHTML = '';
-            messages.forEach(m => addMessageToDom(m.role, m.content, m.timestamp));
+            messages.forEach((m, i) => addMessageToDom(m.role, m.content, m.timestamp, i));
         }
 
-        function addMessageToDom(role, content, timestamp) {
+        function addMessageToDom(role, content, timestamp, index) {
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper ' + role;
 
@@ -204,6 +339,37 @@ export class ChatPanel {
             const div = document.createElement('div');
             div.className = 'message';
             
+            // Buttons Container for User messages
+            if (role === 'user' && typeof index === 'number') {
+                const btns = document.createElement('div');
+                btns.className = 'buttons-container';
+                
+                // Copy Button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'icon-btn';
+                copyBtn.title = 'Copy';
+                copyBtn.innerHTML = CopyIcon;
+                copyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(content);
+                    // Could show tooltip "Copied!"
+                };
+                btns.appendChild(copyBtn);
+
+                // Options Button
+                const optsBtn = document.createElement('button');
+                optsBtn.className = 'icon-btn';
+                optsBtn.title = 'Options';
+                optsBtn.innerHTML = MoreIcon;
+                optsBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleDropdown(e, index, content);
+                };
+                btns.appendChild(optsBtn);
+
+                wrapper.appendChild(btns);
+            }
+
             const contentDiv = document.createElement('div');
             contentDiv.style.whiteSpace = 'pre-wrap';
             contentDiv.textContent = content;
@@ -219,26 +385,130 @@ export class ChatPanel {
             wrapper.appendChild(div);
             messagesDiv.appendChild(wrapper);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return div; // Return message bubble for streaming updates
+            return div;
+        }
+
+        function toggleDropdown(e, index, content) {
+            // Remove existing dropdown if any
+            closeDropdown();
+            
+            const btn = e.currentTarget;
+            const parent = btn.parentElement; 
+            
+            const menu = document.createElement('div');
+            menu.className = 'dropdown-menu';
+            
+            const itemTruncate = document.createElement('div');
+            itemTruncate.className = 'dropdown-item';
+            itemTruncate.textContent = 'Edit / Truncate';
+            itemTruncate.onclick = () => {
+                // Request confirmation from extension
+                vscode.postMessage({ 
+                    command: 'requestTruncate', 
+                    index, 
+                    content 
+                });
+                closeDropdown();
+            };
+            menu.appendChild(itemTruncate);
+            
+            const itemFork = document.createElement('div');
+            itemFork.className = 'dropdown-item';
+            itemFork.textContent = 'Edit / Fork';
+            itemFork.onclick = () => {
+                 enterEditMode('fork', index, content);
+                 closeDropdown();
+            };
+            menu.appendChild(itemFork);
+            
+            parent.appendChild(menu);
+            menu.style.display = 'block';
+            activeDropdown = menu;
+            
+            // Click outside to close
+            setTimeout(() => {
+                document.addEventListener('click', closeDropdownOutside);
+            }, 0);
+        }
+        
+        function closeDropdown() {
+            if (activeDropdown) {
+                activeDropdown.remove();
+                activeDropdown = null;
+                document.removeEventListener('click', closeDropdownOutside);
+            }
+        }
+        
+        function closeDropdownOutside(e) {
+            if (activeDropdown && !activeDropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        }
+        
+        function enterEditMode(mode, index, content) {
+            editState = { mode, index };
+            input.value = content;
+            input.focus();
+            inputArea.classList.add('editing');
+            sendBtn.textContent = mode === 'truncate' ? 'Edit & Send' : 'Fork & Send';
+
+            if (mode === 'truncate' || mode === 'fork') {
+                // Backup messages from index onwards (including the one being edited, 
+                // but we want to show the one being edited in the input box, 
+                // and usually we want to see the CONTEXT before it.
+                // The user request says: "edited message and the truncated content afterwards are not visible"
+                // So we hide from index onwards.
+                
+                truncatedMessagesBackup = messages.slice(index);
+                messages = messages.slice(0, index);
+                renderMessages();
+            }
+        }
+        
+        function resetEditMode() {
+            if (editState && (editState.mode === 'truncate' || editState.mode === 'fork') && truncatedMessagesBackup) {
+                 // Restore messages on cancel
+                 messages = messages.concat(truncatedMessagesBackup);
+                 truncatedMessagesBackup = null;
+                 renderMessages();
+            }
+            editState = null;
+            inputArea.classList.remove('editing');
+            sendBtn.textContent = 'Send';
+        }
+
+        function sendMessage() {
+            const text = input.value;
+            if (text) {
+                if (editState) {
+                    vscode.postMessage({ 
+                        command: 'sendMessage', 
+                        text, 
+                        editOptions: editState 
+                    });
+                    resetEditMode();
+                } else {
+                    vscode.postMessage({ command: 'sendMessage', text });
+                }
+                input.value = '';
+            }
         }
 
         renderMessages();
 
-        sendBtn.addEventListener('click', () => {
-            const text = input.value;
-            if (text) {
-                vscode.postMessage({ command: 'sendMessage', text });
-                input.value = '';
-            }
-        });
+        sendBtn.addEventListener('click', sendMessage);
 
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const text = input.value;
-                if (text) {
-                    vscode.postMessage({ command: 'sendMessage', text });
-                    input.value = '';
-                }
+                sendMessage();
+            }
+        });
+        
+        // Cancel edit on Escape
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && editState) {
+                input.value = '';
+                resetEditMode();
             }
         });
 
@@ -247,7 +517,9 @@ export class ChatPanel {
             const message = event.data;
             switch(message.command) {
                 case 'addMessage':
-                    addMessageToDom(message.role, message.content, Date.now());
+                    // Update local state
+                    messages.push({ role: message.role, content: message.content, timestamp: Date.now() });
+                    addMessageToDom(message.role, message.content, Date.now(), messages.length - 1);
                     break;
                 case 'startAssistantMessage':
                     // Create a placeholder div we can append to
@@ -288,7 +560,16 @@ export class ChatPanel {
                         timeDiv.className = 'timestamp';
                         timeDiv.textContent = formatTime(Date.now());
                         parentMsg.appendChild(timeDiv);
+                        
+                        // Update local messages array for the assistant message
+                        // We need to capture the full content.
+                        // Ideally the view should be stateless or synced better, but for now:
+                        const fullContent = done.textContent;
+                        messages.push({ role: 'assistant', content: fullContent, timestamp: Date.now() });
                     }
+                    break;
+                case 'enterEditMode':
+                    enterEditMode(message.mode, message.index, message.content);
                     break;
             }
         });

@@ -32,6 +32,9 @@ You can install this extension from the following sources:
 - **History**: Chat history is automatically saved and persists across VS Code sessions.
 - **Auto-Start**: Sending a message to a stopped model continuously starts it.
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
+- **Message Editing**: Hover over user messages to **copy** content or access **edit options**:
+  - **Edit / Truncate**: Edit a message and remove all subsequent history (rewriting the conversation path).
+  - **Edit / Fork**: Edit a message and create a new chat branch, preserving the original conversation.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
 ## Requirements
