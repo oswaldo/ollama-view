@@ -63,6 +63,13 @@ You can install this extension from the following sources:
 
 ## Release Notes
 
-### 0.0.1
+### 0.0.2 - Initial Chat Functionality
+
+- **Persistent Chats**: Conversations are now possible and persistent across sessions.
+- **Message Editing**: Edit user messages to branch conversation paths (Truncate or Fork).
+- **Model Actions**: Copy, regenerate, and fork directly from model responses.
+- **Enhanced UI**: Improved tree view, chat deletion flow, and timestamp formatting.
+
+### 0.0.1 - Foundations
 
 - Initial release with View, Start, Stop, Delete, and Pull functionalities.
