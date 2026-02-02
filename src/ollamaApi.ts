@@ -157,6 +157,48 @@ export class OllamaApi {
         });
     }
 
+    async chat(
+        model: string,
+        messages: { role: string; content: string }[],
+        onToken: (token: string) => void,
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const request = http.request(
+                `${this.baseUrl}/api/chat`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                },
+                (res) => {
+                    res.setEncoding('utf8');
+                    res.on('data', (chunk) => {
+                        try {
+                            const lines = chunk.split('\n').filter((l: string) => l.trim() !== '');
+                            for (const line of lines) {
+                                const json = JSON.parse(line);
+                                if (json.message && json.message.content) {
+                                    onToken(json.message.content);
+                                }
+                                if (json.error) {
+                                    reject(new Error(json.error));
+                                }
+                                if (json.done) {
+                                    // done
+                                }
+                            }
+                        } catch (e) {
+                            // ignore partial
+                        }
+                    });
+                    res.on('end', resolve);
+                },
+            );
+            request.on('error', reject);
+            request.write(JSON.stringify({ model, messages, stream: true }));
+            request.end();
+        });
+    }
+
     private get(path: string): Promise<any> {
         return new Promise((resolve, reject) => {
             http.get(`${this.baseUrl}${path}`, (res) => {

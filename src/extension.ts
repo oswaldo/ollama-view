@@ -1,17 +1,67 @@
 import * as vscode from 'vscode';
-import { OllamaProvider, OllamaModelItem } from './ollamaProvider';
+import { OllamaProvider, OllamaModelItem, OllamaChatItem } from './ollamaProvider';
+import { ChatService } from './chatService';
+import { ChatPanel } from './chatPanel';
 
 // "Popular" models for autocomplete simulation
 const POPULAR_MODELS = ['llama3', 'llama2', 'mistral', 'gemma', 'phi', 'codellama', 'orca-mini', 'vicuna', 'llava'];
 
 export function activate(context: vscode.ExtensionContext) {
-    const ollamaProvider = new OllamaProvider();
+    const chatService = new ChatService(context);
+    const ollamaProvider = new OllamaProvider(chatService);
 
     // Register TreeDataProvider
     vscode.window.registerTreeDataProvider('ollama-models-view', ollamaProvider);
 
     // Commands
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.refresh', () => ollamaProvider.refresh()));
+
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.createChat', async (node?: OllamaModelItem) => {
+        if (!node) { return; }
+
+        // 1. Check if model is running, if not start it with progress
+        if (!node.isRunning) {
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Starting ${node.model.name}...`,
+                    cancellable: false,
+                },
+                async () => {
+                    await ollamaProvider.getApi().startModel(node.model.name);
+                }
+            );
+            // Wait a small bit for Ollama to register state
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 2. Create Chat
+        const chat = await chatService.createChat(node.model.name);
+
+        // 3. Refresh to update tree (show running status and new chat)
+        ollamaProvider.refresh();
+
+        // 4. Open Chat Panel
+        ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.deleteChat', async (node: OllamaChatItem) => {
+        if (!node) { return; }
+        const confirm = await vscode.window.showWarningMessage(
+            `Delete chat "${node.chat.name || 'New Chat'}"?`,
+            { modal: true },
+            'Delete'
+        );
+        if (confirm === 'Delete') {
+            await chatService.deleteChat(node.chat.id);
+            ollamaProvider.refresh();
+        }
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => {
+        if (!node) { return; }
+        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
+    }));
 
     context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.start', async (node?: OllamaModelItem) => {

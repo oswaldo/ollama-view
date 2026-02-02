@@ -1,13 +1,34 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { OllamaApi, OllamaModel } from './ollamaApi';
+import { ChatService, Chat } from './chatService';
+
+export class OllamaChatItem extends vscode.TreeItem {
+    constructor(
+        public readonly chat: Chat,
+    ) {
+        super(chat.name, vscode.TreeItemCollapsibleState.None);
+        this.tooltip = `Created: ${new Date(chat.createdAt).toLocaleString()}`;
+        this.description = ''; // Maybe last message snippet?
+        this.contextValue = 'ollama-chat';
+        this.iconPath = new vscode.ThemeIcon('comment-discussion');
+
+        // Command to open chat
+        this.command = {
+            command: 'ollamaView.openChat',
+            title: 'Open Chat',
+            arguments: [this]
+        };
+    }
+}
 
 export class OllamaModelItem extends vscode.TreeItem {
     constructor(
         public readonly model: OllamaModel,
         public readonly isRunning: boolean,
     ) {
-        super(model.name, vscode.TreeItemCollapsibleState.None);
+        // Collapsible to show chats
+        super(model.name, vscode.TreeItemCollapsibleState.Collapsed);
 
         this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB\nRunning: ${isRunning}`;
         this.description = isRunning ? 'Running' : 'Stopped';
@@ -15,14 +36,6 @@ export class OllamaModelItem extends vscode.TreeItem {
         // Context value for menus
         this.contextValue = isRunning ? 'variable-running' : 'variable-stopped';
 
-        // Icons
-        // We can use built-in ones or custom paths.
-        // Using built-in colored circles if possible? VS Code doesn't have colored icons easily without custom SVGs.
-        // We can use `vscode.ThemeIcon` with 'circle-filled' but color is theme dependent.
-        // Best approach for red/green:
-        // Use a standard icon but rely on description. Or use `resourceUri` hacks.
-        // Actually, let's use standard icons that convey meaning.
-        // 'pass' (check) for running, 'circle-outline' or 'stop' for stopped?
         if (isRunning) {
             this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-running.svg'));
         } else {
@@ -31,52 +44,48 @@ export class OllamaModelItem extends vscode.TreeItem {
                 dark: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-dark.svg'))
             };
         }
-
-        // Since we are using a raw SVG, we can't easily rely on ThemeColor for status (green/red)
-        // without defining separate SVGs or using a mask.
-        // For now, let's keep it simple as requested. The description 'Running'/'Stopped' handles the status text.
-        // If we want color:
-        // this.iconPath = {
-        //    light: iconPath,
-        //    dark: iconPath 
-        // };
     }
 }
 
-export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<OllamaModelItem | undefined | null | void> =
-        new vscode.EventEmitter<OllamaModelItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<OllamaModelItem | undefined | null | void> =
+export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem | OllamaChatItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<OllamaModelItem | OllamaChatItem | undefined | null | void> =
+        new vscode.EventEmitter<OllamaModelItem | OllamaChatItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<OllamaModelItem | OllamaChatItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
 
     private cleanModels: OllamaModel[] = [];
     private runningModels: Set<string> = new Set();
     private api: OllamaApi;
+    private chatService: ChatService;
 
-    constructor() {
+    constructor(chatService: ChatService) {
         this.api = new OllamaApi();
+        this.chatService = chatService;
     }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
 
-    getTreeItem(element: OllamaModelItem): vscode.TreeItem {
+    getTreeItem(element: OllamaModelItem | OllamaChatItem): vscode.TreeItem {
         return element;
     }
 
-    async getChildren(element?: OllamaModelItem): Promise<OllamaModelItem[]> {
-        if (element) {
-            return []; // No children for now
+    async getChildren(element?: OllamaModelItem | OllamaChatItem): Promise<(OllamaModelItem | OllamaChatItem)[]> {
+        if (element instanceof OllamaChatItem) {
+            return [];
         }
 
-        // Fetch data
+        if (element instanceof OllamaModelItem) {
+            // Return chats for this model
+            const chats = this.chatService.getChatsForModel(element.model.name);
+            return chats.map(c => new OllamaChatItem(c));
+        }
+
+        // Root elements: Models
         const [models, running] = await Promise.all([this.api.listModels(), this.api.listRunning()]);
 
         this.runningModels = new Set(running.map((r) => r.model));
-
-        // Note: Ollama 'ps' returns specific model names, 'list' returns tags (e.g. llama2:latest)
-        // We need to match them. running model usually matches the name in list.
 
         return models.map((m) => {
             const isRun = this.runningModels.has(m.name);
