@@ -8,6 +8,8 @@
 
 Manage your locally installed [Ollama](https://ollama.ai) models directly from Visual Studio Code.
 
+(Experimental) Start quick experiments by chatting directly with your models.
+
 ![Ollama View Screenshot](media/screenshot.png)
 
 ## Installation
@@ -22,16 +24,15 @@ You can install this extension from the following sources:
 
 ### Sidepanel View
 - **Model List**: View all your local Ollama models in a tree view.
-- **Status Indication**: Visual indicators for Running (Green) and Stopped (Red) models.
+- **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
+- **Status Indication**: Visual indicators for Running (Green) and Stopped (Grey) models.
 - **Persistent Chats**: Create and manage multiple persistent chats for each model.
 - **Context Menu**: Right-click to Start, Stop, or Delete models and chats.
 
 ### Chat Interface
-- **Rich Chat**: Interactive chat interface with streaming responses.
 - **Concurrent Chats**: Open multiple chat tabs simultaneously.
 - **History**: Chat history is automatically saved and persists across VS Code sessions.
 - **Auto-Start**: Sending a message to a stopped model continuously starts it.
-- **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
 - **Message Editing**: Hover over user messages to **copy** content or access **edit options**:
   - **Edit / Truncate**: Edit a message and remove all subsequent history (rewriting the conversation path).
   - **Edit / Fork**: Edit a message and create a new chat branch, preserving the original conversation.
