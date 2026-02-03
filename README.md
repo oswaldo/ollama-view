@@ -63,6 +63,12 @@ You can install this extension from the following sources:
 
 ## Release Notes
 
+### 0.0.3 - Unique Chat Naming
+
+- **Unique Chat Names**: New chats now have unique names (e.g. "New Chat (2)") to prevent confusion.
+- **Improved Naming Logic**: Renaming and forking chats also ensures unique names.
+- **Tests**: Added tests for chat naming logic.
+
 ### 0.0.2 - Initial Chat Functionality
 
 - **Persistent Chats**: Conversations are now possible and persistent across sessions.
