@@ -41,6 +41,7 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 5.  [x] **Auto-Start**: Chatting starts model automatically.
 6.  [x] **UI Polish**: Timestamps, Sender labels.
 7.  [x] **Message Editing**: Edit user messages to Truncate (overwrite future history) or Fork (create new chat branch).
+8.  [x] **Chat Naming**: Unique names for new, renamed, and forked chats.
 
 ## Suggestions (Antigravity)
 

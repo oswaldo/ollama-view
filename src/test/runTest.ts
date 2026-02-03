@@ -38,3 +38,8 @@ export function run(): Promise<void> {
             .catch((err) => reject(err));
     });
 }
+
+run().catch(err => {
+    console.error('Failed to run tests');
+    process.exit(1);
+});

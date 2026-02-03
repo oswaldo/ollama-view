@@ -146,4 +146,43 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
         assert.ok(newChat!.name.endsWith('(Fork)'), 'Name should indicate fork');
     });
+
+    test('getUniqueChatName should handle duplicates', async () => {
+
+        // Create first "New Chat"
+        const chat1 = await chatService.createChat('llama3');
+        assert.strictEqual(chat1.name, 'New Chat');
+
+        // Create second "New Chat" -> "New Chat (2)"
+        const chat2 = await chatService.createChat('llama3');
+        assert.strictEqual(chat2.name, 'New Chat (2)');
+
+        // Create third "New Chat" -> "New Chat (3)"
+        const chat3 = await chatService.createChat('llama3');
+        assert.strictEqual(chat3.name, 'New Chat (3)');
+    });
+
+    test('addMessage should rename with unique name', async () => {
+        const chat1 = await chatService.createChat('llama3');
+        // Rename "New Chat" to "Hello"
+        await chatService.addMessage(chat1.id, 'user', 'Hello');
+        const updatedChat1 = chatService.getChat(chat1.id);
+        assert.strictEqual(updatedChat1?.name, 'Hello');
+
+        const chat2 = await chatService.createChat('llama3'); // "New Chat"
+        // Rename "New Chat" to "Hello" -> collision with chat1 -> "Hello (2)"
+        await chatService.addMessage(chat2.id, 'user', 'Hello');
+        const updatedChat2 = chatService.getChat(chat2.id);
+        assert.strictEqual(updatedChat2?.name, 'Hello (2)');
+    });
+
+    test('forkChat should use unique name', async () => {
+        const chat1 = await chatService.createChat('llama3');
+        await chatService.addMessage(chat1.id, 'user', 'Hello'); // name = "Hello"
+        await chatService.addMessage(chat1.id, 'assistant', 'Response');
+
+        // Fork -> "Hello" (as content) -> should be "Hello (2)" because "Hello" exists
+        const forkedChat = await chatService.forkChat(chat1.id, 2, 'Hello');
+        assert.strictEqual(forkedChat?.name, 'Hello (2)');
+    });
 });

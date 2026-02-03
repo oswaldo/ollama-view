@@ -28,12 +28,54 @@ export class ChatService {
         await this.context.globalState.update(ChatService.STORAGE_KEY, chats);
     }
 
+    private getUniqueChatName(baseName: string, chats: Chat[]): string {
+        const existingNames = new Set(chats.map(c => c.name));
+        if (!existingNames.has(baseName)) {
+            return baseName;
+        }
+
+        // Regex to parse name and optional number suffix (e.g., "Name (2)")
+        // Matches "Name" in group 1, and "2" in group 3.
+        const regex = /^(.*?)(\s*\((\d+)\))?$/;
+
+        // Find all names that start with baseName
+        let maxNumber = 1;
+        let found = false;
+
+        // If baseName itself has a number, we should handle it, but the requirement is:
+        // "New Chat" -> "New Chat (2)"
+        // "Hello" (if exists) -> "Hello (2)"
+        // "Hello (5)" (if exists) -> "Hello (6)"
+
+        // Let's iterate all existing names to find collisions
+        for (const name of existingNames) {
+            const match = name.match(regex);
+            if (match) {
+                const currentBase = match[1];
+                const numberPart = match[3] ? parseInt(match[3], 10) : 1;
+
+                if (currentBase === baseName) {
+                    if (numberPart >= maxNumber) {
+                        maxNumber = numberPart;
+                        found = true;
+                    }
+                }
+            }
+        }
+
+        if (found) {
+            return `${baseName} (${maxNumber + 1})`;
+        }
+
+        return baseName;
+    }
+
     async createChat(modelName: string): Promise<Chat> {
         const chats = this.getAllChats();
         const newChat: Chat = {
             id: uuidv4(),
             modelName,
-            name: 'New Chat',
+            name: this.getUniqueChatName('New Chat', chats),
             messages: [],
             createdAt: Date.now(),
         };
@@ -71,9 +113,15 @@ export class ChatService {
             timestamp: Date.now(),
         });
 
-        // Update name if it's the first user message and name is still default
-        if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1 && chat.name === 'New Chat') {
-            chat.name = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+        // Update name if it's the first user message and name is still default (or default with number)
+        if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1 && chat.name.startsWith('New Chat')) {
+            const baseName = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+            // We need to calculate unique name against OTHER chats, but the current chat is already in the list if we look at 'chats' array from getAllChats.
+            // However, we are modifying 'chat' object which is a reference if obtained via find (but getAllChats returns a fresh array from globalState usually? No, globalState.get returns value).
+            // Actually, getAllChats returns the array from memento.
+            // We should check uniqueness against OTHER chats.
+            const otherChats = chats.filter(c => c.id !== chatId);
+            chat.name = this.getUniqueChatName(baseName, otherChats);
         }
 
         chats[chatIndex] = chat;
@@ -111,10 +159,13 @@ export class ChatService {
             return undefined;
         }
 
+        const baseName = newContent.slice(0, 30) + (newContent.length > 30 ? '...' : '');
+        const chats = this.getAllChats(); // Get latest
+
         const newChat: Chat = {
             id: uuidv4(),
             modelName: sourceChat.modelName,
-            name: newContent.slice(0, 30) + (newContent.length > 30 ? '...' : ''),
+            name: this.getUniqueChatName(baseName, chats),
             messages: sourceChat.messages.slice(0, messageIndex),
             createdAt: Date.now(),
         };
@@ -125,7 +176,6 @@ export class ChatService {
             timestamp: Date.now(), // New timestamp for the new message
         });
 
-        const chats = this.getAllChats();
         chats.push(newChat);
         await this.saveChats(chats);
         return newChat;
@@ -160,15 +210,17 @@ export class ChatService {
         // Ensure the last message is a user message (sanity check, though not strictly required by logic, it makes sense for a chat flow)
         // For now, simple slice is enough.
 
+        const chats = this.getAllChats();
+        const baseName = sourceChat.name + ' (Fork)';
+
         const newChat: Chat = {
             id: uuidv4(),
             modelName: sourceChat.modelName,
-            name: sourceChat.name + ' (Fork)', // Or better naming strategy?
+            name: this.getUniqueChatName(baseName, chats),
             messages: messagesToKeep, // Clone? Slice returns new array
             createdAt: Date.now(),
         };
 
-        const chats = this.getAllChats();
         chats.push(newChat);
         await this.saveChats(chats);
         return newChat;

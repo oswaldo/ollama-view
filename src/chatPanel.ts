@@ -24,6 +24,9 @@ export class ChatPanel {
         // Check if we already have a panel for this chat
         if (ChatPanel.panels.has(chat.id)) {
             const existing = ChatPanel.panels.get(chat.id)!;
+            // Update the chat object and title in case they changed
+            existing._chat = chat;
+            existing._panel.title = `${chat.name} - ${chat.modelName}`;
             existing._panel.reveal(column);
             return existing;
         }
@@ -31,7 +34,7 @@ export class ChatPanel {
         // Otherwise, create a new panel.
         const panel = vscode.window.createWebviewPanel(
             ChatPanel.viewType,
-            `Chat: ${chat.modelName}`,
+            `${chat.name} - ${chat.modelName}`,
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -85,6 +88,16 @@ export class ChatPanel {
     public dispose() {
         ChatPanel.panels.delete(this._chat.id);
 
+        // If the chat has no messages, it's a "transient" empty chat. 
+        // Delete it so it doesn't clutter the tree.
+        if (this._chat.messages.length === 0) {
+            this._chatService.deleteChat(this._chat.id).then(() => {
+                if (this._onStateChange) {
+                    this._onStateChange();
+                }
+            });
+        }
+
         // Clean up our resources
         this._panel.dispose();
 
@@ -105,6 +118,7 @@ export class ChatPanel {
                 const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, text);
                 if (updatedChat) {
                     this._chat = updatedChat;
+                    this._updateTitle();
                     // We need to refresh the UI completely here because history changed
                     this._update();
                     messageProcessed = true;
@@ -133,6 +147,7 @@ export class ChatPanel {
         if (!messageProcessed) {
             await this._chatService.addMessage(this._chat.id, 'user', text);
             this._chat = this._chatService.getChat(this._chat.id) || this._chat; // Refresh chat state
+            this._updateTitle();
             // 2. Update UI with user message
             this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: text });
         }
@@ -212,6 +227,7 @@ export class ChatPanel {
         const updatedChat = await this._chatService.deleteMessagesFrom(this._chat.id, index);
         if (updatedChat) {
             this._chat = updatedChat;
+            this._updateTitle();
             this._update(); // complete refresh
             await this._generateResponse();
         }
@@ -239,6 +255,10 @@ export class ChatPanel {
                 await newPanel._generateResponse();
             }
         }
+    }
+
+    private _updateTitle() {
+        this._panel.title = `${this._chat.name} - ${this._chat.modelName}`;
     }
 
     private _update() {

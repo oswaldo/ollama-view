@@ -5,32 +5,40 @@ import { OllamaApi } from '../ollamaApi';
 import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 
-describe('OllamaApi', () => {
+suite('OllamaApi', () => {
     let api: OllamaApi;
     let httpRequestStub: sinon.SinonStub;
 
-    beforeEach(() => {
+    setup(() => {
         api = new OllamaApi();
         httpRequestStub = sinon.stub(http, 'request');
     });
 
-    afterEach(() => {
+    teardown(() => {
         sinon.restore();
     });
 
-    it('listModels should return models on success', async () => {
+    test('listModels should return models on success', async () => {
         const mockResponse = new PassThrough();
         mockResponse.push(JSON.stringify({ models: [{ name: 'test-model', size: 100 }] }));
         mockResponse.end();
 
-        const httpGetStub = sinon.stub(http, 'get').yields(mockResponse);
+        const mockReq = new EventEmitter();
+        const httpGetStub = sinon.stub(http, 'get').callsFake((url, options, callback) => {
+            // Handle overload where options is optional
+            const cb = typeof options === 'function' ? options : callback;
+            if (cb) {
+                cb(mockResponse as any);
+            }
+            return mockReq as any;
+        });
 
         const models = await api.listModels();
         assert.strictEqual(models.length, 1);
         assert.strictEqual(models[0].name, 'test-model');
     });
 
-    it('deleteModel should resolve on 200', async () => {
+    test('deleteModel should resolve on 200', async () => {
         const mockReq = new EventEmitter();
         (mockReq as any).write = sinon.stub(); // Cast to any to mock write
         (mockReq as any).end = sinon.stub();
@@ -49,7 +57,7 @@ describe('OllamaApi', () => {
         assert.ok(true, 'Delete resolved');
     });
 
-    it('deleteModel should reject on 400', async () => {
+    test('deleteModel should reject on 400', async () => {
         const mockReq = new EventEmitter();
         (mockReq as any).write = sinon.stub();
         (mockReq as any).end = sinon.stub();
