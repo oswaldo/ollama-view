@@ -144,7 +144,6 @@ suite('ChatService Test Suite', () => {
 
         assert.strictEqual(newChat!.messages.length, 1);
         assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
-        assert.ok(newChat!.name.endsWith('(Fork)'), 'Name should indicate fork');
     });
 
     test('getUniqueChatName should handle duplicates', async () => {
@@ -184,5 +183,17 @@ suite('ChatService Test Suite', () => {
         // Fork -> "Hello" (as content) -> should be "Hello (2)" because "Hello" exists
         const forkedChat = await chatService.forkChat(chat1.id, 2, 'Hello');
         assert.strictEqual(forkedChat?.name, 'Hello (2)');
+    });
+
+    test('getUniqueChatName should handle duplicates with non-numeric suffixes', async () => {
+        // Manually create a chat with a non-numeric suffix
+        const chats = (mockContext.globalState.get('ollama-view.chats', [])) as Chat[];
+        chats.push({ id: '1', name: 'My Chat', modelName: 'llama3', messages: [], createdAt: Date.now() });
+        chats.push({ id: '2', name: 'My Chat (Fork)', modelName: 'llama3', messages: [], createdAt: Date.now() });
+        await mockContext.globalState.update('ollama-view.chats', chats);
+
+        // Fork the chat with the non-numeric suffix
+        const newChat = await chatService.forkChatFrom('2', 0);
+        assert.strictEqual(newChat?.name, 'My Chat (Fork) (2)');
     });
 });

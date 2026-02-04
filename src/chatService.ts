@@ -34,40 +34,14 @@ export class ChatService {
             return baseName;
         }
 
-        // Regex to parse name and optional number suffix (e.g., "Name (2)")
-        // Matches "Name" in group 1, and "2" in group 3.
-        const regex = /^(.*?)(\s*\((\d+)\))?$/;
-
-        // Find all names that start with baseName
-        let maxNumber = 1;
-        let found = false;
-
-        // If baseName itself has a number, we should handle it, but the requirement is:
-        // "New Chat" -> "New Chat (2)"
-        // "Hello" (if exists) -> "Hello (2)"
-        // "Hello (5)" (if exists) -> "Hello (6)"
-
-        // Let's iterate all existing names to find collisions
-        for (const name of existingNames) {
-            const match = name.match(regex);
-            if (match) {
-                const currentBase = match[1];
-                const numberPart = match[3] ? parseInt(match[3], 10) : 1;
-
-                if (currentBase === baseName) {
-                    if (numberPart >= maxNumber) {
-                        maxNumber = numberPart;
-                        found = true;
-                    }
-                }
+        let i = 2;
+        while (true) {
+            const newName = `${baseName} (${i})`;
+            if (!existingNames.has(newName)) {
+                return newName;
             }
+            i++;
         }
-
-        if (found) {
-            return `${baseName} (${maxNumber + 1})`;
-        }
-
-        return baseName;
     }
 
     async createChat(modelName: string): Promise<Chat> {
@@ -211,7 +185,7 @@ export class ChatService {
         // For now, simple slice is enough.
 
         const chats = this.getAllChats();
-        const baseName = sourceChat.name + ' (Fork)';
+        const baseName = sourceChat.name;
 
         const newChat: Chat = {
             id: uuidv4(),
