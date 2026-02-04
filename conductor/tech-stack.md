@@ -4,12 +4,18 @@
 This project, "Ollama View for VS Code," utilizes a modern web technology stack tailored for Visual Studio Code extension development.
 
 ## Core Technologies
-*   **Programming Language**: TypeScript
+*   **Programming Language**: TypeScript (Strict Mode)
     *   **Rationale**: Provides type safety, enhanced developer tooling, and scalability for robust application development.
 *   **Frameworks**: Visual Studio Code Extension API
     *   **Rationale**: The official API for building extensions that integrate deeply with the VS Code environment, providing access to its UI components and functionalities.
-*   **Runtime Environment**: Node.js
+*   **Runtime Environment**: Node.js (v18.x)
     *   **Rationale**: Powers the execution of the TypeScript code within the VS Code extension host, enabling rich functionality and access to Node.js APIs.
+
+## Architecture and Core Components
+*   **Sidebar Provider**: Utilizes a `TreeDataProvider` for listing models and chats in the VS Code sidebar.
+*   **Webview**: The chat interface is built using a Webview (HTML/CSS/JS running inside VS Code).
+*   **Ollama API Communication**: A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
+*   **State Management**: Persists chat history and other extension state using the VS Code `globalState` API.
 
 ## Development Tools
 *   **Build Tools**:
