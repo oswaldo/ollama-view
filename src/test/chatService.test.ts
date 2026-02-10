@@ -196,4 +196,24 @@ suite('ChatService Test Suite', () => {
         const newChat = await chatService.forkChatFrom('2', 0);
         assert.strictEqual(newChat?.name, 'My Chat (Fork) (2)');
     });
+
+    test('truncateChat should not allow empty new content', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+
+        await chatService.truncateChat(chat.id, 1, '');
+        const updatedChat = chatService.getChat(chat.id);
+        assert.strictEqual(updatedChat?.messages.length, 1, "Should not add empty message");
+    });
+
+    test('forkChat should not allow empty new content', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+
+        await chatService.forkChat(chat.id, 2, '');
+        const updatedChat = chatService.getChat(chat.id); // This will be the original chat
+        const newChats = chatService.getChatsForModel('llama3');
+        assert.strictEqual(newChats.length, 1, "Should not create a new chat with empty message");
+    });
 });

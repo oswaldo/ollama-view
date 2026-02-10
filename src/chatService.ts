@@ -103,6 +103,9 @@ export class ChatService {
         return chat;
     }
     async truncateChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+        if (!newContent || newContent.trim() === '') {
+            return this.getChat(chatId);
+        }
         const chats = this.getAllChats();
         const chatIndex = chats.findIndex(c => c.id === chatId);
         if (chatIndex === -1) {
@@ -128,6 +131,9 @@ export class ChatService {
     }
 
     async forkChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+        if (!newContent || newContent.trim() === '') {
+            return undefined; // Or throw an error, but returning undefined is consistent with other undefined returns.
+        }
         const sourceChat = this.getChat(chatId);
         if (!sourceChat) {
             return undefined;

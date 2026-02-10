@@ -110,12 +110,24 @@ export class ChatPanel {
     }
 
     private async _handleMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
+        const trimmedText = text.trim();
         // 1. Save user message (handling edits)
         let messageProcessed = false;
 
         if (editOptions) {
             if (editOptions.mode === 'truncate') {
-                const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, text);
+                const answer = await vscode.window.showWarningMessage(
+                    'Are you sure? Editing this message will remove all subsequent messages in this chat.',
+                    { modal: true },
+                    'Edit & Truncate'
+                );
+
+                if (answer !== 'Edit & Truncate') {
+                    // User cancelled, do not proceed with truncation
+                    return;
+                }
+
+                const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, trimmedText);
                 if (updatedChat) {
                     this._chat = updatedChat;
                     this._updateTitle();
@@ -124,7 +136,7 @@ export class ChatPanel {
                     messageProcessed = true;
                 }
             } else if (editOptions.mode === 'fork') {
-                const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, text);
+                const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, trimmedText);
                 if (newChat) {
                     // Switch to new chat
                     const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._api, this._onStateChange);
@@ -145,11 +157,11 @@ export class ChatPanel {
         }
 
         if (!messageProcessed) {
-            await this._chatService.addMessage(this._chat.id, 'user', text);
+            await this._chatService.addMessage(this._chat.id, 'user', trimmedText);
             this._chat = this._chatService.getChat(this._chat.id) || this._chat; // Refresh chat state
             this._updateTitle();
             // 2. Update UI with user message
-            this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: text });
+            this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: trimmedText });
         }
 
         // 3. Call Ollama API
@@ -190,20 +202,12 @@ export class ChatPanel {
     }
 
     private async _handleRequestTruncate(index: number, content: string) {
-        const answer = await vscode.window.showWarningMessage(
-            'Are you sure? Editing this message will remove all subsequent messages in this chat.',
-            { modal: true },
-            'Edit & Truncate'
-        );
-
-        if (answer === 'Edit & Truncate') {
-            this._panel.webview.postMessage({
-                command: 'enterEditMode',
-                mode: 'truncate',
-                index,
-                content
-            });
-        }
+        this._panel.webview.postMessage({
+            command: 'enterEditMode',
+            mode: 'truncate',
+            index,
+            content
+        });
     }
 
     private async _handleRequestRegenerate(index: number) {
@@ -289,15 +293,16 @@ export class ChatPanel {
         
         .input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; }
         #messageInput { flex-grow: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
-        #sendBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
+        #sendBtn, #cancelBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
         #sendBtn:hover { background: var(--vscode-button-hoverBackground); }
+        #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
         
+        #cancelBtn { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+        #cancelBtn:hover { background: var(--vscode-button-secondaryHoverBackground); }
+
         .input-area.editing #sendBtn {
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
-        }
-        .input-area.editing #sendBtn:hover {
-            background: var(--vscode-button-secondaryHoverBackground);
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
         }
 
         .messages-container { margin-bottom: 60px; overflow-y: auto; height: calc(100vh - 80px); display: flex; flex-direction: column; padding-bottom: 20px; }
@@ -393,6 +398,7 @@ export class ChatPanel {
     <div class="input-area" id="inputArea">
         <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
         <button id="sendBtn">Send</button>
+        <button id="cancelBtn" style="display: none;">Cancel</button>
     </div>
 
     <script>
@@ -400,6 +406,7 @@ export class ChatPanel {
         const messagesDiv = document.getElementById('messages');
         const input = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
         const inputArea = document.getElementById('inputArea');
         const modelName = "${this._chat.modelName}";
         
@@ -459,7 +466,6 @@ export class ChatPanel {
             div.className = 'message';
             
             // Buttons Container for ALL messages (user and assistant)
-            // But only if we have a valid index (streaming messages might not have index yet? existing code passes index)
             if (typeof index === 'number') {
                 const btns = document.createElement('div');
                 btns.className = 'buttons-container';
@@ -483,7 +489,6 @@ export class ChatPanel {
                 optsBtn.innerHTML = MoreIcon;
                 optsBtn.onclick = (e) => {
                     e.stopPropagation();
-                    console.log('toggleDropdown', index, role);
                     toggleDropdown(e, index, content, role);
                 };
                 btns.appendChild(optsBtn);
@@ -524,11 +529,7 @@ export class ChatPanel {
                 itemTruncate.className = 'dropdown-item';
                 itemTruncate.textContent = 'Edit / Truncate';
                 itemTruncate.onclick = () => {
-                    vscode.postMessage({ 
-                        command: 'requestTruncate', 
-                        index, 
-                        content 
-                    });
+                    enterEditMode('truncate', index, content);
                     closeDropdown();
                 };
                 menu.appendChild(itemTruncate);
@@ -600,21 +601,20 @@ export class ChatPanel {
         function enterEditMode(mode, index, content) {
             editState = { mode, index };
             input.value = content;
-            input.focus();
+            
+            // Ensure focus happens after DOM updates
+            setTimeout(() => input.focus(), 0); 
+            
             inputArea.classList.add('editing');
+            cancelBtn.style.display = 'inline-block';
             sendBtn.textContent = mode === 'truncate' ? 'Edit & Send' : 'Fork & Send';
 
             if (mode === 'truncate' || mode === 'fork') {
-                // Backup messages from index onwards (including the one being edited, 
-                // but we want to show the one being edited in the input box, 
-                // and usually we want to see the CONTEXT before it.
-                // The user request says: "edited message and the truncated content afterwards are not visible"
-                // So we hide from index onwards.
-                
                 truncatedMessagesBackup = messages.slice(index);
                 messages = messages.slice(0, index);
                 renderMessages();
             }
+            validateInput();
         }
         
         function resetEditMode() {
@@ -626,29 +626,48 @@ export class ChatPanel {
             }
             editState = null;
             inputArea.classList.remove('editing');
+            cancelBtn.style.display = 'none';
             sendBtn.textContent = 'Send';
+            validateInput();
+        }
+
+        function validateInput() {
+            const trimmedText = input.value.trim();
+            sendBtn.disabled = !trimmedText;
         }
 
         function sendMessage() {
             const text = input.value;
-            if (text) {
-                if (editState) {
-                    vscode.postMessage({ 
-                        command: 'sendMessage', 
-                        text, 
-                        editOptions: editState 
-                    });
-                    resetEditMode();
-                } else {
-                    vscode.postMessage({ command: 'sendMessage', text });
-                }
-                input.value = '';
+            const trimmedText = text.trim();
+
+            if (!trimmedText) {
+                return;
             }
+
+            if (editState) {
+                vscode.postMessage({ 
+                    command: 'sendMessage', 
+                    text: trimmedText, 
+                    editOptions: editState 
+                });
+                resetEditMode();
+            } else {
+                vscode.postMessage({ command: 'sendMessage', text: trimmedText });
+            }
+            input.value = '';
+            validateInput();
         }
 
         renderMessages();
+        validateInput();
 
         sendBtn.addEventListener('click', sendMessage);
+        cancelBtn.addEventListener('click', () => {
+            input.value = '';
+            resetEditMode();
+        });
+
+        input.addEventListener('input', validateInput);
 
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -714,8 +733,6 @@ export class ChatPanel {
                         parentMsg.appendChild(timeDiv);
                         
                         // Update local messages array for the assistant message
-                        // We need to capture the full content.
-                        // Ideally the view should be stateless or synced better, but for now:
                         const fullContent = done.textContent;
                         messages.push({ role: 'assistant', content: fullContent, timestamp: Date.now() });
                     }
