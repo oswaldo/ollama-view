@@ -185,6 +185,39 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(forkedChat?.name, 'Hello (2)');
     });
 
+    test('getPaginatedMessages should return correct slice', async () => {
+        const chat = await chatService.createChat('llama3');
+        for (let i = 0; i < 100; i++) {
+            await chatService.addMessage(chat.id, 'user', `Msg ${i}`);
+        }
+
+        // Page 1: last 20 messages (80 to 99)
+        const page1 = chatService.getPaginatedMessages(chat.id, 20, 0);
+        assert.strictEqual(page1.messages.length, 20);
+        assert.strictEqual(page1.total, 100);
+        assert.strictEqual(page1.messages[0].content, 'Msg 80');
+        assert.strictEqual(page1.messages[19].content, 'Msg 99');
+
+        // Page 2: next 20 messages (60 to 79)
+        const page2 = chatService.getPaginatedMessages(chat.id, 20, 20);
+        assert.strictEqual(page2.messages.length, 20);
+        assert.strictEqual(page2.messages[0].content, 'Msg 60');
+        assert.strictEqual(page2.messages[19].content, 'Msg 79');
+
+        // Page 6: last bit (0 to 19) is not right, Page 5 is 0 to 19.
+        // offset 80 -> messages 0 to 19
+        const page5 = chatService.getPaginatedMessages(chat.id, 20, 80);
+        assert.strictEqual(page5.messages.length, 20);
+        assert.strictEqual(page5.messages[0].content, 'Msg 0');
+        assert.strictEqual(page5.messages[19].content, 'Msg 19');
+        
+        // Overflow
+        const page6 = chatService.getPaginatedMessages(chat.id, 20, 90);
+        assert.strictEqual(page6.messages.length, 10);
+        assert.strictEqual(page6.messages[0].content, 'Msg 0');
+        assert.strictEqual(page6.messages[9].content, 'Msg 9');
+    });
+
     test('getUniqueChatName should handle duplicates with non-numeric suffixes', async () => {
         // Manually create a chat with a non-numeric suffix
         const chats = (mockContext.globalState.get('ollama-view.chats', [])) as Chat[];

@@ -205,4 +205,22 @@ export class ChatService {
         await this.saveChats(chats);
         return newChat;
     }
+
+    getPaginatedMessages(chatId: string, limit: number, offset: number): { messages: ChatMessage[], total: number } {
+        const chat = this.getChat(chatId);
+        if (!chat) {
+            return { messages: [], total: 0 };
+        }
+        const total = chat.messages.length;
+        // We want the LATEST messages first if offset is 0.
+        // total = 100, limit = 20, offset = 0 -> messages 80 to 99
+        // total = 100, limit = 20, offset = 20 -> messages 60 to 79
+        const end = total - offset;
+        const start = end - limit;
+        
+        return {
+            messages: chat.messages.slice(Math.max(0, start), Math.max(0, end)),
+            total
+        };
+    }
 }

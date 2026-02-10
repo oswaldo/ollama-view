@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { OllamaProvider, OllamaModelItem, OllamaChatItem } from './ollamaProvider';
 import { ChatService } from './chatService';
 import { ChatPanel } from './chatPanel';
+import { Logger } from './logger';
 
 // "Popular" models for autocomplete simulation
 const POPULAR_MODELS = ['llama3', 'llama2', 'mistral', 'gemma', 'phi', 'codellama', 'orca-mini', 'vicuna', 'llava'];
 
 export function activate(context: vscode.ExtensionContext) {
+    Logger.init();
     const chatService = new ChatService(context);
     const ollamaProvider = new OllamaProvider(chatService);
 
@@ -176,6 +178,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Started ${modelName}`);
                 ollamaProvider.refresh();
             } catch (err: any) {
+                Logger.error(`Failed to start ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to start ${modelName}: ${err.message}`);
             }
         }),
@@ -217,6 +220,7 @@ export function activate(context: vscode.ExtensionContext) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 ollamaProvider.refresh();
             } catch (err: any) {
+                Logger.error(`Failed to stop ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to stop ${modelName}: ${err.message}`);
             }
         }),
@@ -263,6 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
                     ollamaProvider.refresh();
                     vscode.window.showInformationMessage(`Deleted ${modelName}`);
                 } catch (err: any) {
+                    Logger.error(`Failed to delete ${modelName}`, err);
                     vscode.window.showErrorMessage(`Failed to delete: ${err.message}`);
                 }
             }
@@ -312,6 +317,7 @@ async function pullModel(name: string, provider: OllamaProvider) {
                 vscode.window.showInformationMessage(`Successfully pulled ${name}`);
                 provider.refresh();
             } catch (err: any) {
+                Logger.error(`Failed to pull ${name}`, err);
                 vscode.window.showErrorMessage(`Failed to pull ${name}: ${err.message}`);
             }
         },

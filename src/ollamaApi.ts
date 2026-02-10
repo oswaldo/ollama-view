@@ -1,4 +1,5 @@
 import * as http from 'http';
+import { Logger } from './logger';
 
 export interface OllamaModel {
     name: string;
@@ -23,7 +24,7 @@ export class OllamaApi {
             const response = await this.get('/api/tags');
             return response.models || [];
         } catch (error) {
-            console.error('Failed to list models:', error);
+            Logger.error('Failed to list models', error);
             return [];
         }
     }
@@ -33,7 +34,7 @@ export class OllamaApi {
             const response = await this.get('/api/ps');
             return response.models || [];
         } catch (error) {
-            console.error('Failed to list running models:', error);
+            Logger.error('Failed to list running models', error);
             return [];
         }
     }
@@ -42,11 +43,6 @@ export class OllamaApi {
         name: string,
         progressCallback?: (status: string, completed?: number, total?: number) => void,
     ): Promise<void> {
-        // Pull is a streaming response usually, implementing simple fetch for now.
-        // For better UX we should use a library or handle streaming.
-        // Using CLI for pull might be easier to track progress if we spawn a process?
-        // Let's use fetch with streaming for the API: POST /api/pull
-
         return new Promise((resolve, reject) => {
             const request = http.request(
                 `${this.baseUrl}/api/pull`,
@@ -55,6 +51,20 @@ export class OllamaApi {
                     headers: { 'Content-Type': 'application/json' },
                 },
                 (res) => {
+                    if (res.statusCode !== 200) {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
+                        });
+                        return;
+                    }
+
                     res.setEncoding('utf8');
                     res.on('data', (chunk) => {
                         try {
@@ -103,7 +113,12 @@ export class OllamaApi {
                         if (res.statusCode === 200) {
                             resolve();
                         } else {
-                            reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
                         }
                     });
                 },
@@ -115,9 +130,6 @@ export class OllamaApi {
     }
 
     async startModel(name: string): Promise<void> {
-        // To "start" (load) a model, we can just send a generate request with keep_alive
-        // Or run it interactively. The user asked for "Start" and "Stop".
-        // Let's just load it into memory.
         return new Promise((resolve, reject) => {
             const request = http.request(
                 `${this.baseUrl}/api/generate`,
@@ -126,19 +138,30 @@ export class OllamaApi {
                     headers: { 'Content-Type': 'application/json' },
                 },
                 (res) => {
+                    if (res.statusCode !== 200) {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
+                        });
+                        return;
+                    }
                     res.resume(); // consume
                     res.on('end', resolve);
                 },
             );
             request.on('error', reject);
-            // Empty prompt to just load it
             request.write(JSON.stringify({ model: name, keep_alive: '5m' }));
             request.end();
         });
     }
 
     async stopModel(name: string): Promise<void> {
-        // Unload model
         return new Promise((resolve, reject) => {
             const request = http.request(
                 `${this.baseUrl}/api/generate`,
@@ -147,6 +170,19 @@ export class OllamaApi {
                     headers: { 'Content-Type': 'application/json' },
                 },
                 (res) => {
+                    if (res.statusCode !== 200) {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
+                        });
+                        return;
+                    }
                     res.resume();
                     res.on('end', resolve);
                 },
@@ -170,6 +206,20 @@ export class OllamaApi {
                     headers: { 'Content-Type': 'application/json' },
                 },
                 (res) => {
+                    if (res.statusCode !== 200) {
+                        let data = '';
+                        res.on('data', (chunk) => (data += chunk));
+                        res.on('end', () => {
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
+                        });
+                        return;
+                    }
+
                     res.setEncoding('utf8');
                     res.on('data', (chunk) => {
                         try {

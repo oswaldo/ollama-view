@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ChatService, Chat } from './chatService';
 import { OllamaApi } from './ollamaApi';
+import { Logger } from './logger';
 
 export class ChatPanel {
     public static panels: Map<string, ChatPanel> = new Map();
@@ -74,6 +75,9 @@ export class ChatPanel {
                     case 'requestForkAssistant':
                         await this._handleRequestForkAssistant(message.index);
                         return;
+                    case 'requestLoadMore':
+                        await this._handleRequestLoadMore(message.offset);
+                        return;
                 }
             },
             null,
@@ -83,6 +87,16 @@ export class ChatPanel {
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    }
+
+    private async _handleRequestLoadMore(offset: number) {
+        const PAGE_SIZE = 50;
+        const paginated = this._chatService.getPaginatedMessages(this._chat.id, PAGE_SIZE, offset);
+        this._panel.webview.postMessage({
+            command: 'moreMessagesLoaded',
+            messages: paginated.messages,
+            total: paginated.total
+        });
     }
 
     public dispose() {
@@ -196,8 +210,33 @@ export class ChatPanel {
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
 
         } catch (err: any) {
-            vscode.window.showErrorMessage(`Chat Error: ${err.message}`);
-            this._panel.webview.postMessage({ command: 'endAssistantMessage' }); // finish anyway
+            this._panel.webview.postMessage({ command: 'endAssistantMessage' });
+            Logger.error('Chat generation error', err);
+            
+            let errorMessage = err.message;
+            const options = ['Retry'];
+            
+            if (err.message.includes('ECONNREFUSED')) {
+                errorMessage = 'Could not connect to Ollama. Is it running?';
+            } else if (err.message.toLowerCase().includes('not found')) {
+                errorMessage = `Model '${this._chat.modelName}' not found.`;
+                options.push('Pull Model');
+            }
+
+            this._panel.webview.postMessage({ command: 'addErrorMessage', content: errorMessage });
+            
+            const selection = await vscode.window.showErrorMessage(`Chat Error: ${errorMessage}`, ...options);
+            
+            if (selection === 'Retry') {
+                // Remove the error message from the UI before retrying? 
+                // Currently it just appends a new attempt. 
+                // To keep it clean, we could truncate the chat to remove the last user message and re-send it,
+                // but _generateResponse doesn't add the user message, _handleMessage does.
+                // So retrying here just calls the API again with same messages.
+                await this._generateResponse();
+            } else if (selection === 'Pull Model') {
+                vscode.commands.executeCommand('ollamaView.pull', this._chat.modelName);
+            }
         }
     }
 
@@ -274,7 +313,10 @@ export class ChatPanel {
         // Simple HTML for now. In a real app we might use React/Vue or just cleaner vanilla JS.
         // We will inject the existing messages.
 
-        const initialMessages = JSON.stringify(this._chat.messages);
+        const PAGE_SIZE = 50;
+        const paginated = this._chatService.getPaginatedMessages(this._chat.id, PAGE_SIZE, 0);
+        const initialMessages = JSON.stringify(paginated.messages);
+        const totalMessages = paginated.total;
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -290,6 +332,7 @@ export class ChatPanel {
         .user { align-self: flex-end; align-items: flex-end; }
         .user .message { background-color: var(--vscode-textBlockQuote-background); border-left: 2px solid var(--vscode-textBlockQuote-border); }
         .assistant .message { background-color: var(--vscode-editor-inactiveSelectionBackground); }
+        .error .message { background-color: var(--vscode-inputValidation-errorBackground); border: 1px solid var(--vscode-inputValidation-errorBorder); color: var(--vscode-inputValidation-errorForeground); }
         .timestamp { font-size: 0.7em; color: var(--vscode-descriptionForeground); text-align: right; margin-top: 5px; opacity: 0.8; }
         
         .input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; }
@@ -394,7 +437,11 @@ export class ChatPanel {
     </style>
 </head>
 <body>
-    <div class="messages-container" id="messages"></div>
+    <div class="messages-container" id="messages">
+        <div id="loadMoreContainer" style="text-align: center; padding: 10px; display: none;">
+            <button id="loadMoreBtn" style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); border: none; padding: 5px 10px; cursor: pointer;">Load older messages</button>
+        </div>
+    </div>
     
     <div class="input-area" id="inputArea">
         <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
@@ -410,6 +457,7 @@ export class ChatPanel {
         const cancelBtn = document.getElementById('cancelBtn');
         const inputArea = document.getElementById('inputArea');
         const modelName = "${this._chat.modelName}";
+        let totalMessages = ${totalMessages};
         
         // Initial state
         let messages = ${initialMessages};
@@ -417,7 +465,48 @@ export class ChatPanel {
         let activeDropdown = null; // Element reference
         let truncatedMessagesBackup = null; // To restore on cancel
         
-        const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+        function updateLoadMoreVisibility() {
+            if (messages.length < totalMessages) {
+                loadMoreContainer.style.display = 'block';
+            } else {
+                loadMoreContainer.style.display = 'none';
+            }
+        }
+
+        function renderMessages(preserveScroll = false) {
+            const oldScrollHeight = messagesDiv.scrollHeight;
+            const oldScrollTop = messagesDiv.scrollTop;
+
+            // Clear messages but keep loadMoreContainer
+            const container = document.getElementById('loadMoreContainer');
+            messagesDiv.innerHTML = '';
+            messagesDiv.appendChild(container);
+
+            messages.forEach((m, i) => addMessageToDom(m.role, m.content, m.timestamp, i));
+            
+            updateLoadMoreVisibility();
+
+            if (preserveScroll) {
+                messagesDiv.scrollTop = messagesDiv.scrollTop + (messagesDiv.scrollHeight - oldScrollHeight);
+            } else {
+                messagesDiv.scrollTop = messagesDiv.scrollTop; // Stay where it was? 
+                // Usually on initial render we want to be at bottom.
+                // If it's the first render (no oldScrollHeight), go to bottom.
+                if (oldScrollHeight === 0) {
+                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            }
+        }
+
+        loadMoreBtn.onclick = () => {
+            vscode.postMessage({
+                command: 'requestLoadMore',
+                offset: messages.length
+            });
+        };
         const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
 
         function formatTime(ts) {
@@ -690,11 +779,13 @@ export class ChatPanel {
             switch(message.command) {
                 case 'setMessages':
                     messages = message.messages;
+                    totalMessages = messages.length;
                     renderMessages();
                     break;
                 case 'addMessage':
                     // Update local state
                     messages.push({ role: message.role, content: message.content, timestamp: Date.now() });
+                    totalMessages++;
                     addMessageToDom(message.role, message.content, Date.now(), messages.length - 1);
                     break;
                 case 'startAssistantMessage':
@@ -730,20 +821,34 @@ export class ChatPanel {
                     const done = document.getElementById('current-streaming-response');
                     if (done) {
                         done.removeAttribute('id');
-                        // Add timestamp needed? API response time is current time roughly
-                        const parentMsg = done.parentElement;
-                        const timeDiv = document.createElement('div');
-                        timeDiv.className = 'timestamp';
-                        timeDiv.textContent = formatTime(Date.now());
-                        parentMsg.appendChild(timeDiv);
                         
                         // Update local messages array for the assistant message
                         const fullContent = done.textContent;
-                        messages.push({ role: 'assistant', content: fullContent, timestamp: Date.now() });
+                        if (!fullContent) {
+                            // Remove empty placeholder
+                            done.parentElement.parentElement.remove();
+                        } else {
+                            const parentMsg = done.parentElement;
+                            const timeDiv = document.createElement('div');
+                            timeDiv.className = 'timestamp';
+                            timeDiv.textContent = formatTime(Date.now());
+                            parentMsg.appendChild(timeDiv);
+
+                            messages.push({ role: 'assistant', content: fullContent, timestamp: Date.now() });
+                            totalMessages++;
+                        }
                     }
                     break;
                 case 'enterEditMode':
                     enterEditMode(message.mode, message.index, message.content);
+                    break;
+                case 'addErrorMessage':
+                    addMessageToDom('error', message.content, Date.now());
+                    break;
+                case 'moreMessagesLoaded':
+                    messages = message.messages.concat(messages);
+                    totalMessages = message.total;
+                    renderMessages(true);
                     break;
             }
         });

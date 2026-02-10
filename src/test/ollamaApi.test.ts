@@ -80,4 +80,74 @@ suite('OllamaApi', () => {
             assert.ok(err.message.includes('Status: 400'));
         }
     });
+
+    test('chat should reject on connection error', async () => {
+        const mockReq = new EventEmitter();
+        (mockReq as any).write = sinon.stub();
+        (mockReq as any).end = sinon.stub();
+
+        httpRequestStub.returns(mockReq as any);
+
+        const apiError = new Error('ECONNREFUSED');
+        setTimeout(() => {
+            mockReq.emit('error', apiError);
+        }, 10);
+
+        try {
+            await api.chat('model', [], () => {});
+            assert.fail('Should have rejected');
+        } catch (err: any) {
+            assert.strictEqual(err.message, 'ECONNREFUSED');
+        }
+    });
+
+    test('chat should reject on 404', async () => {
+        const mockReq = new EventEmitter();
+        (mockReq as any).write = sinon.stub();
+        (mockReq as any).end = sinon.stub();
+
+        httpRequestStub.returns(mockReq as any);
+
+        const mockRes = new EventEmitter();
+        (mockRes as any).statusCode = 404;
+        (mockRes as any).setEncoding = sinon.stub();
+
+        setTimeout(() => {
+            httpRequestStub.callArgWith(2, mockRes);
+            mockRes.emit('data', JSON.stringify({ error: 'model not found' }));
+            mockRes.emit('end');
+        }, 10);
+
+        try {
+            await api.chat('invalid-model', [], () => {});
+            assert.fail('Should have rejected');
+        } catch (err: any) {
+            assert.ok(err.message.includes('model not found'));
+        }
+    });
+
+    test('chat should reject on non-JSON error response', async () => {
+        const mockReq = new EventEmitter();
+        (mockReq as any).write = sinon.stub();
+        (mockReq as any).end = sinon.stub();
+
+        httpRequestStub.returns(mockReq as any);
+
+        const mockRes = new EventEmitter();
+        (mockRes as any).statusCode = 500;
+        (mockRes as any).setEncoding = sinon.stub();
+
+        setTimeout(() => {
+            httpRequestStub.callArgWith(2, mockRes);
+            mockRes.emit('data', 'Internal Server Error');
+            mockRes.emit('end');
+        }, 10);
+
+        try {
+            await api.chat('model', [], () => {});
+            assert.fail('Should have rejected');
+        } catch (err: any) {
+            assert.ok(err.message.includes('Status: 500'));
+        }
+    });
 });
