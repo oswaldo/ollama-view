@@ -2,7 +2,7 @@
 
 This plan outlines the tasks to enhance and stabilize the interactive chat experience within the Ollama View for VS Code extension.
 
-## Phase 1: Chat Stability and Core Refinements
+## Phase 1: Chat Stability and Core Refinements [checkpoint: e8a033d]
 
 - [x] Task: Investigate and fix reported chat stability issues. [4f5105c]
     - [x] Write failing tests for known stability issues.
@@ -17,11 +17,11 @@ This plan outlines the tasks to enhance and stabilize the interactive chat exper
     - [x] Write tests for message forking and new branch creation.
     - [x] Implement improvements for intuitive conversation branching.
     - [x] Update UI feedback for forking actions.
-- [ ] Task: Conductor - User Manual Verification 'Chat Stability and Core Refinements' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Chat Stability and Core Refinements' (Protocol in workflow.md) [e8a033d]
 
 ## Phase 2: Performance Optimization and Error Handling
 
-- [ ] Task: Optimize chat message rendering performance.
+- [~] Task: Optimize chat message rendering performance.
     - [ ] Write performance benchmarks for chat rendering.
     - [ ] Identify and implement rendering optimizations.
     - [ ] Verify performance improvements against benchmarks.
