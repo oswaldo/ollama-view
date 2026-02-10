@@ -131,8 +131,8 @@ export class ChatPanel {
                 if (updatedChat) {
                     this._chat = updatedChat;
                     this._updateTitle();
-                    // We need to refresh the UI completely here because history changed
-                    this._update();
+                    // PERFORMANCE OPTIMIZATION: Update messages without full re-render
+                    this._panel.webview.postMessage({ command: 'setMessages', messages: this._chat.messages });
                     messageProcessed = true;
                 }
             } else if (editOptions.mode === 'fork') {
@@ -232,7 +232,8 @@ export class ChatPanel {
         if (updatedChat) {
             this._chat = updatedChat;
             this._updateTitle();
-            this._update(); // complete refresh
+            // PERFORMANCE OPTIMIZATION: Update messages without full re-render
+            this._panel.webview.postMessage({ command: 'setMessages', messages: this._chat.messages });
             await this._generateResponse();
         }
     }
@@ -687,6 +688,10 @@ export class ChatPanel {
         window.addEventListener('message', event => {
             const message = event.data;
             switch(message.command) {
+                case 'setMessages':
+                    messages = message.messages;
+                    renderMessages();
+                    break;
                 case 'addMessage':
                     // Update local state
                     messages.push({ role: message.role, content: message.content, timestamp: Date.now() });
