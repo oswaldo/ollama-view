@@ -13,10 +13,10 @@ This plan outlines the tasks to enhance and stabilize the interactive chat exper
     - [x] Write tests for message editing and truncation scenarios.
     - [x] Implement improvements for a smoother editing experience.
     - [x] Update UI feedback for editing actions.
-- [ ] Task: Refine message forking functionality.
-    - [ ] Write tests for message forking and new branch creation.
-    - [ ] Implement improvements for intuitive conversation branching.
-    - [ ] Update UI feedback for forking actions.
+- [x] Task: Refine message forking functionality. [aaf023f]
+    - [x] Write tests for message forking and new branch creation.
+    - [x] Implement improvements for intuitive conversation branching.
+    - [x] Update UI feedback for forking actions.
 - [ ] Task: Conductor - User Manual Verification 'Chat Stability and Core Refinements' (Protocol in workflow.md)
 
 ## Phase 2: Performance Optimization and Error Handling
