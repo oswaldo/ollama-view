@@ -485,16 +485,17 @@ export class ChatPanel {
             messagesDiv.innerHTML = '';
             messagesDiv.appendChild(container);
 
-            messages.forEach((m, i) => addMessageToDom(m.role, m.content, m.timestamp, i));
+            messages.forEach((m, i) => {
+                const absoluteIndex = (totalMessages - messages.length) + i;
+                addMessageToDom(m.role, m.content, m.timestamp, absoluteIndex, false);
+            });
             
             updateLoadMoreVisibility();
 
             if (preserveScroll) {
-                messagesDiv.scrollTop = messagesDiv.scrollTop + (messagesDiv.scrollHeight - oldScrollHeight);
+                messagesDiv.scrollTop = oldScrollTop + (messagesDiv.scrollHeight - oldScrollHeight);
             } else {
-                messagesDiv.scrollTop = messagesDiv.scrollTop; // Stay where it was? 
-                // Usually on initial render we want to be at bottom.
-                // If it's the first render (no oldScrollHeight), go to bottom.
+                // If it's the first render or we are adding new messages at bottom
                 if (oldScrollHeight === 0) {
                      messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }
@@ -507,6 +508,7 @@ export class ChatPanel {
                 offset: messages.length
             });
         };
+        const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
         const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
 
         function formatTime(ts) {
@@ -538,12 +540,7 @@ export class ChatPanel {
             }, 1500);
         }
 
-        function renderMessages() {
-            messagesDiv.innerHTML = '';
-            messages.forEach((m, i) => addMessageToDom(m.role, m.content, m.timestamp, i));
-        }
-
-        function addMessageToDom(role, content, timestamp, index) {
+        function addMessageToDom(role, content, timestamp, index, shouldScroll = true) {
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper ' + role;
 
@@ -600,7 +597,9 @@ export class ChatPanel {
 
             wrapper.appendChild(div);
             messagesDiv.appendChild(wrapper);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            if (shouldScroll) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
             return div;
         }
 
@@ -820,22 +819,22 @@ export class ChatPanel {
                 case 'endAssistantMessage':
                     const done = document.getElementById('current-streaming-response');
                     if (done) {
-                        done.removeAttribute('id');
-                        
-                        // Update local messages array for the assistant message
+                        const wrapper = done.parentElement.parentElement;
                         const fullContent = done.textContent;
+                        const timestamp = Date.now();
+                        
                         if (!fullContent) {
-                            // Remove empty placeholder
-                            done.parentElement.parentElement.remove();
+                            wrapper.remove();
                         } else {
-                            const parentMsg = done.parentElement;
-                            const timeDiv = document.createElement('div');
-                            timeDiv.className = 'timestamp';
-                            timeDiv.textContent = formatTime(Date.now());
-                            parentMsg.appendChild(timeDiv);
-
-                            messages.push({ role: 'assistant', content: fullContent, timestamp: Date.now() });
+                            // Update local state
+                            messages.push({ role: 'assistant', content: fullContent, timestamp: timestamp });
                             totalMessages++;
+
+                            // Re-render properly with buttons
+                            addMessageToDom('assistant', fullContent, timestamp, totalMessages - 1, true);
+                            
+                            // Remove placeholder
+                            wrapper.remove();
                         }
                     }
                     break;
