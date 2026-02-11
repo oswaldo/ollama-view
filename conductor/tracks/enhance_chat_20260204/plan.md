@@ -37,6 +37,13 @@ This plan outlines the tasks to enhance and stabilize the interactive chat exper
 
 ## Phase 3: Cross-platform Compatibility and Final Polish
 
+- [x] Task: Improve UI responsiveness during model startup. [3d9bb18]
+    - [x] Implement asynchronous startup handling in ChatPanel.
+    - [x] Add "Starting..." visual feedback (triple dots) in the chat webview.
+    - [x] Add model icon state for loading/starting (yellow).
+- [ ] Task: Refactor and modularize the chat implementation.
+    - [ ] Extract webview HTML/CSS/JS from `ChatPanel.ts` into separate files or templates.
+    - [ ] Modularize chat logic for better separation of concerns.
 - [ ] Task: Initial cross-platform review of chat features.
     - [ ] Document platform-specific chat behaviors (Windows, macOS).
     - [ ] Identify and address minor UI/UX inconsistencies across platforms.

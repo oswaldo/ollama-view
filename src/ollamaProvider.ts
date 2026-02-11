@@ -26,19 +26,26 @@ export class OllamaModelItem extends vscode.TreeItem {
     constructor(
         public readonly model: OllamaModel,
         public readonly isRunning: boolean,
-        public readonly hasChildren: boolean
+        public readonly hasChildren: boolean,
+        public readonly isStarting: boolean = false,
+        public readonly isStopping: boolean = false
     ) {
         // Collapsible to show chats
         super(model.name, hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 
-        this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB\nRunning: ${isRunning}`;
-        this.description = isRunning ? 'Running' : 'Stopped';
+        const statusText = isRunning ? 'Running' : (isStarting ? 'Starting' : (isStopping ? 'Stopping' : 'Stopped'));
+        this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB\nStatus: ${statusText}`;
+        this.description = isRunning ? 'Running' : (isStarting ? 'Starting...' : (isStopping ? 'Stopping...' : 'Stopped'));
 
         // Context value for menus
-        this.contextValue = isRunning ? 'variable-running' : 'variable-stopped';
+        this.contextValue = isRunning ? 'variable-running' : (isStarting ? 'variable-starting' : (isStopping ? 'variable-stopping' : 'variable-stopped'));
 
         if (isRunning) {
             this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-running.svg'));
+        } else if (isStarting) {
+            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-starting.svg'));
+        } else if (isStopping) {
+            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-stopping.svg'));
         } else {
             this.iconPath = {
                 light: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-light.svg')),
@@ -56,6 +63,8 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
 
     private cleanModels: OllamaModel[] = [];
     private runningModels: Set<string> = new Set();
+    private startingModels: Set<string> = new Set();
+    private stoppingModels: Set<string> = new Set();
     private api: OllamaApi;
     private chatService: ChatService;
 
@@ -66,6 +75,24 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
+    }
+
+    setStarting(modelName: string, starting: boolean) {
+        if (starting) {
+            this.startingModels.add(modelName);
+        } else {
+            this.startingModels.delete(modelName);
+        }
+        this.refresh();
+    }
+
+    setStopping(modelName: string, stopping: boolean) {
+        if (stopping) {
+            this.stoppingModels.add(modelName);
+        } else {
+            this.stoppingModels.delete(modelName);
+        }
+        this.refresh();
     }
 
     getTreeItem(element: OllamaModelItem | OllamaChatItem): vscode.TreeItem {
@@ -89,9 +116,11 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         this.runningModels = new Set(running.map((r) => r.model));
 
         return models.map((m) => {
-            const isRun = this.runningModels.has(m.name);
+            const isStart = this.startingModels.has(m.name);
+            const isStop = this.stoppingModels.has(m.name);
+            const isRun = this.runningModels.has(m.name) && !isStart && !isStop;
             const hasChildren = this.chatService.getChatsForModel(m.name).length > 0;
-            return new OllamaModelItem(m, isRun, hasChildren);
+            return new OllamaModelItem(m, isRun, hasChildren, isStart, isStop);
         });
     }
 

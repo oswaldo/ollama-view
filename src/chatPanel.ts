@@ -64,7 +64,7 @@ export class ChatPanel {
             async message => {
                 switch (message.command) {
                     case 'sendMessage':
-                        await this._handleMessage(message.text, message.editOptions);
+                        await this.handleUserMessage(message.text, message.editOptions);
                         return;
                     case 'requestTruncate':
                         await this._handleRequestTruncate(message.index, message.content);
@@ -99,6 +99,10 @@ export class ChatPanel {
         });
     }
 
+    public postMessage(message: any) {
+        this._panel.webview.postMessage(message);
+    }
+
     public dispose() {
         ChatPanel.panels.delete(this._chat.id);
 
@@ -123,7 +127,7 @@ export class ChatPanel {
         }
     }
 
-    private async _handleMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
+    public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
         const trimmedText = text.trim();
         // 1. Save user message (handling edits)
         let messageProcessed = false;
@@ -187,6 +191,8 @@ export class ChatPanel {
         let fullResponse = '';
 
         try {
+            this._panel.webview.postMessage({ command: 'setLoading', loading: true });
+            
             // Send empty assistant message to start streaming into
             this._panel.webview.postMessage({ command: 'startAssistantMessage' });
 
@@ -194,6 +200,7 @@ export class ChatPanel {
             await this._api.chat(this._chat.modelName, messages, (token) => {
                 if (!hasStarted) {
                     hasStarted = true;
+                    this._panel.webview.postMessage({ command: 'setLoading', loading: false });
                     // Signal state change (model is running)
                     if (this._onStateChange) {
                         this._onStateChange();
@@ -210,6 +217,7 @@ export class ChatPanel {
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
 
         } catch (err: any) {
+            this._panel.webview.postMessage({ command: 'setLoading', loading: false });
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
             Logger.error('Chat generation error', err);
             
@@ -335,6 +343,26 @@ export class ChatPanel {
         .error .message { background-color: var(--vscode-inputValidation-errorBackground); border: 1px solid var(--vscode-inputValidation-errorBorder); color: var(--vscode-inputValidation-errorForeground); }
         .timestamp { font-size: 0.7em; color: var(--vscode-descriptionForeground); text-align: right; margin-top: 5px; opacity: 0.8; }
         
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            padding: 10px;
+            gap: 4px;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--vscode-descriptionForeground);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
         .input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; }
         #messageInput { flex-grow: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
         #sendBtn, #cancelBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
@@ -508,6 +536,33 @@ export class ChatPanel {
                 offset: messages.length
             });
         };
+
+        let typingIndicator = null;
+        function showTypingIndicator() {
+            if (typingIndicator) return;
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'message-wrapper assistant';
+            typingIndicator.innerHTML = \`
+                <div class="message-header">\${modelName}</div>
+                <div class="message">
+                    <div class="typing-indicator">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            \`;
+            messagesDiv.appendChild(typingIndicator);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+
         const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
         const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
 
@@ -788,6 +843,7 @@ export class ChatPanel {
                     addMessageToDom(message.role, message.content, Date.now(), messages.length - 1);
                     break;
                 case 'startAssistantMessage':
+                    hideTypingIndicator();
                     // Create a placeholder div we can append to
                     const wrapper = document.createElement('div');
                     wrapper.className = 'message-wrapper assistant';
@@ -842,7 +898,15 @@ export class ChatPanel {
                     enterEditMode(message.mode, message.index, message.content);
                     break;
                 case 'addErrorMessage':
+                    hideTypingIndicator();
                     addMessageToDom('error', message.content, Date.now());
+                    break;
+                case 'setLoading':
+                    if (message.loading) {
+                        showTypingIndicator();
+                    } else {
+                        hideTypingIndicator();
+                    }
                     break;
                 case 'moreMessagesLoaded':
                     messages = message.messages.concat(messages);

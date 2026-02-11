@@ -4,8 +4,8 @@ import { ChatService } from './chatService';
 import { ChatPanel } from './chatPanel';
 import { Logger } from './logger';
 
-// "Popular" models for autocomplete simulation
-const POPULAR_MODELS = ['llama3', 'llama2', 'mistral', 'gemma', 'phi', 'codellama', 'orca-mini', 'vicuna', 'llava'];
+// "Popular" models as of Feb 2026
+const POPULAR_MODELS = ['llama3.2', 'mistral', 'deepseek-r1', 'qwen2.5', 'gemma2', 'phi3.5', 'codellama', 'dolphin-llama3', 'llava', 'starcoder2'];
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.init();
@@ -21,30 +21,45 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.createChat', async (node?: OllamaModelItem) => {
         if (!node) { return; }
 
-        // 1. Check if model is running, if not start it with progress
+        // 1. Create Chat (immediate)
+        const chat = await chatService.createChat(node.model.name);
+
+        // 2. Open Chat Panel (immediate)
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
+
+        // 3. Start model if not running (async)
         if (!node.isRunning) {
-            await vscode.window.withProgress(
+            // Signal loading in UI
+            panel.postMessage({ command: 'setLoading', loading: true });
+            ollamaProvider.setStarting(node.model.name, true);
+            ollamaProvider.refresh();
+            
+            // We don't await the withProgress if we want panel to be responsive, 
+            // but withProgress is good for background notification.
+            // Let's run it without awaiting the whole block for the panel.
+            vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
                     title: `Starting ${node.model.name}...`,
                     cancellable: false,
                 },
                 async () => {
-                    await ollamaProvider.getApi().startModel(node.model.name);
+                    try {
+                        await ollamaProvider.getApi().startModel(node.model.name);
+                        // Refresh to update tree (show running status)
+                        ollamaProvider.refresh();
+                    } catch (err: any) {
+                        Logger.error(`Failed to start model ${node.model.name}`, err);
+                        panel.postMessage({ command: 'addErrorMessage', content: `Failed to start model: ${err.message}` });
+                    } finally {
+                        ollamaProvider.setStarting(node.model.name, false);
+                        panel.postMessage({ command: 'setLoading', loading: false });
+                    }
                 }
             );
-            // Wait a small bit for Ollama to register state
-            await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+             ollamaProvider.refresh();
         }
-
-        // 2. Create Chat
-        const chat = await chatService.createChat(node.model.name);
-
-        // 3. Refresh to update tree (show running status and new chat)
-        ollamaProvider.refresh();
-
-        // 4. Open Chat Panel
-        ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.startChat', async () => {
@@ -68,55 +83,47 @@ export function activate(context: vscode.ExtensionContext) {
         });
         if (!prompt) { return; }
 
-        // 3. Ensure Model is Running
+        // 3. Create Chat (immediate)
+        const chat = await chatService.createChat(modelName);
+        ollamaProvider.refresh();
+
+        // 4. Open Panel (immediate)
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, api, () => ollamaProvider.refresh());
+
+        // 5. Ensure Model is Running (async)
         const runningModels = await api.listRunning();
         const isRunning = runningModels.some(r => r.model === modelName);
 
         if (!isRunning) {
-            await vscode.window.withProgress(
+            panel.postMessage({ command: 'setLoading', loading: true });
+            ollamaProvider.setStarting(modelName, true);
+            ollamaProvider.refresh();
+            
+            vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
                     title: `Starting ${modelName}...`,
                     cancellable: false,
                 },
                 async () => {
-                    await api.startModel(modelName);
+                    try {
+                        await api.startModel(modelName);
+                        ollamaProvider.refresh();
+                        // Now that it's started, send the initial message
+                        await panel.handleUserMessage(prompt);
+                    } catch (err: any) {
+                        Logger.error(`Failed to start model ${modelName}`, err);
+                        panel.postMessage({ command: 'addErrorMessage', content: `Failed to start model: ${err.message}` });
+                    } finally {
+                        ollamaProvider.setStarting(modelName, false);
+                        panel.postMessage({ command: 'setLoading', loading: false });
+                    }
                 }
             );
-            await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+            // Model already running, just send message
+            await panel.handleUserMessage(prompt);
         }
-
-        // 4. Create Chat
-        const chat = await chatService.createChat(modelName);
-        ollamaProvider.refresh();
-
-        // 5. Open Panel and Send Message
-        ChatPanel.createOrShow(context.extensionUri, chat, chatService, api, () => ollamaProvider.refresh());
-
-        // Wait for webview to be ready? The ChatPanel handles message queuing? 
-        // Our ChatPanel implementation listens for messages from the webview.
-        // But we want to send a message TO the webview/service programmatically.
-        // We can use the ChatPanel instance to simulate a user message.
-
-        // We need access to the panel instance we just created? 
-        // The createOrShow is static. We can lookup by ID.
-        setTimeout(async () => {
-            const panel = ChatPanel.panels.get(chat.id);
-            if (panel) {
-                // We need a public method on ChatPanel to send a user message?
-                // Or just use webview.postMessage? 
-                // Actually, the ChatPanel handles "sendMessage" from UI.
-                // We want to simulate that.
-                // Let's modify ChatPanel to allow programmatic sending or just use internal _handleMessage
-                // We can cast to any for now or add a public method.
-                // Ideally add `handleUserMessage` public method.
-
-                // For now, let's just use the internal private method via cast or send a message to webview?
-                // No, we need to trigger the full flow (save to db, call API).
-                // Accessing private _handleMessage via any:
-                await (panel as any)._handleMessage(prompt);
-            }
-        }, 1000); // Small delay to ensure webview is loaded
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.deleteChat', async (node: OllamaChatItem) => {
@@ -165,6 +172,8 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             try {
+                ollamaProvider.setStarting(modelName, true);
+                ollamaProvider.refresh();
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
@@ -180,6 +189,8 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (err: any) {
                 Logger.error(`Failed to start ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to start ${modelName}: ${err.message}`);
+            } finally {
+                ollamaProvider.setStarting(modelName, false);
             }
         }),
     );
@@ -205,6 +216,8 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             try {
+                ollamaProvider.setStopping(modelName, true);
+                ollamaProvider.refresh();
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
@@ -222,6 +235,8 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (err: any) {
                 Logger.error(`Failed to stop ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to stop ${modelName}: ${err.message}`);
+            } finally {
+                ollamaProvider.setStopping(modelName, false);
             }
         }),
     );
