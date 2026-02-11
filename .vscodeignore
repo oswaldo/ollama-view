@@ -1,0 +1,17 @@
+.vscode/**
+.github/**
+.git/**
+src/**
+conductor/**
+media/logo.svg
+tsconfig.json
+eslint.config.mjs
+package-lock.json
+**/*.ts
+**/*.map
+node_modules/@types/**
+AGENTS.md
+CONTRIBUTING.md
+PUBLISHING.md
+scope.md
+.prettierrc

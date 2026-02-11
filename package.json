@@ -1,10 +1,35 @@
 {
   "name": "ollama-view",
-  "displayName": "ollama-view",
+  "displayName": "Ollama View",
   "description": "Manage local Ollama models",
   "version": "0.0.3",
   "publisher": "OswaldoDantas",
   "license": "MIT",
+  "icon": "media/logo.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "categories": [
+    "AI",
+    "Machine Learning",
+    "Productivity",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ollama",
+    "llm",
+    "ai",
+    "chat",
+    "local-ai",
+    "llama3",
+    "mistral"
+  ],
+  "homepage": "https://github.com/oswaldo/ollama-view",
+  "bugs": {
+    "url": "https://github.com/oswaldo/ollama-view/issues"
+  },
+  "qna": "marketplace",
   "repository": {
     "type": "git",
     "url": "https://github.com/oswaldo/ollama-view.git"
@@ -12,9 +37,6 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": [
-    "Other"
-  ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
