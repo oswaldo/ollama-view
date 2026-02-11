@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{{styleUri}}">
+</head>
+<body>
+    <div class="messages-container" id="messages">
+        <div id="loadMoreContainer" style="text-align: center; padding: 10px; display: none;">
+            <button id="loadMoreBtn">Load older messages</button>
+        </div>
+    </div>
+    
+    <div class="input-area" id="inputArea">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
+        <button id="sendBtn">Send</button>
+        <button id="cancelBtn" style="display: none;">Cancel</button>
+    </div>
+
+    <script src="{{scriptUri}}"></script>
+</body>
+</html>

@@ -25,14 +25,12 @@ export function activate(context: vscode.ExtensionContext) {
         const chat = await chatService.createChat(node.model.name);
 
         // 2. Open Chat Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
 
         // 3. Start model if not running (async)
         if (!node.isRunning) {
             // Signal loading in UI
             panel.postMessage({ command: 'setLoading', loading: true });
-            ollamaProvider.setStarting(node.model.name, true);
-            ollamaProvider.refresh();
             
             // We don't await the withProgress if we want panel to be responsive, 
             // but withProgress is good for background notification.
@@ -45,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
                 },
                 async () => {
                     try {
-                        await ollamaProvider.getApi().startModel(node.model.name);
+                        await ollamaProvider.startModel(node.model.name);
                         // Refresh to update tree (show running status)
                         ollamaProvider.refresh();
                     } catch (err: any) {
@@ -88,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
         ollamaProvider.refresh();
 
         // 4. Open Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, api, () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
 
         // 5. Ensure Model is Running (async)
         const runningModels = await api.listRunning();
@@ -96,8 +94,6 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (!isRunning) {
             panel.postMessage({ command: 'setLoading', loading: true });
-            ollamaProvider.setStarting(modelName, true);
-            ollamaProvider.refresh();
             
             vscode.window.withProgress(
                 {
@@ -107,7 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
                 },
                 async () => {
                     try {
-                        await api.startModel(modelName);
+                        await ollamaProvider.startModel(modelName);
                         ollamaProvider.refresh();
                         // Now that it's started, send the initial message
                         await panel.handleUserMessage(prompt);
@@ -115,7 +111,6 @@ export function activate(context: vscode.ExtensionContext) {
                         Logger.error(`Failed to start model ${modelName}`, err);
                         panel.postMessage({ command: 'addErrorMessage', content: `Failed to start model: ${err.message}` });
                     } finally {
-                        ollamaProvider.setStarting(modelName, false);
                         panel.postMessage({ command: 'setLoading', loading: false });
                     }
                 }
@@ -147,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => {
         if (!node) { return; }
-        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider.getApi(), () => ollamaProvider.refresh());
+        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
     }));
 
     context.subscriptions.push(
@@ -172,8 +167,6 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             try {
-                ollamaProvider.setStarting(modelName, true);
-                ollamaProvider.refresh();
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
@@ -181,7 +174,7 @@ export function activate(context: vscode.ExtensionContext) {
                         cancellable: false,
                     },
                     async () => {
-                        await ollamaProvider.getApi().startModel(modelName!);
+                        await ollamaProvider.startModel(modelName!);
                     },
                 );
                 vscode.window.showInformationMessage(`Started ${modelName}`);
@@ -189,8 +182,6 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (err: any) {
                 Logger.error(`Failed to start ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to start ${modelName}: ${err.message}`);
-            } finally {
-                ollamaProvider.setStarting(modelName, false);
             }
         }),
     );
@@ -216,8 +207,6 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             try {
-                ollamaProvider.setStopping(modelName, true);
-                ollamaProvider.refresh();
                 await vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
@@ -225,7 +214,7 @@ export function activate(context: vscode.ExtensionContext) {
                         cancellable: false,
                     },
                     async () => {
-                        await ollamaProvider.getApi().stopModel(modelName!);
+                        await ollamaProvider.stopModel(modelName!);
                     },
                 );
                 vscode.window.showInformationMessage(`Stopped ${modelName}`);
@@ -235,8 +224,6 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (err: any) {
                 Logger.error(`Failed to stop ${modelName}`, err);
                 vscode.window.showErrorMessage(`Failed to stop ${modelName}: ${err.message}`);
-            } finally {
-                ollamaProvider.setStopping(modelName, false);
             }
         }),
     );

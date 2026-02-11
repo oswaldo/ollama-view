@@ -95,6 +95,40 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         this.refresh();
     }
 
+    async startModel(modelName: string): Promise<void> {
+        this.setStarting(modelName, true);
+        try {
+            await this.api.startModel(modelName);
+        } finally {
+            this.setStarting(modelName, false);
+        }
+    }
+
+    async stopModel(modelName: string): Promise<void> {
+        this.setStopping(modelName, true);
+        try {
+            await this.api.stopModel(modelName);
+        } finally {
+            this.setStopping(modelName, false);
+        }
+    }
+
+    async chat(modelName: string, messages: { role: string; content: string }[], onToken: (token: string) => void): Promise<void> {
+        // If we know it's not running, show starting state
+        const wasRunning = this.runningModels.has(modelName);
+        if (!wasRunning) {
+            this.setStarting(modelName, true);
+        }
+
+        try {
+            await this.api.chat(modelName, messages, onToken);
+        } finally {
+            if (!wasRunning) {
+                this.setStarting(modelName, false);
+            }
+        }
+    }
+
     getTreeItem(element: OllamaModelItem | OllamaChatItem): vscode.TreeItem {
         return element;
     }

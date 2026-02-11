@@ -37,13 +37,15 @@ This plan outlines the tasks to enhance and stabilize the interactive chat exper
 
 ## Phase 3: Cross-platform Compatibility and Final Polish
 
-- [x] Task: Improve UI responsiveness during model startup. [3d9bb18]
+- [x] Task: Improve UI responsiveness during model startup. [2f62f3c]
     - [x] Implement asynchronous startup handling in ChatPanel.
     - [x] Add "Starting..." visual feedback (triple dots) in the chat webview.
     - [x] Add model icon state for loading/starting (yellow).
-- [ ] Task: Refactor and modularize the chat implementation.
-    - [ ] Extract webview HTML/CSS/JS from `ChatPanel.ts` into separate files or templates.
-    - [ ] Modularize chat logic for better separation of concerns.
+- [x] Task: Refactor and modularize the chat implementation. [2f62f3c]
+    - [x] Extract webview HTML/CSS/JS from `ChatPanel.ts` into separate files or templates.
+    - [x] Modularize chat logic for better separation of concerns.
+    - [x] Set up TypeScript build pipeline for the webview.
+    - [x] Centralize model state management in `OllamaProvider`.
 - [ ] Task: Initial cross-platform review of chat features.
     - [ ] Document platform-specific chat behaviors (Windows, macOS).
     - [ ] Identify and address minor UI/UX inconsistencies across platforms.
