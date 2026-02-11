@@ -64,3 +64,6 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
         - [ ] Run all automated unit and integration tests.
         - [ ] Verify end-to-end chat functionality.
         - [ ] Ensure high code coverage across the chat module.
+
+- **Model Management & Setup**:
+    - [ ] **Template Gallery**: Provide a selection of common system prompts (e.g., "Software Engineer", "Creative Writer", "Concise Assistant") in the model setup screen.

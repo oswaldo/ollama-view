@@ -1,0 +1,8 @@
+{
+  "track_id": "model_setup_safety_20260211",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "description": "Move the dangerous delete button to a menu, adding a last triple dot button to hold it, as we done with some message operations in the chat panel. also, I want to add a setup menu item that should open a screen to set a system prompt to the specific model. by default, there should be some simple prompt like 'you are the helpful ai agent' or something like it, appropriate for the majority of simple model tests. it should be in a way that, if the model gets deleted, a custom prompt, if ever defined, must be deleted with it to avoid wasting the user's storage or possible leaks"
+}

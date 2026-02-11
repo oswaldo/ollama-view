@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { ChatService, Chat } from './chatService';
 import { OllamaProvider } from './ollamaProvider';
+import { ModelSettingsService } from './modelSettingsService';
 import { Logger } from './logger';
 
 export class ChatPanel {
@@ -17,9 +18,10 @@ export class ChatPanel {
     // Services
     private _chatService: ChatService;
     private _provider: OllamaProvider;
+    private _modelSettingsService: ModelSettingsService;
     private _onStateChange?: () => void;
 
-    public static createOrShow(extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, onStateChange?: () => void) {
+    public static createOrShow(extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, modelSettingsService: ModelSettingsService, onStateChange?: () => void) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -49,17 +51,18 @@ export class ChatPanel {
             }
         );
 
-        const chatPanel = new ChatPanel(panel, extensionUri, chat, chatService, provider, onStateChange);
+        const chatPanel = new ChatPanel(panel, extensionUri, chat, chatService, provider, modelSettingsService, onStateChange);
         ChatPanel.panels.set(chat.id, chatPanel);
         return chatPanel;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, onStateChange?: () => void) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, modelSettingsService: ModelSettingsService, onStateChange?: () => void) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._chat = chat;
         this._chatService = chatService;
         this._provider = provider;
+        this._modelSettingsService = modelSettingsService;
         this._onStateChange = onStateChange;
 
         // Set the webview's initial html content
@@ -163,7 +166,7 @@ export class ChatPanel {
                 const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, trimmedText);
                 if (newChat) {
                     // Switch to new chat
-                    const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._onStateChange);
+                    const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._onStateChange);
 
                     // Signal tree view to refresh so the new chat appears
                     if (this._onStateChange) {
@@ -193,14 +196,48 @@ export class ChatPanel {
     }
 
     private async _generateResponse() {
-        const messages = this._chat.messages.map(m => ({ role: m.role, content: m.content }));
+        const settings = this._modelSettingsService.getSettings(this._chat.modelName);
+        const apiMessages: { role: string; content: string }[] = [];
+
+        // 1. Initial Global System Message
+        if (settings.systemMessage) {
+            apiMessages.push({ role: 'system', content: settings.systemMessage });
+        }
+
+        // 2. Map chat history with full injection logic
+        for (const m of this._chat.messages) {
+            if (m.role === 'user') {
+                // System turn prefix
+                if (settings.systemTurnPrefix) {
+                    apiMessages.push({ role: 'system', content: settings.systemTurnPrefix });
+                }
+
+                // User message framing
+                let userContent = m.content;
+                if (settings.userMessagePrefix) {
+                    userContent = `${settings.userMessagePrefix}${userContent}`;
+                }
+                if (settings.userMessageSuffix) {
+                    userContent = `${userContent}${settings.userMessageSuffix}`;
+                }
+                apiMessages.push({ role: 'user', content: userContent });
+
+                // System turn suffix
+                if (settings.systemTurnSuffix) {
+                    apiMessages.push({ role: 'system', content: settings.systemTurnSuffix });
+                }
+            } else {
+                apiMessages.push({ role: m.role, content: m.content });
+            }
+        }
+
         let fullResponse = '';
 
         try {
             this._panel.webview.postMessage({ command: 'setLoading', loading: true });
             
             let hasStarted = false;
-            await this._provider.chat(this._chat.modelName, messages, (token) => {
+            await this._provider.chat(this._chat.modelName, apiMessages, (token) => {
                 if (!hasStarted) {
                     hasStarted = true;
                     this._panel.webview.postMessage({ command: 'setLoading', loading: false });
@@ -301,7 +338,7 @@ export class ChatPanel {
         const newChat = await this._chatService.forkChatFrom(this._chat.id, index);
         if (newChat) {
             // Switch to new chat
-            const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._onStateChange);
+            const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._onStateChange);
 
             // Signal tree view to refresh so the new chat appears
             if (this._onStateChange) {

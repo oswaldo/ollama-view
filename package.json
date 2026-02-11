@@ -101,6 +101,18 @@
         "icon": "$(add)"
       },
       {
+        "command": "ollamaView.setup",
+        "title": "Setup",
+        "category": "ollama-view",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "ollamaView.showMoreActions",
+        "title": "More Actions...",
+        "category": "ollama-view",
+        "icon": "$(more)"
+      },
+      {
         "command": "ollamaView.deleteChat",
         "title": "Delete Chat",
         "category": "ollama-view",
@@ -122,26 +134,36 @@
         {
           "command": "ollamaView.start",
           "when": "viewItem == variable-stopped",
-          "group": "inline"
+          "group": "inline@1"
         },
         {
           "command": "ollamaView.stop",
           "when": "viewItem == variable-running",
-          "group": "inline"
+          "group": "inline@1"
         },
         {
           "command": "ollamaView.createChat",
           "when": "viewItem == variable-running || viewItem == variable-stopped",
-          "group": "inline"
+          "group": "inline@2"
         },
         {
-          "command": "ollamaView.deleteChat",
-          "when": "viewItem == ollama-chat",
-          "group": "inline"
+          "command": "ollamaView.showMoreActions",
+          "when": "viewItem == variable-running || viewItem == variable-stopped",
+          "group": "inline@3"
+        },
+        {
+          "command": "ollamaView.setup",
+          "when": "viewItem == variable-running || viewItem == variable-stopped",
+          "group": "ollama@1"
         },
         {
           "command": "ollamaView.delete",
           "when": "viewItem == variable-running || viewItem == variable-stopped",
+          "group": "ollama@2"
+        },
+        {
+          "command": "ollamaView.deleteChat",
+          "when": "viewItem == ollama-chat",
           "group": "inline"
         }
       ]
@@ -152,7 +174,9 @@
     "compile": "tsc -p ./ && npm run build:webview",
     "watch": "tsc -watch -p ./",
     "package": "tsc -p ./ && npm run build:webview",
-    "build:webview": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
+    "build:webview": "npm run build:webview:chat && npm run build:webview:setup",
+    "build:webview:chat": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
+    "build:webview:setup": "esbuild src/webview/setup.ts --bundle --outfile=dist/webview/setup.js --platform=browser --target=es2020 --format=iife",
     "pretest": "npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",

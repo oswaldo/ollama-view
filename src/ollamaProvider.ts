@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { OllamaApi, OllamaModel } from './ollamaApi';
 import { ChatService, Chat } from './chatService';
+import { ModelSettingsService } from './modelSettingsService';
 
 export class OllamaChatItem extends vscode.TreeItem {
     constructor(
@@ -67,10 +68,12 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
     private stoppingModels: Set<string> = new Set();
     private api: OllamaApi;
     private chatService: ChatService;
+    private modelSettingsService: ModelSettingsService;
 
-    constructor(chatService: ChatService) {
+    constructor(chatService: ChatService, modelSettingsService: ModelSettingsService) {
         this.api = new OllamaApi();
         this.chatService = chatService;
+        this.modelSettingsService = modelSettingsService;
     }
 
     refresh(): void {
@@ -148,6 +151,9 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         const [models, running] = await Promise.all([this.api.listModels(), this.api.listRunning()]);
 
         this.runningModels = new Set(running.map((r) => r.model));
+
+        // Cleanup settings for models that no longer exist
+        this.modelSettingsService.cleanupOrphanedSettings(models.map(m => m.name));
 
         return models.map((m) => {
             const isStart = this.startingModels.has(m.name);

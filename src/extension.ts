@@ -2,15 +2,28 @@ import * as vscode from 'vscode';
 import { OllamaProvider, OllamaModelItem, OllamaChatItem } from './ollamaProvider';
 import { ChatService } from './chatService';
 import { ChatPanel } from './chatPanel';
+import { SetupPanel } from './setupPanel';
+import { ModelSettingsService } from './modelSettingsService';
 import { Logger } from './logger';
 
 // "Popular" models as of Feb 2026
 const POPULAR_MODELS = ['llama3.2', 'mistral', 'deepseek-r1', 'qwen2.5', 'gemma2', 'phi3.5', 'codellama', 'dolphin-llama3', 'llava', 'starcoder2'];
 
+interface ModelAction extends vscode.QuickPickItem {
+    id: string;
+    command: string;
+}
+
+const getModelActions = (): ModelAction[] => [
+    { label: '$(settings-gear) Setup', id: 'setup', command: 'ollamaView.setup', description: 'Configure model settings' },
+    { label: '$(trash) Delete', id: 'delete', command: 'ollamaView.delete', description: 'Permanently remove model' }
+];
+
 export function activate(context: vscode.ExtensionContext) {
     Logger.init();
     const chatService = new ChatService(context);
-    const ollamaProvider = new OllamaProvider(chatService);
+    const modelSettingsService = new ModelSettingsService(context);
+    const ollamaProvider = new OllamaProvider(chatService, modelSettingsService);
 
     // Register TreeDataProvider
     vscode.window.registerTreeDataProvider('ollama-models-view', ollamaProvider);
@@ -25,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
         const chat = await chatService.createChat(node.model.name);
 
         // 2. Open Chat Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
 
         // 3. Start model if not running (async)
         if (!node.isRunning) {
@@ -86,7 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
         ollamaProvider.refresh();
 
         // 4. Open Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
 
         // 5. Ensure Model is Running (async)
         const runningModels = await api.listRunning();
@@ -142,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => {
         if (!node) { return; }
-        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider, () => ollamaProvider.refresh());
+        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
     }));
 
     context.subscriptions.push(
@@ -229,6 +242,27 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('ollamaView.setup', async (node?: OllamaModelItem) => {
+            if (!node) { return; }
+            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService);
+        }),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('ollamaView.showMoreActions', async (node?: OllamaModelItem) => {
+            if (!node) { return; }
+            const actions = getModelActions();
+            const result = await vscode.window.showQuickPick(actions, {
+                placeHolder: `Actions for ${node.model.name}`
+            });
+
+            if (result) {
+                vscode.commands.executeCommand(result.command, node);
+            }
+        }),
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.delete', async (node?: OllamaModelItem) => {
             let modelName = node?.model.name;
 
@@ -264,6 +298,7 @@ export function activate(context: vscode.ExtensionContext) {
                         },
                         async () => {
                             await ollamaProvider.getApi().deleteModel(modelName!);
+                            await modelSettingsService.deleteSettings(modelName!);
                         },
                     );
                     ollamaProvider.refresh();
