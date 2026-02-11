@@ -46,16 +46,16 @@ This plan outlines the tasks to enhance and stabilize the interactive chat exper
     - [x] Modularize chat logic for better separation of concerns.
     - [x] Set up TypeScript build pipeline for the webview.
     - [x] Centralize model state management in `OllamaProvider`.
-- [ ] Task: Initial cross-platform review of chat features.
+- [ ] Task: Initial cross-platform review of chat features. (Moved to Backlog in `scope.md`)
     - [ ] Document platform-specific chat behaviors (Windows, macOS).
     - [ ] Identify and address minor UI/UX inconsistencies across platforms.
     - [ ] Write targeted tests for identified cross-platform issues.
-- [ ] Task: General UI/UX polish for the chat interface.
+- [ ] Task: General UI/UX polish for the chat interface. (Moved to Backlog in `scope.md`)
     - [ ] Collect user feedback on chat usability.
     - [ ] Implement minor visual and interaction improvements.
     - [ ] Ensure accessibility standards are met for chat components.
-- [ ] Task: Final comprehensive test suite execution.
+- [ ] Task: Final comprehensive test suite execution. (Moved to Backlog in `scope.md`)
     - [ ] Run all automated unit and integration tests.
     - [ ] Verify end-to-end chat functionality.
     - [ ] Ensure high code coverage across the chat module.
-- [ ] Task: Conductor - User Manual Verification 'Cross-platform Compatibility and Final Polish' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Cross-platform Compatibility and Final Polish' (Protocol in workflow.md) (Cancelled - Track closed early)

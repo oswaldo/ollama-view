@@ -48,3 +48,19 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 1.  **Model Details**: Show metadata (Size, Quantization, Family) on hover/click.
 2.  **Output Channel**: Dedicated VS Code output channel for Ollama logs/interaction.
 3.  **Quick Test**: A simple "Chat" input box in the sidebar to test the running model without opening a full terminal.
+
+## Backlog
+
+- **Cross-platform Compatibility and Final Polish** (Moved from `enhance_chat_20260204`):
+    - [ ] Initial cross-platform review of chat features:
+        - [ ] Document platform-specific chat behaviors (Windows, macOS).
+        - [ ] Identify and address minor UI/UX inconsistencies across platforms.
+        - [ ] Write targeted tests for identified cross-platform issues.
+    - [ ] General UI/UX polish for the chat interface:
+        - [ ] Collect user feedback on chat usability.
+        - [ ] Implement minor visual and interaction improvements.
+        - [ ] Ensure accessibility standards are met for chat components.
+    - [ ] Final comprehensive test suite execution:
+        - [ ] Run all automated unit and integration tests.
+        - [ ] Verify end-to-end chat functionality.
+        - [ ] Ensure high code coverage across the chat module.
