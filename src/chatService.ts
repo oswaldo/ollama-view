@@ -5,6 +5,11 @@ export interface ChatMessage {
     role: 'user' | 'assistant' | 'system';
     content: string;
     timestamp: number;
+    // Metadata for prompt engineering visibility
+    systemTurnPrefix?: string;
+    userPrefix?: string;
+    userSuffix?: string;
+    systemTurnSuffix?: string;
 }
 
 export interface Chat {
@@ -73,7 +78,17 @@ export class ChatService {
         await this.saveChats(chats);
     }
 
-    async addMessage(chatId: string, role: 'user' | 'assistant' | 'system', content: string): Promise<Chat | undefined> {
+    async addMessage(
+        chatId: string, 
+        role: 'user' | 'assistant' | 'system', 
+        content: string,
+        metadata?: {
+            systemTurnPrefix?: string;
+            userPrefix?: string;
+            userSuffix?: string;
+            systemTurnSuffix?: string;
+        }
+    ): Promise<Chat | undefined> {
         const chats = this.getAllChats();
         const chatIndex = chats.findIndex(c => c.id === chatId);
         if (chatIndex === -1) {
@@ -85,6 +100,7 @@ export class ChatService {
             role,
             content,
             timestamp: Date.now(),
+            ...metadata
         });
 
         // Update name if it's the first user message and name is still default (or default with number)

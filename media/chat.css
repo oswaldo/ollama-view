@@ -46,6 +46,101 @@ body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscod
 pre { background: var(--vscode-textCodeBlock-background); padding: 5px; overflow-x: auto; }
 code { font-family: var(--vscode-editor-font-family); }
 
+/* Toolbar */
+.toolbar {
+    padding: 5px 10px;
+    background: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+.toolbar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    color: var(--vscode-descriptionForeground);
+}
+.toolbar-label {
+    user-select: none;
+}
+
+/* Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--vscode-button-secondaryBackground);
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--vscode-foreground);
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: var(--vscode-button-background);
+}
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--vscode-button-background);
+}
+input:checked + .slider:before {
+    transform: translateX(16px);
+}
+.slider.round {
+    border-radius: 34px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Injection Styles */
+.injection {
+    font-size: 0.85em;
+    font-style: italic;
+    color: var(--vscode-descriptionForeground);
+    opacity: 0.8;
+    background-color: var(--vscode-editor-inactiveSelectionBackground);
+    padding: 4px 8px;
+    border-left: 2px dashed var(--vscode-descriptionForeground);
+    margin: 2px 0;
+}
+.injection-label {
+    font-weight: bold;
+    font-style: normal;
+    font-size: 0.8em;
+    margin-right: 5px;
+    text-transform: uppercase;
+}
+
+.system .message {
+    background-color: var(--vscode-editor-inactiveSelectionBackground);
+    border-left: 2px solid var(--vscode-symbolIcon-propertyForeground);
+    font-style: italic;
+}
+
 /* Hover Buttons */
 .buttons-container {
     position: sticky;

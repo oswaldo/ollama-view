@@ -138,6 +138,8 @@ export class ChatPanel {
 
     public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
         const trimmedText = text.trim();
+        const settings = this._modelSettingsService.getSettings(this._chat.modelName);
+
         // 1. Save user message (handling edits)
         let messageProcessed = false;
 
@@ -184,11 +186,35 @@ export class ChatPanel {
         }
 
         if (!messageProcessed) {
-            await this._chatService.addMessage(this._chat.id, 'user', trimmedText);
+            // If it's a completely new chat, and there's an initial system message, store it.
+            if (this._chat.messages.length === 0 && settings.systemMessage) {
+                await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage);
+            }
+
+            const metadata = {
+                systemTurnPrefix: settings.systemTurnPrefix,
+                userPrefix: settings.userMessagePrefix,
+                userSuffix: settings.userMessageSuffix,
+                systemTurnSuffix: settings.systemTurnSuffix
+            };
+
+            await this._chatService.addMessage(this._chat.id, 'user', trimmedText, metadata);
             this._chat = this._chatService.getChat(this._chat.id) || this._chat; // Refresh chat state
             this._updateTitle();
-            // 2. Update UI with user message
-            this._panel.webview.postMessage({ command: 'addMessage', role: 'user', content: trimmedText });
+            // 2. Update UI with user message (including metadata)
+            this._panel.webview.postMessage({ 
+                command: 'addMessage', 
+                role: 'user', 
+                content: trimmedText,
+                ...metadata
+            });
+
+            // If we added a system message, we might need to refresh the webview messages 
+            // or send an 'addMessage' for it too if we want it to show up immediately.
+            // Let's just refresh the messages to be safe since it's only at the start.
+            if (this._chat.messages.length > 1 && this._chat.messages[0].role === 'system') {
+                this._panel.webview.postMessage({ command: 'setMessages', messages: this._chat.messages });
+            }
         }
 
         // 3. Call Ollama API
@@ -196,35 +222,31 @@ export class ChatPanel {
     }
 
     private async _generateResponse() {
-        const settings = this._modelSettingsService.getSettings(this._chat.modelName);
         const apiMessages: { role: string; content: string }[] = [];
 
-        // 1. Initial Global System Message
-        if (settings.systemMessage) {
-            apiMessages.push({ role: 'system', content: settings.systemMessage });
-        }
-
-        // 2. Map chat history with full injection logic
+        // Map chat history with stored injection logic for historical consistency
         for (const m of this._chat.messages) {
-            if (m.role === 'user') {
-                // System turn prefix
-                if (settings.systemTurnPrefix) {
-                    apiMessages.push({ role: 'system', content: settings.systemTurnPrefix });
+            if (m.role === 'system') {
+                apiMessages.push({ role: 'system', content: m.content });
+            } else if (m.role === 'user') {
+                // System turn prefix from metadata
+                if (m.systemTurnPrefix) {
+                    apiMessages.push({ role: 'system', content: m.systemTurnPrefix });
                 }
 
-                // User message framing
+                // User message framing from metadata
                 let userContent = m.content;
-                if (settings.userMessagePrefix) {
-                    userContent = `${settings.userMessagePrefix}${userContent}`;
+                if (m.userPrefix) {
+                    userContent = `${m.userPrefix}${userContent}`;
                 }
-                if (settings.userMessageSuffix) {
-                    userContent = `${userContent}${settings.userMessageSuffix}`;
+                if (m.userSuffix) {
+                    userContent = `${userContent}${m.userSuffix}`;
                 }
                 apiMessages.push({ role: 'user', content: userContent });
 
-                // System turn suffix
-                if (settings.systemTurnSuffix) {
-                    apiMessages.push({ role: 'system', content: settings.systemTurnSuffix });
+                // System turn suffix from metadata
+                if (m.systemTurnSuffix) {
+                    apiMessages.push({ role: 'system', content: m.systemTurnSuffix });
                 }
             } else {
                 apiMessages.push({ role: m.role, content: m.content });

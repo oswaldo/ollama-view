@@ -10,6 +10,10 @@ interface ChatMessage {
     role: 'user' | 'assistant' | 'system' | 'error';
     content: string;
     timestamp: number;
+    systemTurnPrefix?: string;
+    userPrefix?: string;
+    userSuffix?: string;
+    systemTurnSuffix?: string;
 }
 
 const messagesDiv = document.getElementById('messages') as HTMLDivElement;
@@ -19,10 +23,15 @@ const cancelBtn = document.getElementById('cancelBtn') as HTMLButtonElement;
 const inputArea = document.getElementById('inputArea') as HTMLDivElement;
 const loadMoreContainer = document.getElementById('loadMoreContainer') as HTMLDivElement;
 const loadMoreBtn = document.getElementById('loadMoreBtn') as HTMLButtonElement;
+const showInjectionsToggle = document.getElementById('showInjections') as HTMLInputElement;
 
 let modelName = '';
 let totalMessages = 0;
 let messages: ChatMessage[] = [];
+
+showInjectionsToggle.onchange = () => {
+    renderMessages();
+};
 
 let editState: { mode: 'truncate' | 'fork', index: number } | null = null;
 let activeDropdown: HTMLElement | null = null;
@@ -50,7 +59,10 @@ function renderMessages(preserveScroll = false) {
 
     messages.forEach((m, i) => {
         const absoluteIndex = (totalMessages - messages.length) + i;
-        addMessageToDom(m.role, m.content, m.timestamp, absoluteIndex, false);
+        if (m.role === 'system' && !showInjectionsToggle.checked) {
+            return;
+        }
+        addMessageToDom(m, absoluteIndex, false);
     });
     
     updateLoadMoreVisibility();
@@ -125,19 +137,30 @@ function showTooltip(target: HTMLElement, text: string) {
     }, 1500);
 }
 
-function addMessageToDom(role: string, content: string, timestamp: number, index?: number, shouldScroll = true) {
+function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
+    const { role, content, timestamp } = m;
+    const showInjections = showInjectionsToggle.checked;
+
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper ' + role;
 
+    // Render systemTurnPrefix if enabled
+    if (showInjections && m.systemTurnPrefix) {
+        const inj = document.createElement('div');
+        inj.className = 'injection';
+        inj.innerHTML = `<span class="injection-label">System Prefix Turn:</span>${m.systemTurnPrefix}`;
+        wrapper.appendChild(inj);
+    }
+
     const header = document.createElement('div');
     header.className = 'message-header';
-    header.textContent = role === 'user' ? 'You' : (role === 'error' ? 'Error' : modelName);
+    header.textContent = role === 'user' ? 'You' : (role === 'error' ? 'Error' : (role === 'system' ? 'System' : modelName));
     wrapper.appendChild(header);
 
     const div = document.createElement('div');
     div.className = 'message';
     
-    if (typeof index === 'number' && role !== 'error') {
+    if (typeof index === 'number' && role !== 'error' && role !== 'system') {
         const btns = document.createElement('div');
         btns.className = 'buttons-container';
         
@@ -165,10 +188,26 @@ function addMessageToDom(role: string, content: string, timestamp: number, index
         wrapper.appendChild(btns);
     }
 
+    // Render userPrefix if enabled
+    if (showInjections && m.userPrefix) {
+        const inj = document.createElement('div');
+        inj.className = 'injection';
+        inj.innerHTML = `<span class="injection-label">User Prefix:</span>${m.userPrefix}`;
+        div.appendChild(inj);
+    }
+
     const contentDiv = document.createElement('div');
     contentDiv.style.whiteSpace = 'pre-wrap';
     contentDiv.textContent = content;
     div.appendChild(contentDiv);
+
+    // Render userSuffix if enabled
+    if (showInjections && m.userSuffix) {
+        const inj = document.createElement('div');
+        inj.className = 'injection';
+        inj.innerHTML = `<span class="injection-label">User Suffix:</span>${m.userSuffix}`;
+        div.appendChild(inj);
+    }
 
     if (timestamp) {
         const timeDiv = document.createElement('div');
@@ -178,6 +217,15 @@ function addMessageToDom(role: string, content: string, timestamp: number, index
     }
 
     wrapper.appendChild(div);
+
+    // Render systemTurnSuffix if enabled
+    if (showInjections && m.systemTurnSuffix) {
+        const inj = document.createElement('div');
+        inj.className = 'injection';
+        inj.innerHTML = `<span class="injection-label">System Suffix Turn:</span>${m.systemTurnSuffix}`;
+        wrapper.appendChild(inj);
+    }
+
     messagesDiv.appendChild(wrapper);
     if (shouldScroll) {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -373,9 +421,20 @@ window.addEventListener('message', event => {
             break;
         }
         case 'addMessage': {
-            messages.push({ role: message.role, content: message.content, timestamp: Date.now() });
+            const newMessage: ChatMessage = { 
+                role: message.role, 
+                content: message.content, 
+                timestamp: Date.now(),
+                systemTurnPrefix: message.systemTurnPrefix,
+                userPrefix: message.userPrefix,
+                userSuffix: message.userSuffix,
+                systemTurnSuffix: message.systemTurnSuffix
+            };
+            messages.push(newMessage);
             totalMessages++;
-            addMessageToDom(message.role, message.content, Date.now(), totalMessages - 1);
+            if (newMessage.role !== 'system' || showInjectionsToggle.checked) {
+                addMessageToDom(newMessage, totalMessages - 1);
+            }
             break;
         }
         case 'startAssistantMessage': {
@@ -410,9 +469,10 @@ window.addEventListener('message', event => {
                 if (!fullContent) {
                     wrapper.remove();
                 } else {
-                    messages.push({ role: 'assistant', content: fullContent, timestamp: timestamp });
+                    const assistantMsg: ChatMessage = { role: 'assistant', content: fullContent, timestamp: timestamp };
+                    messages.push(assistantMsg);
                     totalMessages++;
-                    addMessageToDom('assistant', fullContent, timestamp, totalMessages - 1, true);
+                    addMessageToDom(assistantMsg, totalMessages - 1, true);
                     wrapper.remove();
                 }
             }
