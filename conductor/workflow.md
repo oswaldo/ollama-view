@@ -344,3 +344,23 @@ A task is complete when:
 - Document lessons learned
 - Optimize for user happiness
 - Keep things simple and maintainable
+
+## Publishing and Versioning
+
+### 1. Release Preparation
+- **Version Bump**: Update `"version"` in `package.json`.
+- **Release Notes**: Add a section in `README.md` under "Release Notes".
+- **Categories**: Ensure categories in `package.json` are limited to VS Code supported ones: `Machine Learning`, `Programming Languages`, or `Other`.
+
+### 2. Git Tagging
+- **Format**: Use annotated tags (`git tag -a`).
+- **Convention**: Use the version (e.g., `v0.0.5`) and provide the release title from the README as the tag message.
+- **Example**: `git tag -a v0.0.5 -m "Marketplace Compatibility"`
+
+### 3. Production Build
+- **Requirement**: Always use the Webpack-bundled production build to ensure optimization and minimal package footprint.
+- **Command**: `npm run package && npx @vscode/vsce package`
+
+### 4. Publishing
+- **Open VSX**: `ovsx publish <filename>.vsix`
+- **VS Code Marketplace**: `vsce publish` (requires `vsce` login)
