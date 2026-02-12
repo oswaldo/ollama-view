@@ -9,7 +9,7 @@ eslint.config.mjs
 package-lock.json
 **/*.ts
 **/*.map
-node_modules/@types/**
+node_modules/**
 AGENTS.md
 CONTRIBUTING.md
 PUBLISHING.md
