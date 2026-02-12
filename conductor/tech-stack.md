@@ -20,8 +20,8 @@ This project, "Ollama View for VS Code," utilizes a modern web technology stack 
 ## Development Tools
 *   **Build Tools**:
     *   **TypeScript Compiler (tsc)**: Transpiles TypeScript code into JavaScript.
-    *   **Webpack**: A module bundler that processes application modules and generates static assets for deployment.
-*   **Testing Frameworks**:
+    *   **Webpack**: Primary bundler for the extension host code, providing minification and tree-shaking for production builds.
+    *   **esbuild**: High-performance bundler used for Webview JavaScript assets.
     *   **Mocha**: A feature-rich JavaScript test framework running on Node.js and in the browser, making asynchronous testing simple and fun.
     *   **Sinon**: Standalone test spies, stubs and mocks for JavaScript.
 *   **Linting**:
