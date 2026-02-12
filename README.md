@@ -11,7 +11,18 @@ Manage your locally installed [Ollama](https://ollama.ai) models directly from V
 
 (Experimental) Start quick experiments by chatting directly with your models.
 
-![Ollama View Screenshot](media/screenshot.png)
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <a href="media/screenshot-chat.png"><img src="media/screenshot-chat.png" /></a><br />
+      <b>Interactive Chat</b>
+    </td>
+    <td align="center" width="50%">
+      <a href="media/screenshot-setup.png"><img src="media/screenshot-setup.png" /></a><br />
+      <b>Advanced Model Setup</b>
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
