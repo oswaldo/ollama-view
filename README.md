@@ -77,6 +77,10 @@ You can install this extension from the following sources:
 
 ## Release Notes
 
+### 0.0.5 - Marketplace Compatibility
+
+- **Publishing Fix**: Corrected extension categories to comply with VS Code Marketplace requirements.
+
 ### 0.0.4 - Model Setup & Advanced Prompting
 
 - **Model Setup**: New configuration screen to define system messages and message framing (prefixes/suffixes).

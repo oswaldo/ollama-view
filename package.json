@@ -2,7 +2,7 @@
   "name": "ollama-view",
   "displayName": "Ollama View",
   "description": "Manage local Ollama models",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "OswaldoDantas",
   "license": "MIT",
   "icon": "media/logo.png",
@@ -11,10 +11,8 @@
     "theme": "dark"
   },
   "categories": [
-    "AI",
     "Machine Learning",
-    "Productivity",
-    "Programming Languages"
+    "Other"
   ],
   "keywords": [
     "ollama",
