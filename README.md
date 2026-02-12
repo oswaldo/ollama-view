@@ -28,7 +28,8 @@ You can install this extension from the following sources:
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
 - **Status Indication**: Visual indicators for Running (Green) and Stopped (Grey) models.
 - **Persistent Chats**: Create and manage multiple persistent chats for each model.
-- **Context Menu**: Right-click to Start, Stop, or Delete models and chats.
+- **Advanced Setup**: Configure model-specific system messages and prompt injection templates (prefix/suffix framing).
+- **Context Menu**: Safe model deletion and configuration access via the "More Actions" menu.
 
 ### Chat Interface
 - **Concurrent Chats**: Open multiple chat tabs simultaneously.
@@ -41,6 +42,7 @@ You can install this extension from the following sources:
   - **Copy**: Copy response content to clipboard.
   - **Regenerate**: Re-generate the answer. If it's not the last message, this will truncate the conversation.
   - **Fork**: Create a new chat branching from this point.
+- **Prompt Debugging**: Visibility toggle to show/hide "hidden" system turns and prompt injections in the chat history.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
 ## Requirements
@@ -63,6 +65,13 @@ You can install this extension from the following sources:
 - Autocomplete for model names during "Pull" is limited to a popular subset. You can still type any model name manually.
 
 ## Release Notes
+
+### 0.0.4 - Model Setup & Advanced Prompting
+
+- **Model Setup**: New configuration screen to define system messages and message framing (prefixes/suffixes).
+- **Prompt Injections**: Support for per-message system turns and user message wrapping.
+- **Visibility Toggle**: View hidden system instructions directly in the chat panel.
+- **UI Safety**: Moved destructive "Delete" action to a context menu.
 
 ### 0.0.3 - Unique Chat Naming
 

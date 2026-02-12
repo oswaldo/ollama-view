@@ -5,7 +5,9 @@ The primary purpose of this Visual Studio Code extension is to provide a compreh
 
 ## Key Features
 *   **Model Management**: View, pull, start, stop, and delete local Ollama models.
+*   **Model Setup**: Configure model-specific system messages and prompt injection templates (prefixes/suffixes) to enhance adherence and steerability.
 *   **Interactive Chat**: Engage in persistent, multi-turn conversations with Ollama models directly within VS Code, including message editing, regeneration, and conversation branching.
+*   **Prompt Engineering Tools**: Visibility toggle for hidden system turns and injections, providing transparency for advanced prompt debugging.
 *   **User Interface**: Intuitive side panel view with model list, status indicators, and context menus for quick actions.
 *   **Seamless Integration**: Designed to integrate smoothly with the VS Code workflow, offering commands and views that feel native to the editor.
 
