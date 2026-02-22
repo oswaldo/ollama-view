@@ -16,7 +16,7 @@ Establish the core data structures and service layer, ensuring separation of con
     - [x] Write unit tests in `src/test/templateService.test.ts` to verify CRUD, tag organization, and built-in protection.
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) b7e6d52
 
-## Phase 2: Templates Sidebar & Tree View
+## Phase 2: Templates Sidebar & Tree View [checkpoint: 38f9412]
 Implement the UI components to display templates using the Provider pattern.
 
 - [x] Task: Register Sidebar View ede8fde
