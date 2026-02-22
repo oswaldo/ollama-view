@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Editor</title>
+    <link rel="stylesheet" href="{{styleUri}}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="header-title">Template Editor</h1>
+            <div id="template-source" class="badge">Built-in</div>
+        </header>
+
+        <main>
+            <div class="form-group">
+                <label for="template-name">Name</label>
+                <input type="text" id="template-name" placeholder="e.g. Helpful Assistant">
+            </div>
+
+            <div class="form-group">
+                <label for="template-description">Description</label>
+                <textarea id="template-description" rows="2" placeholder="Briefly describe what this template is for..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="template-tags">Tags</label>
+                <p class="help-text">Comma-separated tags (e.g. AI, Programming, Writing)</p>
+                <input type="text" id="template-tags" placeholder="AI, Programming">
+            </div>
+
+            <div class="form-group">
+                <label for="template-content">System Prompt</label>
+                <p class="help-text">The core instructions that will be applied to the model.</p>
+                <textarea id="template-content" rows="10" placeholder="You are a helpful assistant..."></textarea>
+            </div>
+            
+            <p id="readonly-warning" class="warning-text hidden">Built-in templates are read-only. Duplicate to make changes.</p>
+        </main>
+
+        <footer>
+            <div class="actions-left">
+                <button id="duplicate-btn" class="secondary">Duplicate</button>
+            </div>
+            <div class="actions-right">
+                <button id="cancel-btn" class="secondary">Cancel</button>
+                <button id="save-btn" class="primary">Save Changes</button>
+            </div>
+        </footer>
+    </div>
+    <script src="{{scriptUri}}"></script>
+</body>
+</html>
