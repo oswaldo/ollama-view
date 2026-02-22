@@ -120,6 +120,18 @@
         "title": "Delete Chat",
         "category": "ollama-view",
         "icon": "$(trash)"
+      },
+      {
+        "command": "ollamaView.createTemplate",
+        "title": "New Template",
+        "category": "ollama-view",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ollamaView.duplicateTemplate",
+        "title": "Duplicate",
+        "category": "ollama-view",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -131,6 +143,11 @@
         {
           "command": "ollamaView.pull",
           "group": "navigation"
+        },
+        {
+          "command": "ollamaView.createTemplate",
+          "group": "navigation",
+          "when": "view == ollama-templates-view"
         }
       ],
       "view/item/context": [
@@ -167,6 +184,11 @@
         {
           "command": "ollamaView.deleteChat",
           "when": "viewItem == ollama-chat",
+          "group": "inline"
+        },
+        {
+          "command": "ollamaView.duplicateTemplate",
+          "when": "view == ollama-templates-view && viewItem =~ /template-/",
           "group": "inline"
         }
       ]
