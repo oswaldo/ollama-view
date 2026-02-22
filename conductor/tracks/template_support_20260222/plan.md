@@ -2,7 +2,7 @@
 
 This plan outlines the steps to implement a system prompt template management system in the VS Code Ollama Controller, following modular software engineering principles.
 
-## Phase 1: Foundation & Modular Data Management
+## Phase 1: Foundation & Modular Data Management [checkpoint: a975a90]
 Establish the core data structures and service layer, ensuring separation of concerns.
 
 - [x] Task: Define Template Models & Types d99b004
