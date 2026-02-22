@@ -19,15 +19,15 @@ Establish the core data structures and service layer, ensuring separation of con
 ## Phase 2: Templates Sidebar & Tree View
 Implement the UI components to display templates using the Provider pattern.
 
-- [ ] Task: Register Sidebar View
-    - [ ] Update `package.json` to register the `ollama-templates` view.
-    - [ ] Ensure it appears as a collapsible block alongside the Models view.
-- [ ] Task: Implement TemplatesProvider
-    - [ ] Create `src/providers/templatesProvider.ts` implementing `vscode.TreeDataProvider`.
-    - [ ] Implement hierarchical display: `Tag` > `Template Name`, including the "Untagged" logic.
-- [ ] Task: Write Tests for TemplatesProvider
-    - [ ] Write unit tests to verify the tree structure and "Untagged" folder categorization.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Register Sidebar View ede8fde
+    - [x] Update `package.json` to register the `ollama-templates` view.
+    - [x] Ensure it appears as a collapsible block alongside the Models view.
+- [x] Task: Implement TemplatesProvider a0010dd
+    - [x] Create `src/providers/templatesProvider.ts` implementing `vscode.TreeDataProvider`.
+    - [x] Implement hierarchical display: `Tag` > `Template Name`, including the "Untagged" logic.
+- [x] Task: Write Tests for TemplatesProvider a0010dd
+    - [x] Write unit tests to verify the tree structure and "Untagged" folder categorization.
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) a0010dd
 
 ## Phase 3: Template Editor & Webview Architecture
 Create a decoupled webview system for viewing and editing templates.
