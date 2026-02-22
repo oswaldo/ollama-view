@@ -1,6 +1,17 @@
 import * as path from 'path';
 import * as Mocha from 'mocha';
 import * as fg from 'fast-glob';
+import * as vscodeMock from './vscodeMock';
+
+// Mock the vscode module
+const moduleAlias = require('module');
+const originalRequire = moduleAlias.prototype.require;
+moduleAlias.prototype.require = function (this: any, name: string) {
+    if (name === 'vscode') {
+        return vscodeMock;
+    }
+    return originalRequire.apply(this, arguments);
+};
 
 export function run(): Promise<void> {
     // Create the mocha test

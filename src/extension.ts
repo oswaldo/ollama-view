@@ -5,6 +5,8 @@ import { ChatPanel } from './chatPanel';
 import { SetupPanel } from './setupPanel';
 import { ModelSettingsService } from './modelSettingsService';
 import { Logger } from './logger';
+import { TemplateService } from './services/templateService';
+import { TemplatesProvider, TemplateItem } from './providers/templatesProvider';
 
 // "Popular" models as of Feb 2026
 const POPULAR_MODELS = ['llama3.2', 'mistral', 'deepseek-r1', 'qwen2.5', 'gemma2', 'phi3.5', 'codellama', 'dolphin-llama3', 'llava', 'starcoder2'];
@@ -24,12 +26,22 @@ export function activate(context: vscode.ExtensionContext) {
     const chatService = new ChatService(context);
     const modelSettingsService = new ModelSettingsService(context);
     const ollamaProvider = new OllamaProvider(chatService, modelSettingsService);
+    const templateService = new TemplateService(context);
+    const templatesProvider = new TemplatesProvider(templateService);
 
     // Register TreeDataProvider
     vscode.window.registerTreeDataProvider('ollama-models-view', ollamaProvider);
+    vscode.window.registerTreeDataProvider('ollama-templates-view', templatesProvider);
 
     // Commands
-    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.refresh', () => ollamaProvider.refresh()));
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.refresh', () => {
+        ollamaProvider.refresh();
+        templatesProvider.refresh();
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('ollamaView.editTemplate', (item: TemplateItem) => {
+        vscode.window.showInformationMessage(`Editing template: ${item.template.name} (Editor coming soon)`);
+    }));
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.createChat', async (node?: OllamaModelItem) => {
         if (!node) { return; }
