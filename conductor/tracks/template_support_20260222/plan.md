@@ -5,16 +5,16 @@ This plan outlines the steps to implement a system prompt template management sy
 ## Phase 1: Foundation & Modular Data Management
 Establish the core data structures and service layer, ensuring separation of concerns.
 
-- [ ] Task: Define Template Models & Types
-    - [ ] Create `src/models/template.ts` to hold the `Template` and `Tag` interfaces.
-    - [ ] Define the `TemplateSource` (Built-in vs. User) and metadata structures.
-- [ ] Task: Implement TemplateService
-    - [ ] Create `src/services/templateService.ts` to handle CRUD operations via `globalState`.
-    - [ ] Implement logic to merge built-in templates (from a static JSON) with user-created ones.
-    - [ ] Add `duplicateTemplate` and logic to retrieve templates by tag.
-- [ ] Task: Write Tests for TemplateService
-    - [ ] Write unit tests in `src/test/templateService.test.ts` to verify CRUD, tag organization, and built-in protection.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Define Template Models & Types d99b004
+    - [x] Create `src/models/template.ts` to hold the `Template` and `Tag` interfaces.
+    - [x] Define the `TemplateSource` (Built-in vs. User) and metadata structures.
+- [x] Task: Implement TemplateService 5ef9ad1
+    - [x] Create `src/services/templateService.ts` to handle CRUD operations via `globalState`.
+    - [x] Implement logic to merge built-in templates (from a static JSON) with user-created ones.
+    - [x] Add `duplicateTemplate` and logic to retrieve templates by tag.
+- [x] Task: Write Tests for TemplateService b7e6d52
+    - [x] Write unit tests in `src/test/templateService.test.ts` to verify CRUD, tag organization, and built-in protection.
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) b7e6d52
 
 ## Phase 2: Templates Sidebar & Tree View
 Implement the UI components to display templates using the Provider pattern.

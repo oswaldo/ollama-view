@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Add template support for system prompts with a tagged tree view and integrated editor.**
+- [~] **Track: Add template support for system prompts with a tagged tree view and integrated editor.**
 *Link: [./tracks/template_support_20260222/](./tracks/template_support_20260222/)*
