@@ -53,6 +53,11 @@
           "id": "ollama-models-view",
           "name": "Models",
           "icon": "media/sidebar-icon.svg"
+        },
+        {
+          "id": "ollama-templates-view",
+          "name": "Templates",
+          "icon": "$(library)"
         }
       ]
     },
