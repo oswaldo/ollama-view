@@ -34,6 +34,7 @@ const revertFramingBtn = document.getElementById('revertFramingBtn') as HTMLDivE
 let modelName = '';
 let totalMessages = 0;
 let messages: ChatMessage[] = [];
+let currentFramingName: string | undefined = undefined;
 
 showInjectionsToggle.onchange = () => {
     renderMessages();
@@ -55,6 +56,7 @@ moreActionsBtn.onclick = () => {
 let editState: { mode: 'truncate' | 'fork', index: number } | null = null;
 let activeDropdown: HTMLElement | null = null;
 let truncatedMessagesBackup: ChatMessage[] | null = null;
+let framingBackup: string | undefined = undefined;
 
 const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
@@ -261,7 +263,18 @@ function toggleDropdown(e: MouseEvent, index: number, content: string, role: str
         itemTruncate.className = 'dropdown-item';
         itemTruncate.textContent = 'Edit / Truncate';
         itemTruncate.onclick = () => {
-            enterEditMode('truncate', index, content);
+            const absoluteIndex = index;
+            // The message object itself should be in our 'messages' array if it is rendered
+            const localIndex = absoluteIndex - (totalMessages - messages.length);
+            const targetMessage = messages[localIndex];
+            
+            vscode.postMessage({ 
+                command: 'requestTruncate', 
+                index: absoluteIndex, 
+                content,
+                framingId: targetMessage?.framingId,
+                framingName: targetMessage?.framingName
+            });
             closeDropdown();
         };
         menu.appendChild(itemTruncate);
@@ -270,7 +283,17 @@ function toggleDropdown(e: MouseEvent, index: number, content: string, role: str
         itemFork.className = 'dropdown-item';
         itemFork.textContent = 'Edit / Fork';
         itemFork.onclick = () => {
-             enterEditMode('fork', index, content);
+             const absoluteIndex = index;
+             const localIndex = absoluteIndex - (totalMessages - messages.length);
+             const targetMessage = messages[localIndex];
+
+             vscode.postMessage({ 
+                 command: 'requestFork', 
+                 index: absoluteIndex, 
+                 content,
+                 framingId: targetMessage?.framingId,
+                 framingName: targetMessage?.framingName
+             });
              closeDropdown();
         };
         menu.appendChild(itemFork);
@@ -325,10 +348,16 @@ function closeDropdownOutside(e: MouseEvent) {
     }
 }
 
-function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string) {
+function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string, framingName?: string) {
     editState = { mode, index };
     input.value = content;
     
+    // Atomic framing backup
+    framingBackup = currentFramingName;
+    if (framingName !== undefined) {
+        updateFramingUI(framingName);
+    }
+
     setTimeout(() => input.focus(), 0); 
     
     inputArea.classList.add('editing');
@@ -348,10 +377,15 @@ function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string
 }
 
 function resetEditMode() {
-    if (editState && (editState.mode === 'truncate' || editState.mode === 'fork') && truncatedMessagesBackup) {
-         messages = truncatedMessagesBackup;
-         truncatedMessagesBackup = null;
-         renderMessages();
+    if (editState && (editState.mode === 'truncate' || editState.mode === 'fork')) {
+        if (truncatedMessagesBackup) {
+            messages = truncatedMessagesBackup;
+            truncatedMessagesBackup = null;
+            renderMessages();
+        }
+        // Restore framing backup
+        updateFramingUI(framingBackup);
+        framingBackup = undefined;
     }
     editState = null;
     inputArea.classList.remove('editing');
@@ -379,6 +413,9 @@ function sendMessage() {
             text: trimmedText, 
             editOptions: editState 
         });
+        // Clear backup so it's not restored
+        truncatedMessagesBackup = null;
+        framingBackup = undefined;
         editState = null; 
         inputArea.classList.remove('editing');
         cancelBtn.style.display = 'none';
@@ -391,6 +428,7 @@ function sendMessage() {
 }
 
 function updateFramingUI(framingName?: string) {
+    currentFramingName = framingName;
     if (framingName) {
         framingNameSpan.textContent = framingName;
         revertFramingBtn.style.display = 'flex';
@@ -505,7 +543,7 @@ window.addEventListener('message', event => {
             break;
         }
         case 'enterEditMode': {
-            enterEditMode(message.mode, message.index, message.content);
+            enterEditMode(message.mode, message.index, message.content, message.framingName);
             break;
         }
         case 'addErrorMessage': {

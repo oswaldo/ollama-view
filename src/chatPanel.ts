@@ -74,7 +74,10 @@ export class ChatPanel {
                         await this.handleUserMessage(message.text, message.editOptions);
                         return;
                     case 'requestTruncate':
-                        await this._handleRequestTruncate(message.index, message.content);
+                        await this._handleHistoryAction('truncate', message.index, message.content, message.framingId, message.framingName);
+                        return;
+                    case 'requestFork':
+                        await this._handleHistoryAction('fork', message.index, message.content, message.framingId, message.framingName);
                         return;
                     case 'requestRegenerate':
                         await this._handleRequestRegenerate(message.index);
@@ -150,6 +153,46 @@ export class ChatPanel {
         }
     }
 
+    private async _handleHistoryAction(mode: 'truncate' | 'fork', index: number, content: string, msgFramingId?: string, msgFramingName?: string) {
+        let activeFramingId = this._chat.activeFramingId;
+        let activeFramingName = activeFramingId ? this._framingService.getFraming(activeFramingId)?.name : undefined;
+
+        // Detection of mismatch
+        if (msgFramingId !== activeFramingId) {
+            const msgName = msgFramingName || 'Default Framing';
+            const currentName = activeFramingName || 'Default Framing';
+
+            const selection = await vscode.window.showWarningMessage(
+                `Framing Mismatch: This message used "${msgName}", but the chat is currently using "${currentName}". Which framing should be active for the new turn?`,
+                { modal: true },
+                `Use "${msgName}"`,
+                `Keep "${currentName}"`
+            );
+
+            if (selection === `Use "${msgName}"`) {
+                activeFramingId = msgFramingId;
+                activeFramingName = msgFramingName;
+                await this._chatService.setActiveFraming(this._chat.id, activeFramingId);
+                this._chat.activeFramingId = activeFramingId;
+                this._panel.webview.postMessage({
+                    command: 'updateFraming',
+                    framingName: activeFramingName
+                });
+            } else if (!selection) {
+                // Cancelled
+                return;
+            }
+        }
+
+        this._panel.webview.postMessage({
+            command: 'enterEditMode',
+            mode,
+            index,
+            content,
+            framingName: activeFramingName
+        });
+    }
+
     private async _handleRequestLoadMore(offset: number) {
         const PAGE_SIZE = 50;
         const paginated = this._chatService.getPaginatedMessages(this._chat.id, PAGE_SIZE, offset);
@@ -188,7 +231,11 @@ export class ChatPanel {
     public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
         const trimmedText = text.trim();
         
-        // Resolve active framing
+        // Resolve active framing (including potential change from mismatch prompt)
+        // If we are in edit mode, the webview might have a different currentFramingName.
+        // However, the extension host is the source of truth for IDs.
+        // We should ensure that if editOptions is present, we check if we need to update the chat's activeFramingId first.
+        
         let settings = this._modelSettingsService.getSettings(this._chat.modelName);
         let activeFraming: any = undefined;
 
@@ -203,7 +250,6 @@ export class ChatPanel {
                     systemTurnSuffix: activeFraming.systemTurnSuffix
                 };
             } else {
-                // Framing was deleted!
                 const selection = await vscode.window.showWarningMessage(
                     `The framing previously used in this chat was deleted. What would you like to do?`,
                     { modal: true },
@@ -213,7 +259,6 @@ export class ChatPanel {
 
                 if (selection === 'Select New Framing') {
                     await this._handleRequestFraming();
-                    // Re-read settings after potential selection
                     if (this._chat.activeFramingId) {
                         activeFraming = this._framingService.getFraming(this._chat.activeFramingId);
                         if (activeFraming) {
@@ -230,7 +275,6 @@ export class ChatPanel {
                     await this._handleRevertFraming();
                     settings = this._modelSettingsService.getSettings(this._chat.modelName);
                 } else {
-                    // Cancelled
                     return;
                 }
             }
@@ -239,6 +283,11 @@ export class ChatPanel {
         let messageProcessed = false;
 
         if (editOptions) {
+            // Note: If mismatch prompt changed the framing, we should have updated activeFraming already if we handled it in _handleHistoryAction.
+            // But _handleHistoryAction only sent 'enterEditMode' to webview.
+            // We need 'sendMessage' to also potentially include the target framingId if it was changed during the mismatch prompt.
+            // Actually, let's simplify: if the user chose a framing in the mismatch prompt, we should update the chat state immediately.
+            
             if (editOptions.mode === 'truncate') {
                 const answer = await vscode.window.showWarningMessage(
                     'Are you sure? Editing this message will remove all subsequent messages in this chat.',
@@ -284,11 +333,8 @@ export class ChatPanel {
         }
 
         if (!messageProcessed) {
-            // Check if we need to inject a system prompt change
-            const lastMessage = this._chat.messages[this._chat.messages.length - 1];
             const lastSystemPrompt = this._chat.messages.filter(m => m.role === 'system').pop()?.content;
             
-            // If it's a completely new chat, or the system prompt has changed
             if (this._chat.messages.length === 0 || (settings.systemMessage && settings.systemMessage !== lastSystemPrompt)) {
                 await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage || '');
             }
@@ -400,15 +446,6 @@ export class ChatPanel {
         }
     }
 
-    private async _handleRequestTruncate(index: number, content: string) {
-        this._panel.webview.postMessage({
-            command: 'enterEditMode',
-            mode: 'truncate',
-            index,
-            content
-        });
-    }
-
     private async _handleRequestRegenerate(index: number) {
         if (index < this._chat.messages.length - 1) {
             const answer = await vscode.window.showWarningMessage(
@@ -479,7 +516,7 @@ export class ChatPanel {
             vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'chat.js'))
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'chat.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());

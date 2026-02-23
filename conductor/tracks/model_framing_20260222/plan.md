@@ -65,7 +65,20 @@ Implement edge case handling for deleted/renamed framings and finalize UI.
 - [x] Task: Implement Deletion Safety Check b0bc595
     - [x] Before sending a message, verify the `activeFramingId` still exists.
     - [x] Implement the blocking prompt if the framing is missing.
-- [ ] Task: Final UI Polish
-    - [ ] Ensure consistent spacing and icons across the new header elements.
-    - [ ] Verify "Revert to Default" functionality works correctly.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md)
+- [x] Task: Final UI Polish 321f8b2
+    - [x] Ensure consistent spacing and icons across the new header elements.
+    - [x] Verify "Revert to Default" functionality works correctly.
+- [x] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md) 321f8b2
+
+## Phase 6: Logic Refinements (Mismatch Handling & Atomic Edits)
+Address framing inconsistencies during Fork/Truncate actions.
+
+- [ ] Task: Implement Mismatch Detection in ChatPanel
+    - [ ] Compare current active framing with target message framing during edit/fork.
+    - [ ] Implement user prompt to choose framing if a mismatch is detected.
+- [ ] Task: Atomic Framing State in Webview
+    - [ ] Update `chat.ts` to backup active framing before entering edit mode.
+    - [ ] Restore backed-up framing if edit/truncate is cancelled.
+- [ ] Task: Write Tests for History Logic
+    - [ ] Verify framing inheritance and mismatch prompts.
+- [ ] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md)
