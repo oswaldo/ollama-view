@@ -1,0 +1,8 @@
+{
+  "track_id": "suggest_next_message_20260222",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-22T15:15:00Z",
+  "updated_at": "2026-02-22T15:15:00Z",
+  "description": "Suggest next message feature for the chat triple-dot menu."
+}
