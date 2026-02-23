@@ -13,6 +13,8 @@ export interface ChatMessage {
     // Model Framing metadata
     framingId?: string;
     framingName?: string;
+    // Turn metadata
+    modelName?: string;
 }
 
 export interface Chat {
@@ -102,6 +104,7 @@ export class ChatService {
             systemTurnSuffix?: string;
             framingId?: string;
             framingName?: string;
+            modelName?: string;
         }
     ): Promise<Chat | undefined> {
         const chats = this.getAllChats();
@@ -111,11 +114,18 @@ export class ChatService {
         }
 
         const chat = chats[chatIndex];
+        
+        // Default modelName from chat if not provided in metadata
+        const finalMetadata = {
+            modelName: chat.modelName,
+            ...metadata
+        };
+
         chat.messages.push({
             role,
             content,
             timestamp: Date.now(),
-            ...metadata
+            ...finalMetadata
         });
 
         // Update name if it's the first user message and name is still default (or default with number)
@@ -142,11 +152,16 @@ export class ChatService {
         const chat = chats[chatIndex];
         chat.messages = chat.messages.slice(0, messageIndex);
 
+        const finalMetadata = {
+            modelName: chat.modelName,
+            ...metadata
+        };
+
         chat.messages.push({
             role: 'user',
             content: newContent,
             timestamp: Date.now(),
-            ...metadata
+            ...finalMetadata
         });
 
         chats[chatIndex] = chat;
@@ -175,11 +190,16 @@ export class ChatService {
             activeFramingId: sourceChat.activeFramingId
         };
 
+        const finalMetadata = {
+            modelName: newChat.modelName,
+            ...metadata
+        };
+
         newChat.messages.push({
             role: 'user',
             content: newContent,
             timestamp: Date.now(),
-            ...metadata
+            ...finalMetadata
         });
 
         chats.push(newChat);

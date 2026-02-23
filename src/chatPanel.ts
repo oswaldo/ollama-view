@@ -123,6 +123,7 @@ export class ChatPanel {
             this._chat.activeFramingId = selected.framing.id;
             this._panel.webview.postMessage({
                 command: 'updateFraming',
+                framingId: selected.framing.id,
                 framingName: selected.framing.name
             });
             vscode.window.showInformationMessage(`Applied framing override: ${selected.framing.name}`);
@@ -134,6 +135,7 @@ export class ChatPanel {
         this._chat.activeFramingId = undefined;
         this._panel.webview.postMessage({
             command: 'updateFraming',
+            framingId: undefined,
             framingName: undefined
         });
         vscode.window.showInformationMessage('Reverted to model default framing');
@@ -173,7 +175,7 @@ export class ChatPanel {
 
             if (selection === `Use "${msgName}"`) {
                 targetFramingId = msgFramingId;
-                targetFramingName = msgFramingName;
+                targetFramingName = msgName;
             } else if (!selection) {
                 return;
             }
@@ -227,13 +229,11 @@ export class ChatPanel {
     public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }, framingIdOverride?: string) {
         const trimmedText = text.trim();
         
-        // If we have a framing override from the mismatch prompt (during edit/fork)
         if (editOptions && framingIdOverride !== undefined && framingIdOverride !== this._chat.activeFramingId) {
             await this._chatService.setActiveFraming(this._chat.id, framingIdOverride);
             this._chat.activeFramingId = framingIdOverride;
-            // Also notify webview to ensure header is in sync (it should be already but to be safe)
             const name = framingIdOverride ? this._framingService.getFraming(framingIdOverride)?.name : undefined;
-            this._panel.webview.postMessage({ command: 'updateFraming', framingName: name });
+            this._panel.webview.postMessage({ command: 'updateFraming', framingId: framingIdOverride, framingName: name });
         }
 
         let settings = this._modelSettingsService.getSettings(this._chat.modelName);
@@ -297,6 +297,7 @@ export class ChatPanel {
                 const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, trimmedText, {
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
+                    modelName: this._chat.modelName,
                     ...settings
                 });
                 if (updatedChat) {
@@ -309,6 +310,7 @@ export class ChatPanel {
                 const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, trimmedText, {
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
+                    modelName: this._chat.modelName,
                     ...settings
                 });
                 if (newChat) {
@@ -331,7 +333,11 @@ export class ChatPanel {
             const lastSystemPrompt = this._chat.messages.filter(m => m.role === 'system').pop()?.content;
             
             if (this._chat.messages.length === 0 || (settings.systemMessage && settings.systemMessage !== lastSystemPrompt)) {
-                await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage || '');
+                await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage || '', {
+                    modelName: this._chat.modelName,
+                    framingId: activeFraming?.id,
+                    framingName: activeFraming?.name
+                });
             }
 
             const metadata = {
@@ -340,7 +346,8 @@ export class ChatPanel {
                 userSuffix: settings.userMessageSuffix,
                 systemTurnSuffix: settings.systemTurnSuffix,
                 framingId: activeFraming?.id,
-                framingName: activeFraming?.name
+                framingName: activeFraming?.name,
+                modelName: this._chat.modelName
             };
 
             await this._chatService.addMessage(this._chat.id, 'user', trimmedText, metadata);
@@ -409,7 +416,15 @@ export class ChatPanel {
             });
 
             this._panel.webview.postMessage({ command: 'setLoading', loading: false });
-            await this._chatService.addMessage(this._chat.id, 'assistant', fullResponse);
+            
+            const activeFramingId = this._chat.activeFramingId;
+            const activeFraming = activeFramingId ? this._framingService.getFraming(activeFramingId) : undefined;
+
+            await this._chatService.addMessage(this._chat.id, 'assistant', fullResponse, {
+                modelName: this._chat.modelName,
+                framingId: activeFraming?.id,
+                framingName: activeFraming?.name
+            });
             this._chat = this._chatService.getChat(this._chat.id) || this._chat;
 
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
@@ -498,6 +513,7 @@ export class ChatPanel {
                 modelName: this._chat.modelName,
                 messages: paginated.messages,
                 total: paginated.total,
+                activeFramingId: this._chat.activeFramingId,
                 activeFramingName
             });
         }, 100);

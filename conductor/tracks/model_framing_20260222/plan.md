@@ -82,3 +82,19 @@ Address framing inconsistencies during Fork/Truncate actions.
 - [x] Task: Write Tests for History Logic ebd17a8
     - [x] Verify framing inheritance and mismatch prompts.
 - [x] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md) ebd17a8
+
+## Phase 7: Message Metadata & Info Modal
+Add a detailed information view for individual chat messages.
+
+- [ ] Task: Update Message Schema for Model Info
+    - [ ] Add `modelName` to `ChatMessage` in `src/chatService.ts`.
+    - [ ] Ensure `modelName` is persisted for every turn (User and Assistant).
+- [ ] Task: Implement Modal UI in Webview
+    - [ ] Add modal HTML structure to `media/chat.html`.
+    - [ ] Add modal styles to `media/chat.css`.
+- [ ] Task: Implement "Info" Action & Modal Logic
+    - [ ] Add "Info" option to the message dropdown in `src/webview/chat.ts`.
+    - [ ] Implement the modal display logic with formatted metadata.
+- [ ] Task: Write Tests for Turn Metadata
+    - [ ] Verify that model and framing info is correctly stored in message history.
+- [ ] Task: Conductor - User Manual Verification 'Phase 7' (Protocol in workflow.md)

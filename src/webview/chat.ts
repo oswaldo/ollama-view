@@ -16,6 +16,7 @@ interface ChatMessage {
     systemTurnSuffix?: string;
     framingId?: string;
     framingName?: string;
+    modelName?: string;
 }
 
 const messagesDiv = document.getElementById('messages') as HTMLDivElement;
@@ -31,10 +32,15 @@ const showInjectionsToggle = document.getElementById('showInjections') as HTMLIn
 const framingNameSpan = document.getElementById('framingName') as HTMLSpanElement;
 const revertFramingBtn = document.getElementById('revertFramingBtn') as HTMLDivElement;
 
+const modalOverlay = document.getElementById('modal-overlay') as HTMLDivElement;
+const modalContent = document.getElementById('modal-content') as HTMLDivElement;
+const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
+
 let modelName = '';
 let totalMessages = 0;
 let messages: ChatMessage[] = [];
 let currentFramingName: string | undefined = undefined;
+let currentFramingId: string | undefined = undefined;
 
 showInjectionsToggle.onchange = () => {
     renderMessages();
@@ -53,10 +59,21 @@ moreActionsBtn.onclick = () => {
     vscode.postMessage({ command: 'requestMoreActions' });
 };
 
+closeModalBtn.onclick = () => {
+    modalOverlay.classList.remove('visible');
+};
+
+modalOverlay.onclick = (e) => {
+    if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('visible');
+    }
+};
+
 let editState: { mode: 'truncate' | 'fork', index: number } | null = null;
 let activeDropdown: HTMLElement | null = null;
 let truncatedMessagesBackup: ChatMessage[] | null = null;
-let framingBackup: string | undefined = undefined;
+let framingBackupId: string | undefined = undefined;
+let framingBackupName: string | undefined = undefined;
 
 const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
@@ -204,7 +221,7 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
         optsBtn.innerHTML = MoreIcon;
         optsBtn.onclick = (e) => {
             e.stopPropagation();
-            toggleDropdown(e, index, content, role);
+            toggleDropdown(e, index, m);
         };
         btns.appendChild(optsBtn);
 
@@ -253,7 +270,7 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
     return div;
 }
 
-function toggleDropdown(e: MouseEvent, index: number, content: string, role: string) {
+function toggleDropdown(e: MouseEvent, index: number, m: ChatMessage) {
     closeDropdown();
     
     const btn = e.currentTarget as HTMLElement;
@@ -261,21 +278,29 @@ function toggleDropdown(e: MouseEvent, index: number, content: string, role: str
     
     const menu = document.createElement('div');
     menu.className = 'dropdown-menu';
+
+    const itemInfo = document.createElement('div');
+    itemInfo.className = 'dropdown-item';
+    itemInfo.textContent = 'Info';
+    itemInfo.onclick = () => {
+        showInfoModal(m);
+        closeDropdown();
+    };
+    menu.appendChild(itemInfo);
     
-    if (role === 'user') {
+    if (m.role === 'user') {
         const itemTruncate = document.createElement('div');
         itemTruncate.className = 'dropdown-item';
         itemTruncate.textContent = 'Edit / Truncate';
         itemTruncate.onclick = () => {
             const absoluteIndex = index;
-            // The message object itself should be in our 'messages' array if it is rendered
             const localIndex = absoluteIndex - (totalMessages - messages.length);
             const targetMessage = messages[localIndex];
             
             vscode.postMessage({ 
                 command: 'requestTruncate', 
                 index: absoluteIndex, 
-                content,
+                content: m.content,
                 framingId: targetMessage?.framingId,
                 framingName: targetMessage?.framingName
             });
@@ -294,14 +319,14 @@ function toggleDropdown(e: MouseEvent, index: number, content: string, role: str
              vscode.postMessage({ 
                  command: 'requestFork', 
                  index: absoluteIndex, 
-                 content,
+                 content: m.content,
                  framingId: targetMessage?.framingId,
                  framingName: targetMessage?.framingName
              });
              closeDropdown();
         };
         menu.appendChild(itemFork);
-    } else if (role === 'assistant') {
+    } else if (m.role === 'assistant') {
         const itemRegen = document.createElement('div');
         itemRegen.className = 'dropdown-item';
         const isLast = index === (totalMessages - 1);
@@ -338,6 +363,33 @@ function toggleDropdown(e: MouseEvent, index: number, content: string, role: str
     }, 0);
 }
 
+function showInfoModal(m: ChatMessage) {
+    const metaHtml = `
+        <div class="metadata-group">
+            <span class="metadata-label">Message</span>
+            <div class="metadata-value content">${m.content}</div>
+        </div>
+        <div class="metadata-group">
+            <span class="metadata-label">Role</span>
+            <div class="metadata-value">${m.role}</div>
+        </div>
+        <div class="metadata-group">
+            <span class="metadata-label">Model</span>
+            <div class="metadata-value">${m.modelName || 'Unknown'}</div>
+        </div>
+        <div class="metadata-group">
+            <span class="metadata-label">Active Framing</span>
+            <div class="metadata-value">${m.framingName || 'Default Model Setup'}</div>
+        </div>
+        <div class="metadata-group">
+            <span class="metadata-label">Timestamp</span>
+            <div class="metadata-value">${formatTime(m.timestamp)}</div>
+        </div>
+    `;
+    modalContent.innerHTML = metaHtml;
+    modalOverlay.classList.add('visible');
+}
+
 function closeDropdown() {
     if (activeDropdown) {
         activeDropdown.remove();
@@ -352,14 +404,16 @@ function closeDropdownOutside(e: MouseEvent) {
     }
 }
 
-function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string, framingName?: string) {
+function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string, framingId?: string, framingName?: string) {
     editState = { mode, index };
     input.value = content;
     
     // Atomic framing backup
-    framingBackup = currentFramingName;
-    if (framingName !== undefined) {
-        updateFramingUI(framingName);
+    framingBackupId = currentFramingId;
+    framingBackupName = currentFramingName;
+    
+    if (framingId !== undefined) {
+        updateFramingUI(framingId, framingName);
     }
 
     setTimeout(() => input.focus(), 0); 
@@ -388,8 +442,9 @@ function resetEditMode() {
             renderMessages();
         }
         // Restore framing backup
-        updateFramingUI(framingBackup);
-        framingBackup = undefined;
+        updateFramingUI(framingBackupId, framingBackupName);
+        framingBackupId = undefined;
+        framingBackupName = undefined;
     }
     editState = null;
     inputArea.classList.remove('editing');
@@ -415,11 +470,12 @@ function sendMessage() {
         vscode.postMessage({ 
             command: 'sendMessage', 
             text: trimmedText, 
-            editOptions: editState 
+            editOptions: editState,
+            framingId: currentFramingId 
         });
-        // Clear backup so it's not restored
         truncatedMessagesBackup = null;
-        framingBackup = undefined;
+        framingBackupId = undefined;
+        framingBackupName = undefined;
         editState = null; 
         inputArea.classList.remove('editing');
         cancelBtn.style.display = 'none';
@@ -431,7 +487,8 @@ function sendMessage() {
     validateInput();
 }
 
-function updateFramingUI(framingName?: string) {
+function updateFramingUI(framingId?: string, framingName?: string) {
+    currentFramingId = framingId;
     currentFramingName = framingName;
     if (framingName) {
         framingNameSpan.textContent = framingName;
@@ -471,7 +528,7 @@ window.addEventListener('message', event => {
             modelName = message.modelName;
             messages = message.messages;
             totalMessages = message.total;
-            updateFramingUI(message.activeFramingName);
+            updateFramingUI(message.activeFramingId, message.activeFramingName);
             renderMessages();
             validateInput();
             break;
@@ -483,7 +540,7 @@ window.addEventListener('message', event => {
             break;
         }
         case 'updateFraming': {
-            updateFramingUI(message.framingName);
+            updateFramingUI(message.framingId, message.framingName);
             break;
         }
         case 'addMessage': {
@@ -496,7 +553,8 @@ window.addEventListener('message', event => {
                 userSuffix: message.userSuffix,
                 systemTurnSuffix: message.systemTurnSuffix,
                 framingId: message.framingId,
-                framingName: message.framingName
+                framingName: message.framingName,
+                modelName: message.modelName
             };
             messages.push(newMessage);
             totalMessages++;
@@ -537,7 +595,14 @@ window.addEventListener('message', event => {
                 if (!fullContent) {
                     wrapper.remove();
                 } else {
-                    const assistantMsg: ChatMessage = { role: 'assistant', content: fullContent, timestamp: timestamp };
+                    const assistantMsg: ChatMessage = { 
+                        role: 'assistant', 
+                        content: fullContent, 
+                        timestamp: timestamp,
+                        modelName: modelName,
+                        framingId: currentFramingId,
+                        framingName: currentFramingName
+                    };
                     messages.push(assistantMsg);
                     totalMessages++;
                     addMessageToDom(assistantMsg, totalMessages - 1, true);
@@ -547,7 +612,7 @@ window.addEventListener('message', event => {
             break;
         }
         case 'enterEditMode': {
-            enterEditMode(message.mode, message.index, message.content, message.framingName);
+            enterEditMode(message.mode, message.index, message.content, message.framingId, message.framingName);
             break;
         }
         case 'addErrorMessage': {

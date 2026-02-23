@@ -256,3 +256,72 @@ input:checked + .slider:before {
 .tooltip.visible {
     opacity: 1;
 }
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-overlay.visible {
+    display: flex;
+}
+.modal {
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    width: 80%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.modal-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: normal;
+}
+.modal-body {
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+.metadata-group {
+    margin-bottom: 15px;
+}
+.metadata-label {
+    font-weight: bold;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 4px;
+    display: block;
+    font-size: 0.85em;
+    text-transform: uppercase;
+}
+.metadata-value {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 8px;
+    border-radius: 4px;
+    word-break: break-all;
+}
+.metadata-value.content {
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+}
