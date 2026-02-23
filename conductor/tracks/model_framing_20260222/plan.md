@@ -81,4 +81,4 @@ Address framing inconsistencies during Fork/Truncate actions.
     - [x] Restore backed-up framing if edit/truncate is cancelled.
 - [x] Task: Write Tests for History Logic 709740e
     - [x] Verify framing inheritance and mismatch prompts.
-- [x] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md) 709740e
+- [x] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md) d52a1e5

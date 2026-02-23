@@ -71,7 +71,7 @@ export class ChatPanel {
             async message => {
                 switch (message.command) {
                     case 'sendMessage':
-                        await this.handleUserMessage(message.text, message.editOptions);
+                        await this.handleUserMessage(message.text, message.editOptions, message.framingId);
                         return;
                     case 'requestTruncate':
                         await this._handleHistoryAction('truncate', message.index, message.content, message.framingId, message.framingName);
@@ -154,10 +154,12 @@ export class ChatPanel {
     }
 
     private async _handleHistoryAction(mode: 'truncate' | 'fork', index: number, content: string, msgFramingId?: string, msgFramingName?: string) {
-        let activeFramingId = this._chat.activeFramingId;
-        let activeFramingName = activeFramingId ? this._framingService.getFraming(activeFramingId)?.name : undefined;
+        const activeFramingId = this._chat.activeFramingId;
+        const activeFramingName = activeFramingId ? this._framingService.getFraming(activeFramingId)?.name : undefined;
 
-        // Detection of mismatch
+        let targetFramingId = activeFramingId;
+        let targetFramingName = activeFramingName;
+
         if (msgFramingId !== activeFramingId) {
             const msgName = msgFramingName || 'Default Framing';
             const currentName = activeFramingName || 'Default Framing';
@@ -170,16 +172,9 @@ export class ChatPanel {
             );
 
             if (selection === `Use "${msgName}"`) {
-                activeFramingId = msgFramingId;
-                activeFramingName = msgFramingName;
-                await this._chatService.setActiveFraming(this._chat.id, activeFramingId);
-                this._chat.activeFramingId = activeFramingId;
-                this._panel.webview.postMessage({
-                    command: 'updateFraming',
-                    framingName: activeFramingName
-                });
+                targetFramingId = msgFramingId;
+                targetFramingName = msgFramingName;
             } else if (!selection) {
-                // Cancelled
                 return;
             }
         }
@@ -189,7 +184,8 @@ export class ChatPanel {
             mode,
             index,
             content,
-            framingName: activeFramingName
+            framingId: targetFramingId,
+            framingName: targetFramingName
         });
     }
 
@@ -228,14 +224,18 @@ export class ChatPanel {
         }
     }
 
-    public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }) {
+    public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }, framingIdOverride?: string) {
         const trimmedText = text.trim();
         
-        // Resolve active framing (including potential change from mismatch prompt)
-        // If we are in edit mode, the webview might have a different currentFramingName.
-        // However, the extension host is the source of truth for IDs.
-        // We should ensure that if editOptions is present, we check if we need to update the chat's activeFramingId first.
-        
+        // If we have a framing override from the mismatch prompt (during edit/fork)
+        if (editOptions && framingIdOverride !== undefined && framingIdOverride !== this._chat.activeFramingId) {
+            await this._chatService.setActiveFraming(this._chat.id, framingIdOverride);
+            this._chat.activeFramingId = framingIdOverride;
+            // Also notify webview to ensure header is in sync (it should be already but to be safe)
+            const name = framingIdOverride ? this._framingService.getFraming(framingIdOverride)?.name : undefined;
+            this._panel.webview.postMessage({ command: 'updateFraming', framingName: name });
+        }
+
         let settings = this._modelSettingsService.getSettings(this._chat.modelName);
         let activeFraming: any = undefined;
 
@@ -283,11 +283,6 @@ export class ChatPanel {
         let messageProcessed = false;
 
         if (editOptions) {
-            // Note: If mismatch prompt changed the framing, we should have updated activeFraming already if we handled it in _handleHistoryAction.
-            // But _handleHistoryAction only sent 'enterEditMode' to webview.
-            // We need 'sendMessage' to also potentially include the target framingId if it was changed during the mismatch prompt.
-            // Actually, let's simplify: if the user chose a framing in the mismatch prompt, we should update the chat state immediately.
-            
             if (editOptions.mode === 'truncate') {
                 const answer = await vscode.window.showWarningMessage(
                     'Are you sure? Editing this message will remove all subsequent messages in this chat.',
