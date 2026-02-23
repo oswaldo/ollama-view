@@ -62,6 +62,10 @@ const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
 
 function updateLoadMoreVisibility() {
+    if (editState && (editState.mode === 'truncate' || editState.mode === 'fork')) {
+        loadMoreContainer.style.display = 'none';
+        return;
+    }
     if (messages.length < totalMessages) {
         loadMoreContainer.style.display = 'block';
     } else {
