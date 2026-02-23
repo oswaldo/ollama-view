@@ -1,8 +1,0 @@
-{
-  "track_id": "model_framing_20260222",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-02-22T14:30:00Z",
-  "updated_at": "2026-02-22T14:30:00Z",
-  "description": "Rename Templates to Model Framing and implement chat-level framing overrides with UI in chat header."
-}
