@@ -73,12 +73,12 @@ Implement edge case handling for deleted/renamed framings and finalize UI.
 ## Phase 6: Logic Refinements (Mismatch Handling & Atomic Edits)
 Address framing inconsistencies during Fork/Truncate actions.
 
-- [x] Task: Implement Mismatch Detection in ChatPanel 24bf51f
+- [x] Task: Implement Mismatch Detection in ChatPanel ebd17a8
     - [x] Compare current active framing with target message framing during edit/fork.
     - [x] Implement user prompt to choose framing if a mismatch is detected.
-- [x] Task: Atomic Framing State in Webview 24bf51f
+- [x] Task: Atomic Framing State in Webview ebd17a8
     - [x] Update `chat.ts` to backup active framing before entering edit mode.
     - [x] Restore backed-up framing if edit/truncate is cancelled.
-- [x] Task: Write Tests for History Logic 709740e
+- [x] Task: Write Tests for History Logic ebd17a8
     - [x] Verify framing inheritance and mismatch prompts.
-- [x] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md) d52a1e5
+- [x] Task: Conductor - User Manual Verification 'Phase 6' (Protocol in workflow.md) ebd17a8
