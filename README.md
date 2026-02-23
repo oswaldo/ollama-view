@@ -77,6 +77,13 @@ You can install this extension from the following sources:
 
 ## Release Notes
 
+### 0.0.6 - Model Framing & Chat Overrides
+
+- **Model Framing View**: A new dedicated sidebar view to create, edit, duplicate, and manage reusable model framings (prefixes, suffixes, and system prompts).
+- **Chat-Level Overrides**: Customize and override model framing on a per-chat or per-message basis for tailored interactions.
+- **Message Info Modal**: Inspect turn-specific metadata and framing context for any message.
+- **Robust History Manipulation**: Enhanced state preservation during chat branching (forking/truncating) with atomic metadata management.
+
 ### 0.0.5 - Marketplace Compatibility
 
 - **Publishing Fix**: Corrected extension categories to comply with VS Code Marketplace requirements.
