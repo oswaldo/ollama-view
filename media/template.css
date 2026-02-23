@@ -133,6 +133,15 @@ button.secondary:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
+button.danger {
+    color: var(--vscode-errorForeground);
+}
+
+button.danger:hover {
+    background-color: var(--vscode-statusBarItem-errorBackground);
+    color: var(--vscode-statusBarItem-errorForeground);
+}
+
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;

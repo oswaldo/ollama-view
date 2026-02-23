@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { TemplateService } from '../services/templateService';
 import { Template, TemplateSource } from '../models/template';
+import { TemplateItem } from '../providers/templatesProvider';
 
 /**
  * Manages the Template Editor webview panel.
@@ -81,6 +82,12 @@ export class TemplateEditorPanel {
                             vscode.commands.executeCommand('ollamaView.refresh');
                             // Open the new copy
                             TemplateEditorPanel.createOrShow(this._extensionUri, copy, this._templateService);
+                        }
+                        return;
+                    case 'delete':
+                        if (this._template.source === TemplateSource.User) {
+                            // Trigger the global delete command with a temporary TemplateItem
+                            vscode.commands.executeCommand('ollamaView.deleteTemplate', new TemplateItem(this._template));
                         }
                         return;
                     case 'cancel':

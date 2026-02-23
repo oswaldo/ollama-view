@@ -132,6 +132,18 @@
         "title": "Duplicate",
         "category": "ollama-view",
         "icon": "$(copy)"
+      },
+      {
+        "command": "ollamaView.deleteTemplate",
+        "title": "Delete",
+        "category": "ollama-view",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ollamaView.showMoreTemplateActions",
+        "title": "More Actions...",
+        "category": "ollama-view",
+        "icon": "$(more)"
       }
     ],
     "menus": {
@@ -187,9 +199,19 @@
           "group": "inline"
         },
         {
-          "command": "ollamaView.duplicateTemplate",
+          "command": "ollamaView.showMoreTemplateActions",
           "when": "view == ollama-templates-view && viewItem =~ /template-/",
           "group": "inline"
+        },
+        {
+          "command": "ollamaView.duplicateTemplate",
+          "when": "view == ollama-templates-view && viewItem =~ /template-/",
+          "group": "templates@1"
+        },
+        {
+          "command": "ollamaView.deleteTemplate",
+          "when": "view == ollama-templates-view && viewItem == template-user",
+          "group": "templates@2"
         }
       ]
     }

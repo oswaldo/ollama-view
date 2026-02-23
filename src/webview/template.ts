@@ -11,10 +11,18 @@ const templateSourceBadge = document.getElementById('template-source') as HTMLDi
 const nameInput = document.getElementById('template-name') as HTMLInputElement;
 const descriptionTextarea = document.getElementById('template-description') as HTMLTextAreaElement;
 const tagsInput = document.getElementById('template-tags') as HTMLInputElement;
-const contentTextarea = document.getElementById('template-content') as HTMLTextAreaElement;
+
+// Prompt Config fields
+const systemMessageTextarea = document.getElementById('system-message') as HTMLTextAreaElement;
+const userPrefixTextarea = document.getElementById('user-prefix') as HTMLTextAreaElement;
+const userSuffixTextarea = document.getElementById('user-suffix') as HTMLTextAreaElement;
+const systemTurnPrefixTextarea = document.getElementById('system-turn-prefix') as HTMLTextAreaElement;
+const systemTurnSuffixTextarea = document.getElementById('system-turn-suffix') as HTMLTextAreaElement;
+
 const readonlyWarning = document.getElementById('readonly-warning') as HTMLParagraphElement;
 
 const duplicateBtn = document.getElementById('duplicate-btn') as HTMLButtonElement;
+const deleteBtn = document.getElementById('delete-btn') as HTMLButtonElement;
 const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
 
@@ -34,21 +42,24 @@ window.addEventListener('message', event => {
             nameInput.value = template.name;
             descriptionTextarea.value = template.description || '';
             tagsInput.value = (template.tags || []).join(', ');
-            contentTextarea.value = template.content || '';
+            
+            systemMessageTextarea.value = template.systemMessage || '';
+            userPrefixTextarea.value = template.userMessagePrefix || '';
+            userSuffixTextarea.value = template.userMessageSuffix || '';
+            systemTurnPrefixTextarea.value = template.systemTurnPrefix || '';
+            systemTurnSuffixTextarea.value = template.systemTurnSuffix || '';
 
+            const inputs = [nameInput, descriptionTextarea, tagsInput, systemMessageTextarea, userPrefixTextarea, userSuffixTextarea, systemTurnPrefixTextarea, systemTurnSuffixTextarea];
+            
             if (isBuiltIn) {
-                nameInput.disabled = true;
-                descriptionTextarea.disabled = true;
-                tagsInput.disabled = true;
-                contentTextarea.disabled = true;
+                inputs.forEach(i => (i as any).disabled = true);
                 saveBtn.disabled = true;
+                deleteBtn.classList.add('hidden');
                 readonlyWarning.classList.remove('hidden');
             } else {
-                nameInput.disabled = false;
-                descriptionTextarea.disabled = false;
-                tagsInput.disabled = false;
-                contentTextarea.disabled = false;
+                inputs.forEach(i => (i as any).disabled = false);
                 saveBtn.disabled = false;
+                deleteBtn.classList.remove('hidden');
                 readonlyWarning.classList.add('hidden');
             }
             break;
@@ -58,6 +69,10 @@ window.addEventListener('message', event => {
 
 duplicateBtn.onclick = () => {
     vscode.postMessage({ command: 'duplicate' });
+};
+
+deleteBtn.onclick = () => {
+    vscode.postMessage({ command: 'delete' });
 };
 
 cancelBtn.onclick = () => {
@@ -77,7 +92,11 @@ saveBtn.onclick = () => {
             name: nameInput.value,
             description: descriptionTextarea.value,
             tags: tags,
-            content: contentTextarea.value
+            systemMessage: systemMessageTextarea.value,
+            userMessagePrefix: userPrefixTextarea.value,
+            userMessageSuffix: userSuffixTextarea.value,
+            systemTurnPrefix: systemTurnPrefixTextarea.value,
+            systemTurnSuffix: systemTurnSuffixTextarea.value
         }
     });
 };

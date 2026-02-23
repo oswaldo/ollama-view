@@ -14,27 +14,59 @@
         </header>
 
         <main>
-            <div class="form-group">
-                <label for="template-name">Name</label>
-                <input type="text" id="template-name" placeholder="e.g. Helpful Assistant">
-            </div>
+            <details open>
+                <summary>Template Information</summary>
+                <div class="section-content">
+                    <div class="form-group">
+                        <label for="template-name">Name</label>
+                        <input type="text" id="template-name" placeholder="e.g. Helpful Assistant">
+                    </div>
 
-            <div class="form-group">
-                <label for="template-description">Description</label>
-                <textarea id="template-description" rows="2" placeholder="Briefly describe what this template is for..."></textarea>
-            </div>
+                    <div class="form-group">
+                        <label for="template-description">Description</label>
+                        <textarea id="template-description" rows="2" placeholder="Briefly describe what this template is for..."></textarea>
+                    </div>
 
-            <div class="form-group">
-                <label for="template-tags">Tags</label>
-                <p class="help-text">Comma-separated tags (e.g. AI, Programming, Writing)</p>
-                <input type="text" id="template-tags" placeholder="AI, Programming">
-            </div>
+                    <div class="form-group">
+                        <label for="template-tags">Tags</label>
+                        <p class="help-text">Comma-separated tags (e.g. AI, Programming, Writing)</p>
+                        <input type="text" id="template-tags" placeholder="AI, Programming">
+                    </div>
+                </div>
+            </details>
 
-            <div class="form-group">
-                <label for="template-content">System Prompt</label>
-                <p class="help-text">The core instructions that will be applied to the model.</p>
-                <textarea id="template-content" rows="10" placeholder="You are a helpful assistant..."></textarea>
-            </div>
+            <details open>
+                <summary>Prompt Configuration</summary>
+                <div class="section-content">
+                    <div class="form-group">
+                        <label for="system-message">System Prompt</label>
+                        <p class="help-text">Core instructions that define the assistant's persona and behavior.</p>
+                        <textarea id="system-message" rows="6" placeholder="e.g. You are a helpful assistant..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-prefix">User Message Prefix</label>
+                        <p class="help-text">Text injected <strong>before</strong> every user message.</p>
+                        <textarea id="user-prefix" rows="2" placeholder="e.g. User said:"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-suffix">User Message Suffix</label>
+                        <p class="help-text">Text injected <strong>after</strong> every user message.</p>
+                        <textarea id="user-suffix" rows="2" placeholder=""></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="system-turn-prefix">System Prefix Turn</label>
+                        <p class="help-text">Separate system message turn sent <strong>before</strong> the user message.</p>
+                        <textarea id="system-turn-prefix" rows="2" placeholder="e.g. [Reminder: Be concise]"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="system-turn-suffix">System Suffix Turn</label>
+                        <p class="help-text">Separate system message turn sent <strong>after</strong> the user message.</p>
+                        <textarea id="system-turn-suffix" rows="2" placeholder=""></textarea>
+                    </div>
+                </div>
+            </details>
             
             <p id="readonly-warning" class="warning-text hidden">Built-in templates are read-only. Duplicate to make changes.</p>
         </main>
@@ -42,6 +74,7 @@
         <footer>
             <div class="actions-left">
                 <button id="duplicate-btn" class="secondary">Duplicate</button>
+                <button id="delete-btn" class="secondary danger hidden">Delete</button>
             </div>
             <div class="actions-right">
                 <button id="cancel-btn" class="secondary">Cancel</button>
