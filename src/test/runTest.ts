@@ -3,14 +3,14 @@ import * as Mocha from 'mocha';
 import * as fg from 'fast-glob';
 import * as vscodeMock from './vscodeMock';
 
-// Mock the vscode module
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const moduleAlias = require('module');
 const originalRequire = moduleAlias.prototype.require;
-moduleAlias.prototype.require = function (this: any, name: string) {
+moduleAlias.prototype.require = function (this: any, name: string, ...args: any[]) {
     if (name === 'vscode') {
         return vscodeMock;
     }
-    return originalRequire.apply(this, arguments);
+    return originalRequire.apply(this, [name, ...args]);
 };
 
 export function run(): Promise<void> {
@@ -51,6 +51,6 @@ export function run(): Promise<void> {
 }
 
 run().catch(err => {
-    console.error('Failed to run tests');
+    console.error('Failed to run tests', err);
     process.exit(1);
 });

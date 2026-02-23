@@ -62,7 +62,7 @@ export class TemplateEditorPanel {
         this._panel.webview.onDidReceiveMessage(
             async message => {
                 switch (message.command) {
-                    case 'save':
+                    case 'save': {
                         if (this._template.source === TemplateSource.BuiltIn) {
                             vscode.window.showErrorMessage('Built-in templates cannot be saved. Please duplicate it first.');
                             return;
@@ -75,7 +75,8 @@ export class TemplateEditorPanel {
                             vscode.commands.executeCommand('ollamaView.refresh');
                         }
                         return;
-                    case 'duplicate':
+                    }
+                    case 'duplicate': {
                         const copy = await this._templateService.duplicateTemplate(this._template.id);
                         if (copy) {
                             vscode.window.showInformationMessage(`Template duplicated as '${copy.name}'.`);
@@ -84,15 +85,18 @@ export class TemplateEditorPanel {
                             TemplateEditorPanel.createOrShow(this._extensionUri, copy, this._templateService);
                         }
                         return;
-                    case 'delete':
+                    }
+                    case 'delete': {
                         if (this._template.source === TemplateSource.User) {
                             // Trigger the global delete command with a temporary TemplateItem
                             vscode.commands.executeCommand('ollamaView.deleteTemplate', new TemplateItem(this._template));
                         }
                         return;
-                    case 'cancel':
+                    }
+                    case 'cancel': {
                         this.dispose();
                         return;
+                    }
                 }
             },
             null,
