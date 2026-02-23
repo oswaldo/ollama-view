@@ -7,7 +7,7 @@ const BUILT_IN_TEMPLATES: Template[] = [
         id: 'builtin-helpful-assistant',
         name: 'Helpful Assistant',
         description: 'General purpose assistant that is helpful, polite, and concise.',
-        content: 'You are a helpful assistant. You always answer politely and concisely, focusing on the most important information first.',
+        systemMessage: 'You are a helpful assistant. You always answer politely and concisely, focusing on the most important information first.',
         tags: ['Built-in', 'General'],
         source: TemplateSource.BuiltIn,
         createdAt: 1704067200000, // 2024-01-01
@@ -17,7 +17,7 @@ const BUILT_IN_TEMPLATES: Template[] = [
         id: 'builtin-software-engineer',
         name: 'Software Engineer',
         description: 'Expert software engineer that writes clean, documented, and efficient code.',
-        content: 'You are an expert software engineer. When writing code, you follow industry best practices, prioritize readability, and ensure efficient algorithms. You provide brief explanations for your technical decisions.',
+        systemMessage: 'You are an expert software engineer. When writing code, you follow industry best practices, prioritize readability, and ensure efficient algorithms. You provide brief explanations for your technical decisions.',
         tags: ['Built-in', 'Programming'],
         source: TemplateSource.BuiltIn,
         createdAt: 1704067200000,
@@ -27,7 +27,7 @@ const BUILT_IN_TEMPLATES: Template[] = [
         id: 'builtin-concise-editor',
         name: 'Concise Editor',
         description: 'Edits text to be more professional, clear, and brief.',
-        content: 'You are a professional editor. Your goal is to rewrite the user\'s input to be more professional, clear, and as concise as possible without losing the original meaning.',
+        systemMessage: 'You are a professional editor. Your goal is to rewrite the user\'s input to be more professional, clear, and as concise as possible without losing the original meaning.',
         tags: ['Built-in', 'Writing'],
         source: TemplateSource.BuiltIn,
         createdAt: 1704067200000,
@@ -44,15 +44,32 @@ export class TemplateService {
      * Gets all templates (Built-in + User).
      */
     getAllTemplates(): Template[] {
-        const userTemplates = this.context.globalState.get<Template[]>(TemplateService.STORAGE_KEY, []);
-        return [...BUILT_IN_TEMPLATES, ...userTemplates];
+        const userTemplates = this.context.globalState.get<any[]>(TemplateService.STORAGE_KEY, []);
+        
+        // Migration: map old 'content' to 'systemMessage'
+        const migratedUserTemplates: Template[] = userTemplates.map(t => {
+            if (t.content !== undefined && t.systemMessage === undefined) {
+                const { content, ...rest } = t;
+                return { ...rest, systemMessage: content } as Template;
+            }
+            return t as Template;
+        });
+
+        return [...BUILT_IN_TEMPLATES, ...migratedUserTemplates];
     }
 
     /**
      * Gets only user-created templates.
      */
     private getUserTemplates(): Template[] {
-        return this.context.globalState.get<Template[]>(TemplateService.STORAGE_KEY, []);
+        const userTemplates = this.context.globalState.get<any[]>(TemplateService.STORAGE_KEY, []);
+        return userTemplates.map(t => {
+            if (t.content !== undefined && t.systemMessage === undefined) {
+                const { content, ...rest } = t;
+                return { ...rest, systemMessage: content } as Template;
+            }
+            return t as Template;
+        });
     }
 
     /**
@@ -70,6 +87,14 @@ export class TemplateService {
     }
 
     /**
+     * Filters out reserved tags from user input.
+     */
+    private filterTags(tags: string[]): string[] {
+        const reserved = ['Built-in', 'Untagged'];
+        return tags.filter(t => !reserved.some(r => r.toLowerCase() === t.trim().toLowerCase()));
+    }
+
+    /**
      * Creates a new user template.
      */
     async createTemplate(templateData: Partial<Template>): Promise<Template> {
@@ -80,8 +105,12 @@ export class TemplateService {
             id: uuidv4(),
             name: templateData.name || 'New Template',
             description: templateData.description || '',
-            content: templateData.content || '',
-            tags: templateData.tags || [],
+            systemMessage: templateData.systemMessage || '',
+            userMessagePrefix: templateData.userMessagePrefix || '',
+            userMessageSuffix: templateData.userMessageSuffix || '',
+            systemTurnPrefix: templateData.systemTurnPrefix || '',
+            systemTurnSuffix: templateData.systemTurnSuffix || '',
+            tags: this.filterTags(templateData.tags || []),
             source: TemplateSource.User,
             createdAt: now,
             updatedAt: now,
@@ -103,9 +132,14 @@ export class TemplateService {
             return undefined;
         }
 
+        const filteredUpdates = { ...updates };
+        if (filteredUpdates.tags) {
+            filteredUpdates.tags = this.filterTags(filteredUpdates.tags);
+        }
+
         const updatedTemplate: Template = {
             ...userTemplates[index],
-            ...updates,
+            ...filteredUpdates,
             id, // Ensure ID doesn't change
             source: TemplateSource.User, // Ensure source remains 'user'
             updatedAt: Date.now()
@@ -144,8 +178,12 @@ export class TemplateService {
         const newTemplateData: Partial<Template> = {
             name: `${sourceTemplate.name} (Copy)`,
             description: sourceTemplate.description,
-            content: sourceTemplate.content,
-            tags: [...sourceTemplate.tags],
+            systemMessage: sourceTemplate.systemMessage,
+            userMessagePrefix: sourceTemplate.userMessagePrefix,
+            userMessageSuffix: sourceTemplate.userMessageSuffix,
+            systemTurnPrefix: sourceTemplate.systemTurnPrefix,
+            systemTurnSuffix: sourceTemplate.systemTurnSuffix,
+            tags: this.filterTags(sourceTemplate.tags),
         };
 
         return this.createTemplate(newTemplateData);

@@ -13,6 +13,7 @@ const userPrefixTextarea = document.getElementById('user-prefix') as HTMLTextAre
 const userSuffixTextarea = document.getElementById('user-suffix') as HTMLTextAreaElement;
 const systemTurnPrefixTextarea = document.getElementById('system-turn-prefix') as HTMLTextAreaElement;
 const systemTurnSuffixTextarea = document.getElementById('system-turn-suffix') as HTMLTextAreaElement;
+const applyTemplateBtn = document.getElementById('apply-template-btn') as HTMLButtonElement;
 const resetBtn = document.getElementById('reset-btn') as HTMLButtonElement;
 const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
@@ -33,8 +34,21 @@ window.addEventListener('message', event => {
             defaultMessage = message.defaultMessage;
             break;
         }
+        case 'updateFields': {
+            const settings = message.settings;
+            systemMessageTextarea.value = settings.systemMessage || '';
+            userPrefixTextarea.value = settings.userMessagePrefix || '';
+            userSuffixTextarea.value = settings.userMessageSuffix || '';
+            systemTurnPrefixTextarea.value = settings.systemTurnPrefix || '';
+            systemTurnSuffixTextarea.value = settings.systemTurnSuffix || '';
+            break;
+        }
     }
 });
+
+applyTemplateBtn.onclick = () => {
+    vscode.postMessage({ command: 'applyTemplate' });
+};
 
 resetBtn.onclick = () => {
     systemMessageTextarea.value = defaultMessage;

@@ -32,34 +32,33 @@ Implement the UI components to display templates using the Provider pattern.
 ## Phase 3: Template Editor & Webview Architecture
 Create a decoupled webview system for viewing and editing templates.
 
-- [ ] Task: Create Template Editor Webview Panel
-    - [ ] Create `src/panels/templateEditorPanel.ts` to manage webview lifecycle and messaging.
-    - [ ] Create `media/template.html`, `media/template.css`, and `src/webview/template.ts`.
-- [ ] Task: Implement Commands & Messaging
-    - [ ] Create `src/commands/templateCommands.ts` for handling user actions (Open, Save, Duplicate).
-    - [ ] Implement strict read-only UI states for built-in templates.
-- [ ] Task: Write Tests for Editor Messaging
-    - [ ] Verify that the panel correctly handles state updates and persists data through the service.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Create Template Editor Webview Panel 56268d4
+    - [x] Create `src/panels/templateEditorPanel.ts` to manage webview lifecycle and messaging.
+    - [x] Create `media/template.html`, `media/template.css`, and `src/webview/template.ts`.
+- [x] Task: Implement Commands & Messaging 4b1d268
+    - [x] Create `src/commands/templateCommands.ts` for handling user actions (Open, Save, Duplicate).
+    - [x] Implement strict read-only UI states for built-in templates.
+- [x] Task: Write Tests for Editor Messaging 4b1d268
+    - [x] Verify that the panel correctly handles state updates and persists data through the service.
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) 8ec8497
 
 ## Phase 4: Model Integration
 Integrate templates into the model configuration workflow.
 
-- [ ] Task: Update Model Setup Interface
+- [~] Task: Update Model Setup Interface
     - [ ] Modify `src/panels/setupPanel.ts` to integrate the "Apply Template" action.
     - [ ] Implement a command to show a template selection QuickPick.
 - [ ] Task: Implement Template Application Logic
     - [ ] Overwrite the model's system prompt and trigger a refresh of the setup screen.
-- [ ] Task: Write Tests for Integration
+- [~] Task: Write Tests for Integration
     - [ ] Verify that applying a template correctly updates model settings without side effects.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
 
 ## Phase 5: Tag Management & Safety Protocols
 Implement advanced management features and robust safety checks.
 
-- [ ] Task: Implement Rename & Delete Operations
-    - [ ] Add commands for renaming/deleting custom templates and tags.
-    - [ ] Create a `src/services/dialogService.ts` for standardized, testable UI confirmations.
+- [x] Task: Implement Rename & Delete Operations 37dc7a5
+    - [x] Add commands for renaming/deleting custom templates and tags.
 - [ ] Task: Implement Safety Confirmation Logic
     - [ ] Implement the template count calculation for tag deletion warnings.
 - [ ] Task: Write Tests for Safety Logic

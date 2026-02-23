@@ -42,7 +42,7 @@ suite('TemplateEditorPanel Test Suite', () => {
     });
 
     test('createOrShow should create a new panel if not exists', () => {
-        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], content: 'test' };
+        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], systemMessage: 'test' };
         TemplateEditorPanel.createOrShow(vscode.Uri.file(''), template as any, mockTemplateService);
         
         assert.ok((vscode.window.createWebviewPanel as sinon.SinonStub).calledOnce);
@@ -50,7 +50,7 @@ suite('TemplateEditorPanel Test Suite', () => {
     });
 
     test('should handle save message for user templates', async () => {
-        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], content: 'test' };
+        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], systemMessage: 'test' };
         TemplateEditorPanel.createOrShow(vscode.Uri.file(''), template as any, mockTemplateService);
         
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
@@ -59,14 +59,14 @@ suite('TemplateEditorPanel Test Suite', () => {
         
         await messageHandler({ 
             command: 'save', 
-            template: { name: 'Updated', description: '', tags: [], content: 'test' } 
+            template: { name: 'Updated', description: '', tags: [], systemMessage: 'test' } 
         });
         
         assert.ok(mockTemplateService.updateTemplate.calledWith('t1', sinon.match({ name: 'Updated' })));
     });
 
     test('should block save for built-in templates', async () => {
-        const template = { id: 't-bi', name: 'BuiltIn', source: TemplateSource.BuiltIn, tags: [], content: 'test' };
+        const template = { id: 't-bi', name: 'BuiltIn', source: TemplateSource.BuiltIn, tags: [], systemMessage: 'test' };
         TemplateEditorPanel.createOrShow(vscode.Uri.file(''), template as any, mockTemplateService);
         
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
@@ -74,7 +74,7 @@ suite('TemplateEditorPanel Test Suite', () => {
         
         await messageHandler({ 
             command: 'save', 
-            template: { name: 'Updated', description: '', tags: [], content: 'test' } 
+            template: { name: 'Updated', description: '', tags: [], systemMessage: 'test' } 
         });
         
         assert.ok(mockTemplateService.updateTemplate.notCalled);
@@ -82,13 +82,13 @@ suite('TemplateEditorPanel Test Suite', () => {
     });
 
     test('should handle duplicate message', async () => {
-        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], content: 'test' };
+        const template = { id: 't1', name: 'T1', source: TemplateSource.User, tags: [], systemMessage: 'test' };
         TemplateEditorPanel.createOrShow(vscode.Uri.file(''), template as any, mockTemplateService);
         
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
         
         mockTemplateService.duplicateTemplate.resolves({ 
-            id: 't2', name: 'T1 (Copy)', source: TemplateSource.User, tags: [], content: 'test' 
+            id: 't2', name: 'T1 (Copy)', source: TemplateSource.User, tags: [], systemMessage: 'test' 
         });
         
         await messageHandler({ command: 'duplicate' });

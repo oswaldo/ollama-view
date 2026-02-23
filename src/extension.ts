@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { OllamaProvider, OllamaModelItem, OllamaChatItem } from './ollamaProvider';
 import { ChatService } from './chatService';
 import { ChatPanel } from './chatPanel';
-import { SetupPanel } from './setupPanel';
+import { SetupPanel } from './panels/setupPanel';
 import { ModelSettingsService } from './modelSettingsService';
 import { Logger } from './logger';
 import { TemplateService } from './services/templateService';
@@ -255,7 +255,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.setup', async (node?: OllamaModelItem) => {
             if (!node) { return; }
-            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService);
+            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, templateService);
         }),
     );
 

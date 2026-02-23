@@ -41,7 +41,7 @@ suite('TemplateService Test Suite', () => {
     test('createTemplate should add a new user template', async () => {
         const newTemplate = await templateService.createTemplate({
             name: 'Test Template',
-            content: 'Test Content',
+            systemMessage: 'Test Content',
             tags: ['Test']
         });
 
@@ -80,7 +80,7 @@ suite('TemplateService Test Suite', () => {
         assert.strictEqual(templateService.getTemplate(template.id), undefined);
     });
 
-    test('deleteTemplate should not remove built-in template', async () => {
+    test('deleteTemplate should remove built-in template', async () => {
         const builtIn = templateService.getAllTemplates()[0];
         const success = await templateService.deleteTemplate(builtIn.id);
 
@@ -95,7 +95,7 @@ suite('TemplateService Test Suite', () => {
         assert.ok(copy);
         assert.strictEqual(copy!.name, `${builtIn.name} (Copy)`);
         assert.strictEqual(copy!.source, TemplateSource.User);
-        assert.strictEqual(copy!.content, builtIn.content);
+        assert.strictEqual(copy!.systemMessage, builtIn.systemMessage);
     });
 
     test('getAllTags should organize tags correctly', async () => {
@@ -127,5 +127,29 @@ suite('TemplateService Test Suite', () => {
         const untaggedTemplates = templateService.getTemplatesByTag('Untagged');
         assert.strictEqual(untaggedTemplates.length, 1);
         assert.strictEqual(untaggedTemplates[0].name, 'Untagged Template');
+    });
+
+    test('should filter out reserved tags from user input', async () => {
+        const template = await templateService.createTemplate({
+            name: 'Reserved Tag Test',
+            tags: ['Built-in', 'Untagged', 'MyTag']
+        });
+
+        assert.strictEqual(template.tags.length, 1);
+        assert.strictEqual(template.tags[0], 'MyTag');
+
+        const updated = await templateService.updateTemplate(template.id, {
+            tags: ['built-in', 'Other']
+        });
+        assert.strictEqual(updated?.tags.length, 1);
+        assert.strictEqual(updated?.tags[0], 'Other');
+    });
+
+    test('duplicateTemplate should remove Built-in tag from copy', async () => {
+        const builtIn = templateService.getAllTemplates()[0]; // Has 'Built-in' tag
+        const copy = await templateService.duplicateTemplate(builtIn.id);
+
+        assert.ok(copy);
+        assert.ok(!copy!.tags.includes('Built-in'), 'Copy should not have Built-in tag');
     });
 });

@@ -139,7 +139,7 @@ export class TemplateEditorPanel {
             vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'template.js'))
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'template.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());

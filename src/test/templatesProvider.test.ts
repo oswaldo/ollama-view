@@ -41,7 +41,7 @@ suite('TemplatesProvider Test Suite', () => {
     test('getChildren should return TemplateItems under a TagItem', async () => {
         const tagItem = new TagItem({ id: 'tag-ai', name: 'AI' });
         mockTemplateService.getTemplatesByTag.withArgs('AI').returns([
-            { id: 't1', name: 'Template 1', source: TemplateSource.BuiltIn, tags: ['AI'], content: 'test' }
+            { id: 't1', name: 'Template 1', source: TemplateSource.BuiltIn, tags: ['AI'], systemMessage: 'test' }
         ]);
 
         const children = await templatesProvider.getChildren(tagItem);
@@ -57,7 +57,7 @@ suite('TemplatesProvider Test Suite', () => {
             description: 'Desc', 
             source: TemplateSource.BuiltIn, 
             tags: ['AI'], 
-            content: 'test',
+            systemMessage: 'test',
             createdAt: 0,
             updatedAt: 0
         };

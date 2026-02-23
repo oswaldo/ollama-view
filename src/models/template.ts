@@ -19,8 +19,20 @@ export interface Template {
     /** Brief description of the template's purpose */
     description: string;
     
-    /** The actual system prompt content */
-    content: string;
+    /** The core system prompt */
+    systemMessage: string;
+
+    /** Prefix injected into the user message turn */
+    userMessagePrefix?: string;
+
+    /** Suffix injected into the user message turn */
+    userMessageSuffix?: string;
+
+    /** System turn sent before the user message */
+    systemTurnPrefix?: string;
+
+    /** System turn sent after the user message */
+    systemTurnSuffix?: string;
     
     /** Tags associated with this template for organization */
     tags: string[];

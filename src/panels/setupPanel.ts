@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ModelSettingsService } from './modelSettingsService';
-import { OllamaModel } from './ollamaApi';
+import { ModelSettingsService } from '../modelSettingsService';
+import { OllamaModel } from '../ollamaApi';
+import { TemplateService } from '../services/templateService';
 
 export class SetupPanel {
     public static panels: Map<string, SetupPanel> = new Map();
@@ -13,8 +14,9 @@ export class SetupPanel {
     private _disposables: vscode.Disposable[] = [];
     private readonly _model: OllamaModel;
     private readonly _modelSettingsService: ModelSettingsService;
+    private readonly _templateService: TemplateService;
 
-    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService) {
+    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, templateService: TemplateService) {
         if (SetupPanel.panels.has(model.name)) {
             SetupPanel.panels.get(model.name)!._panel.reveal();
             return;
@@ -34,15 +36,16 @@ export class SetupPanel {
             }
         );
 
-        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService);
+        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService, templateService);
         SetupPanel.panels.set(model.name, setupPanel);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, templateService: TemplateService) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._model = model;
         this._modelSettingsService = modelSettingsService;
+        this._templateService = templateService;
 
         this._update();
 
@@ -54,6 +57,9 @@ export class SetupPanel {
                         vscode.window.showInformationMessage(`Settings saved for ${this._model.name}`);
                         this.dispose();
                         return;
+                    case 'applyTemplate':
+                        await this._handleApplyTemplate();
+                        return;
                     case 'cancel':
                         this.dispose();
                         return;
@@ -64,6 +70,34 @@ export class SetupPanel {
         );
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    }
+
+    private async _handleApplyTemplate() {
+        const templates = this._templateService.getAllTemplates();
+        const items = templates.map(t => ({
+            label: t.name,
+            description: t.description,
+            template: t
+        }));
+
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: 'Select a template to apply'
+        });
+
+        if (selected) {
+            const t = selected.template;
+            this._panel.webview.postMessage({
+                command: 'updateFields',
+                settings: {
+                    systemMessage: t.systemMessage,
+                    userMessagePrefix: t.userMessagePrefix,
+                    userMessageSuffix: t.userMessageSuffix,
+                    systemTurnPrefix: t.systemTurnPrefix,
+                    systemTurnSuffix: t.systemTurnSuffix
+                }
+            });
+            vscode.window.showInformationMessage(`Applied template: ${t.name}`);
+        }
     }
 
     public dispose() {
@@ -98,7 +132,7 @@ export class SetupPanel {
             vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'setup.js'))
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'setup.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());
