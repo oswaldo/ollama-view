@@ -12,8 +12,12 @@ This project, "Ollama View for VS Code," utilizes a modern web technology stack 
     *   **Rationale**: Powers the execution of the TypeScript code within the VS Code extension host, enabling rich functionality and access to Node.js APIs.
 
 ## Architecture and Core Components
-*   **Sidebar Provider**: Utilizes a `TreeDataProvider` for listing models and chats in the VS Code sidebar.
-*   **Webview**: The chat interface is built using a Webview (HTML/CSS/JS running inside VS Code).
+*   **Modular Architecture**: Organized into specialized directories:
+    - `src/services`: Core logic and data management (e.g., TemplateService, ChatService).
+    - `src/providers`: Tree data providers for sidebar views.
+    - `src/panels`: Webview panel controllers.
+    - `src/models`: Shared interfaces and data structures.
+*   **Webview Subsystem**: Highly decoupled webviews for Chat, Model Setup, and Template Editor, sharing a unified `common-webview.css`.
 *   **Ollama API Communication**: A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
 *   **State Management**: Persists chat history and other extension state using the VS Code `globalState` API.
 
