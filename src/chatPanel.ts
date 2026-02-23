@@ -516,7 +516,7 @@ export class ChatPanel {
             vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'chat.js'))
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'chat.css'))
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());
