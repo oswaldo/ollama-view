@@ -49,16 +49,13 @@ export function activate(context: vscode.ExtensionContext) {
         const chat = await chatService.createChat(node.model.name);
 
         // 2. Open Chat Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, framingService, () => ollamaProvider.refresh());
 
         // 3. Start model if not running (async)
         if (!node.isRunning) {
             // Signal loading in UI
             panel.postMessage({ command: 'setLoading', loading: true });
             
-            // We don't await the withProgress if we want panel to be responsive, 
-            // but withProgress is good for background notification.
-            // Let's run it without awaiting the whole block for the panel.
             vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -110,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
         ollamaProvider.refresh();
 
         // 4. Open Panel (immediate)
-        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
+        const panel = ChatPanel.createOrShow(context.extensionUri, chat, chatService, ollamaProvider, modelSettingsService, framingService, () => ollamaProvider.refresh());
 
         // 5. Ensure Model is Running (async)
         const runningModels = await api.listRunning();
@@ -166,7 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => {
         if (!node) { return; }
-        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider, modelSettingsService, () => ollamaProvider.refresh());
+        ChatPanel.createOrShow(context.extensionUri, node.chat, chatService, ollamaProvider, modelSettingsService, framingService, () => ollamaProvider.refresh());
     }));
 
     context.subscriptions.push(

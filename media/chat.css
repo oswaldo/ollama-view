@@ -28,14 +28,15 @@ body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscod
     50% { opacity: 1; transform: scale(1.2); }
 }
 
-.input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; }
+.input-area { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background-color: var(--vscode-editor-background); border-top: 1px solid var(--vscode-widget-border); display: flex; z-index: 1000; align-items: center; }
 #messageInput { flex-grow: 1; padding: 5px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); }
-#sendBtn, #cancelBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
+#sendBtn, #cancelBtn, #moreActionsBtn { margin-left: 5px; padding: 5px 10px; cursor: pointer; border: none; height: 28px; display: flex; align-items: center; justify-content: center; }
+#sendBtn { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
 #sendBtn:hover { background: var(--vscode-button-hoverBackground); }
 #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-#cancelBtn { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
-#cancelBtn:hover { background: var(--vscode-button-secondaryHoverBackground); }
+#cancelBtn, #moreActionsBtn { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+#cancelBtn:hover, #moreActionsBtn:hover { background: var(--vscode-button-secondaryHoverBackground); }
 
 .input-area.editing #sendBtn {
     background: var(--vscode-button-background);
@@ -53,6 +54,7 @@ code { font-family: var(--vscode-editor-font-family); }
     border-bottom: 1px solid var(--vscode-widget-border);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -66,6 +68,38 @@ code { font-family: var(--vscode-editor-font-family); }
 }
 .toolbar-label {
     user-select: none;
+}
+
+/* Framing Selector */
+.framing-selector {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    padding: 2px 8px;
+    border-radius: 10px;
+    cursor: default;
+}
+#framingName {
+    cursor: pointer;
+    font-weight: bold;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#framingName:hover {
+    text-decoration: underline;
+}
+#revertFramingBtn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+}
+#revertFramingBtn:hover {
+    opacity: 1;
 }
 
 /* Toggle Switch */

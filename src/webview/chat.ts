@@ -14,16 +14,22 @@ interface ChatMessage {
     userPrefix?: string;
     userSuffix?: string;
     systemTurnSuffix?: string;
+    framingId?: string;
+    framingName?: string;
 }
 
 const messagesDiv = document.getElementById('messages') as HTMLDivElement;
 const input = document.getElementById('messageInput') as HTMLInputElement;
 const sendBtn = document.getElementById('sendBtn') as HTMLButtonElement;
 const cancelBtn = document.getElementById('cancelBtn') as HTMLButtonElement;
+const moreActionsBtn = document.getElementById('moreActionsBtn') as HTMLButtonElement;
 const inputArea = document.getElementById('inputArea') as HTMLDivElement;
 const loadMoreContainer = document.getElementById('loadMoreContainer') as HTMLDivElement;
 const loadMoreBtn = document.getElementById('loadMoreBtn') as HTMLButtonElement;
 const showInjectionsToggle = document.getElementById('showInjections') as HTMLInputElement;
+
+const framingNameSpan = document.getElementById('framingName') as HTMLSpanElement;
+const revertFramingBtn = document.getElementById('revertFramingBtn') as HTMLDivElement;
 
 let modelName = '';
 let totalMessages = 0;
@@ -31,6 +37,19 @@ let messages: ChatMessage[] = [];
 
 showInjectionsToggle.onchange = () => {
     renderMessages();
+};
+
+framingNameSpan.onclick = () => {
+    vscode.postMessage({ command: 'requestFraming' });
+};
+
+revertFramingBtn.onclick = (e) => {
+    e.stopPropagation();
+    vscode.postMessage({ command: 'revertFraming' });
+};
+
+moreActionsBtn.onclick = () => {
+    vscode.postMessage({ command: 'requestMoreActions' });
 };
 
 let editState: { mode: 'truncate' | 'fork', index: number } | null = null;
@@ -52,7 +71,6 @@ function renderMessages(preserveScroll = false) {
     const oldScrollHeight = messagesDiv.scrollHeight;
     const oldScrollTop = messagesDiv.scrollTop;
 
-    // Clear messages but keep loadMoreContainer
     const container = document.getElementById('loadMoreContainer') as HTMLElement;
     messagesDiv.innerHTML = '';
     messagesDiv.appendChild(container);
@@ -144,7 +162,6 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper ' + role;
 
-    // Render systemTurnPrefix if enabled
     if (showInjections && m.systemTurnPrefix) {
         const inj = document.createElement('div');
         inj.className = 'injection';
@@ -188,7 +205,6 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
         wrapper.appendChild(btns);
     }
 
-    // Render userPrefix if enabled
     if (showInjections && m.userPrefix) {
         const inj = document.createElement('div');
         inj.className = 'injection';
@@ -201,7 +217,6 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
     contentDiv.textContent = content;
     div.appendChild(contentDiv);
 
-    // Render userSuffix if enabled
     if (showInjections && m.userSuffix) {
         const inj = document.createElement('div');
         inj.className = 'injection';
@@ -218,7 +233,6 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
 
     wrapper.appendChild(div);
 
-    // Render systemTurnSuffix if enabled
     if (showInjections && m.systemTurnSuffix) {
         const inj = document.createElement('div');
         inj.className = 'injection';
@@ -321,9 +335,6 @@ function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string
     cancelBtn.style.display = 'inline-block';
     sendBtn.textContent = mode === 'truncate' ? 'Edit & Send' : 'Fork & Send';
 
-    // We need to find the local index for truncation UI feedback
-    // absoluteIndex = (totalMessages - messages.length) + i
-    // i = absoluteIndex - (totalMessages - messages.length)
     const localIndex = index - (totalMessages - messages.length);
 
     if (mode === 'truncate' || mode === 'fork') {
@@ -368,8 +379,6 @@ function sendMessage() {
             text: trimmedText, 
             editOptions: editState 
         });
-        // We don't resetEditMode here, we wait for messages update? 
-        // Actually the original code reset it immediately.
         editState = null; 
         inputArea.classList.remove('editing');
         cancelBtn.style.display = 'none';
@@ -379,6 +388,16 @@ function sendMessage() {
     }
     input.value = '';
     validateInput();
+}
+
+function updateFramingUI(framingName?: string) {
+    if (framingName) {
+        framingNameSpan.textContent = framingName;
+        revertFramingBtn.style.display = 'flex';
+    } else {
+        framingNameSpan.textContent = 'Default Framing';
+        revertFramingBtn.style.display = 'none';
+    }
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -410,6 +429,7 @@ window.addEventListener('message', event => {
             modelName = message.modelName;
             messages = message.messages;
             totalMessages = message.total;
+            updateFramingUI(message.activeFramingName);
             renderMessages();
             validateInput();
             break;
@@ -420,6 +440,10 @@ window.addEventListener('message', event => {
             renderMessages();
             break;
         }
+        case 'updateFraming': {
+            updateFramingUI(message.framingName);
+            break;
+        }
         case 'addMessage': {
             const newMessage: ChatMessage = { 
                 role: message.role, 
@@ -428,7 +452,9 @@ window.addEventListener('message', event => {
                 systemTurnPrefix: message.systemTurnPrefix,
                 userPrefix: message.userPrefix,
                 userSuffix: message.userSuffix,
-                systemTurnSuffix: message.systemTurnSuffix
+                systemTurnSuffix: message.systemTurnSuffix,
+                framingId: message.framingId,
+                framingName: message.framingName
             };
             messages.push(newMessage);
             totalMessages++;
@@ -484,7 +510,7 @@ window.addEventListener('message', event => {
         }
         case 'addErrorMessage': {
             hideTypingIndicator();
-            addMessageToDom('error', message.content, Date.now());
+            addMessageToDom({ role: 'error', content: message.content, timestamp: Date.now() });
             break;
         }
         case 'setLoading': {
