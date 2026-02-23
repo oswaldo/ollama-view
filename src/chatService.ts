@@ -10,6 +10,9 @@ export interface ChatMessage {
     userPrefix?: string;
     userSuffix?: string;
     systemTurnSuffix?: string;
+    // Model Framing metadata
+    framingId?: string;
+    framingName?: string;
 }
 
 export interface Chat {
@@ -18,6 +21,7 @@ export interface Chat {
     name: string; // Title of the chat (e.g. first user message snippet)
     messages: ChatMessage[];
     createdAt: number;
+    activeFramingId?: string;
 }
 
 export class ChatService {
@@ -78,6 +82,15 @@ export class ChatService {
         await this.saveChats(chats);
     }
 
+    async setActiveFraming(chatId: string, framingId: string | undefined): Promise<void> {
+        const chats = this.getAllChats();
+        const chat = chats.find(c => c.id === chatId);
+        if (chat) {
+            chat.activeFramingId = framingId;
+            await this.saveChats(chats);
+        }
+    }
+
     async addMessage(
         chatId: string, 
         role: 'user' | 'assistant' | 'system', 
@@ -87,6 +100,8 @@ export class ChatService {
             userPrefix?: string;
             userSuffix?: string;
             systemTurnSuffix?: string;
+            framingId?: string;
+            framingName?: string;
         }
     ): Promise<Chat | undefined> {
         const chats = this.getAllChats();
@@ -106,10 +121,6 @@ export class ChatService {
         // Update name if it's the first user message and name is still default (or default with number)
         if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1 && chat.name.startsWith('New Chat')) {
             const baseName = content.slice(0, 30) + (content.length > 30 ? '...' : '');
-            // We need to calculate unique name against OTHER chats, but the current chat is already in the list if we look at 'chats' array from getAllChats.
-            // However, we are modifying 'chat' object which is a reference if obtained via find (but getAllChats returns a fresh array from globalState usually? No, globalState.get returns value).
-            // Actually, getAllChats returns the array from memento.
-            // We should check uniqueness against OTHER chats.
             const otherChats = chats.filter(c => c.id !== chatId);
             chat.name = this.getUniqueChatName(baseName, otherChats);
         }
@@ -118,7 +129,7 @@ export class ChatService {
         await this.saveChats(chats);
         return chat;
     }
-    async truncateChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+    async truncateChat(chatId: string, messageIndex: number, newContent: string, metadata?: any): Promise<Chat | undefined> {
         if (!newContent || newContent.trim() === '') {
             return this.getChat(chatId);
         }
@@ -129,16 +140,13 @@ export class ChatService {
         }
 
         const chat = chats[chatIndex];
-        // Keep messages up to the index (exclusive of the one being edited, as we will replace it/add new one)
-        // Actually, if we are editing message at index N, we want to keep 0..N-1, and then add the new message.
-        // Wait, the UI will likely send the index of the message being edited.
-        // If I edit message 2, I want message 0 and 1 to stay, message 2 to be replaced by new content, and 3+ to be removed.
         chat.messages = chat.messages.slice(0, messageIndex);
 
         chat.messages.push({
             role: 'user',
             content: newContent,
             timestamp: Date.now(),
+            ...metadata
         });
 
         chats[chatIndex] = chat;
@@ -146,9 +154,9 @@ export class ChatService {
         return chat;
     }
 
-    async forkChat(chatId: string, messageIndex: number, newContent: string): Promise<Chat | undefined> {
+    async forkChat(chatId: string, messageIndex: number, newContent: string, metadata?: any): Promise<Chat | undefined> {
         if (!newContent || newContent.trim() === '') {
-            return undefined; // Or throw an error, but returning undefined is consistent with other undefined returns.
+            return undefined;
         }
         const sourceChat = this.getChat(chatId);
         if (!sourceChat) {
@@ -156,7 +164,7 @@ export class ChatService {
         }
 
         const baseName = newContent.slice(0, 30) + (newContent.length > 30 ? '...' : '');
-        const chats = this.getAllChats(); // Get latest
+        const chats = this.getAllChats();
 
         const newChat: Chat = {
             id: uuidv4(),
@@ -164,12 +172,14 @@ export class ChatService {
             name: this.getUniqueChatName(baseName, chats),
             messages: sourceChat.messages.slice(0, messageIndex),
             createdAt: Date.now(),
+            activeFramingId: sourceChat.activeFramingId
         };
 
         newChat.messages.push({
             role: 'user',
             content: newContent,
-            timestamp: Date.now(), // New timestamp for the new message
+            timestamp: Date.now(),
+            ...metadata
         });
 
         chats.push(newChat);
@@ -185,7 +195,6 @@ export class ChatService {
         }
 
         const chat = chats[chatIndex];
-        // Remove message at index and all subsequent
         chat.messages = chat.messages.slice(0, index);
 
         chats[chatIndex] = chat;
@@ -199,13 +208,7 @@ export class ChatService {
             return undefined;
         }
 
-        // We want to keep messages up to index (exclusive)
-        // If we fork at index 1 (assistant response), we want message 0 (user prompt).
         const messagesToKeep = sourceChat.messages.slice(0, index);
-
-        // Ensure the last message is a user message (sanity check, though not strictly required by logic, it makes sense for a chat flow)
-        // For now, simple slice is enough.
-
         const chats = this.getAllChats();
         const baseName = sourceChat.name;
 
@@ -213,8 +216,9 @@ export class ChatService {
             id: uuidv4(),
             modelName: sourceChat.modelName,
             name: this.getUniqueChatName(baseName, chats),
-            messages: messagesToKeep, // Clone? Slice returns new array
+            messages: messagesToKeep,
             createdAt: Date.now(),
+            activeFramingId: sourceChat.activeFramingId
         };
 
         chats.push(newChat);
@@ -228,9 +232,6 @@ export class ChatService {
             return { messages: [], total: 0 };
         }
         const total = chat.messages.length;
-        // We want the LATEST messages first if offset is 0.
-        // total = 100, limit = 20, offset = 0 -> messages 80 to 99
-        // total = 100, limit = 20, offset = 20 -> messages 60 to 79
         const end = total - offset;
         const start = end - limit;
         
