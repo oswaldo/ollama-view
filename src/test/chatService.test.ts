@@ -81,6 +81,20 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(updatedChat?.name, 'Hello world'); // Name updated
     });
 
+    test('addMessage should not update name if not first user message', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'system', 'System prompt');
+
+        // First user message (technically 2nd message total)
+        await chatService.addMessage(chat.id, 'user', 'User message 1');
+        let updatedChat = chatService.getChat(chat.id);
+        assert.strictEqual(updatedChat?.name, 'User message 1');
+
+        await chatService.addMessage(chat.id, 'user', 'User message 2');
+        updatedChat = chatService.getChat(chat.id);
+        assert.strictEqual(updatedChat?.name, 'User message 1'); // Name NOT updated
+    });
+
     test('deleteChat should remove chat', async () => {
         const chat = await chatService.createChat('llama3');
         await chatService.deleteChat(chat.id);
@@ -89,13 +103,80 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(found, undefined);
     });
 
+    test('truncateChat should truncate and update chat', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 2');
+
+        const updatedChat = await chatService.truncateChat(chat.id, 2, 'Msg 2 Edited');
+
+        assert.ok(updatedChat);
+        assert.strictEqual(updatedChat!.messages.length, 3);
+        assert.strictEqual(updatedChat!.messages[2].content, 'Msg 2 Edited');
+        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+    });
+
+    test('forkChat should create new chat branch', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        const newChat = await chatService.forkChat(chat.id, 2, 'Msg 2 Forked');
+
+        assert.ok(newChat);
+        assert.notStrictEqual(newChat!.id, chat.id);
+        assert.strictEqual(newChat!.messages.length, 3);
+        assert.strictEqual(newChat!.messages[2].content, 'Msg 2 Forked');
+
+        const originalChat = chatService.getChat(chat.id);
+        assert.strictEqual(originalChat!.messages.length, 3);
+        assert.strictEqual(originalChat!.messages[2].content, 'Msg 2');
+    });
+
+    test('deleteMessagesFrom should remove subsequent messages', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        const updatedChat = await chatService.deleteMessagesFrom(chat.id, 1);
+
+        assert.ok(updatedChat);
+        assert.strictEqual(updatedChat!.messages.length, 1);
+        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+    });
+
+    test('forkChatFrom should create new chat branch from index', async () => {
+        const chat = await chatService.createChat('llama3');
+        await chatService.addMessage(chat.id, 'user', 'Msg 1');
+        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
+        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+
+        const newChat = await chatService.forkChatFrom(chat.id, 1);
+
+        assert.ok(newChat);
+        assert.strictEqual(newChat!.messages.length, 1);
+        assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
+    });
+
+    test('getUniqueChatName should handle duplicates', async () => {
+        await chatService.createChat('llama3');
+        const chat2 = await chatService.createChat('llama3');
+        assert.strictEqual(chat2.name, 'New Chat (2)');
+
+        const chat3 = await chatService.createChat('llama3');
+        assert.strictEqual(chat3.name, 'New Chat (3)');
+    });
+
     test('getPaginatedMessages should return correct slice', async () => {
         const chat = await chatService.createChat('llama3');
         for (let i = 0; i < 100; i++) {
             await chatService.addMessage(chat.id, 'user', `Msg ${i}`);
         }
 
-        // Page 1: last 20 messages (80 to 99)
         const page1 = chatService.getPaginatedMessages(chat.id, 20, 0);
         assert.strictEqual(page1.messages.length, 20);
         assert.strictEqual(page1.total, 100);
