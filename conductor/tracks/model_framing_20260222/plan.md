@@ -5,7 +5,7 @@ This plan covers the global rename of "Templates" to "Model Framings" and the im
 ## Phase 1: Global Refactor & Renaming
 Rename all "Template" related terminology, files, and identifiers to "Model Framing".
 
-- [ ] Task: Rename Core Models & Services
+- [~] Task: Rename Core Models & Services
     - [ ] Rename `src/models/template.ts` to `src/models/modelFraming.ts`.
     - [ ] Rename `Template` -> `ModelFraming` and `Tag` -> `FramingTag`.
     - [ ] Rename `src/services/templateService.ts` -> `src/services/framingService.ts`.

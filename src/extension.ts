@@ -5,9 +5,9 @@ import { ChatPanel } from './chatPanel';
 import { SetupPanel } from './panels/setupPanel';
 import { ModelSettingsService } from './modelSettingsService';
 import { Logger } from './logger';
-import { TemplateService } from './services/templateService';
-import { TemplatesProvider } from './providers/templatesProvider';
-import { registerTemplateCommands } from './commands/templateCommands';
+import { FramingService } from './services/framingService';
+import { FramingProvider } from './providers/framingProvider';
+import { registerFramingCommands } from './commands/framingCommands';
 
 // "Popular" models as of Feb 2026
 const POPULAR_MODELS = ['llama3.2', 'mistral', 'deepseek-r1', 'qwen2.5', 'gemma2', 'phi3.5', 'codellama', 'dolphin-llama3', 'llava', 'starcoder2'];
@@ -27,19 +27,19 @@ export function activate(context: vscode.ExtensionContext) {
     const chatService = new ChatService(context);
     const modelSettingsService = new ModelSettingsService(context);
     const ollamaProvider = new OllamaProvider(chatService, modelSettingsService);
-    const templateService = new TemplateService(context);
-    const templatesProvider = new TemplatesProvider(templateService);
+    const framingService = new FramingService(context);
+    const framingProvider = new FramingProvider(framingService);
 
     // Register TreeDataProvider
     vscode.window.registerTreeDataProvider('ollama-models-view', ollamaProvider);
-    vscode.window.registerTreeDataProvider('ollama-templates-view', templatesProvider);
+    vscode.window.registerTreeDataProvider('ollama-framing-view', framingProvider);
 
     // Commands
-    registerTemplateCommands(context, templateService);
+    registerFramingCommands(context, framingService);
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.refresh', () => {
         ollamaProvider.refresh();
-        templatesProvider.refresh();
+        framingProvider.refresh();
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('ollamaView.createChat', async (node?: OllamaModelItem) => {
@@ -255,7 +255,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.setup', async (node?: OllamaModelItem) => {
             if (!node) { return; }
-            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, templateService);
+            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, framingService);
         }),
     );
 

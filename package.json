@@ -55,8 +55,8 @@
           "icon": "media/sidebar-icon.svg"
         },
         {
-          "id": "ollama-templates-view",
-          "name": "Templates",
+          "id": "ollama-framing-view",
+          "name": "Model Framing",
           "icon": "$(library)"
         }
       ]
@@ -122,25 +122,25 @@
         "icon": "$(trash)"
       },
       {
-        "command": "ollamaView.createTemplate",
-        "title": "New Template",
+        "command": "ollamaView.createFraming",
+        "title": "New Model Framing",
         "category": "ollama-view",
         "icon": "$(add)"
       },
       {
-        "command": "ollamaView.duplicateTemplate",
+        "command": "ollamaView.duplicateFraming",
         "title": "Duplicate",
         "category": "ollama-view",
         "icon": "$(copy)"
       },
       {
-        "command": "ollamaView.deleteTemplate",
+        "command": "ollamaView.deleteFraming",
         "title": "Delete",
         "category": "ollama-view",
         "icon": "$(trash)"
       },
       {
-        "command": "ollamaView.showMoreTemplateActions",
+        "command": "ollamaView.showMoreFramingActions",
         "title": "More Actions...",
         "category": "ollama-view",
         "icon": "$(more)"
@@ -157,9 +157,9 @@
           "group": "navigation"
         },
         {
-          "command": "ollamaView.createTemplate",
+          "command": "ollamaView.createFraming",
           "group": "navigation",
-          "when": "view == ollama-templates-view"
+          "when": "view == ollama-framing-view"
         }
       ],
       "view/item/context": [
@@ -199,19 +199,19 @@
           "group": "inline"
         },
         {
-          "command": "ollamaView.showMoreTemplateActions",
-          "when": "view == ollama-templates-view && viewItem =~ /template-/",
+          "command": "ollamaView.showMoreFramingActions",
+          "when": "view == ollama-framing-view && viewItem =~ /framing-/",
           "group": "inline"
         },
         {
-          "command": "ollamaView.duplicateTemplate",
-          "when": "view == ollama-templates-view && viewItem =~ /template-/",
-          "group": "templates@1"
+          "command": "ollamaView.duplicateFraming",
+          "when": "view == ollama-framing-view && viewItem =~ /framing-/",
+          "group": "framing@1"
         },
         {
-          "command": "ollamaView.deleteTemplate",
-          "when": "view == ollama-templates-view && viewItem == template-user",
-          "group": "templates@2"
+          "command": "ollamaView.deleteFraming",
+          "when": "view == ollama-framing-view && viewItem == framing-user",
+          "group": "framing@2"
         }
       ]
     }
@@ -224,10 +224,10 @@
     "webpack-base": "webpack --config webpack.config.js",
     "webpack-dev": "npm run webpack-base -- --mode development",
     "webpack-prod": "npm run webpack-base -- --mode production",
-    "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:template",
+    "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:framing",
     "build:webview:chat": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
     "build:webview:setup": "esbuild src/webview/setup.ts --bundle --outfile=dist/webview/setup.js --platform=browser --target=es2020 --format=iife",
-    "build:webview:template": "esbuild src/webview/template.ts --bundle --outfile=dist/webview/template.js --platform=browser --target=es2020 --format=iife",
+    "build:webview:framing": "esbuild src/webview/framing.ts --bundle --outfile=dist/webview/framing.js --platform=browser --target=es2020 --format=iife",
     "pretest": "npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",

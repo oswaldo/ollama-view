@@ -1,22 +1,22 @@
 /**
- * Source of the template: Built-in (Read-Only) or User (Editable).
+ * Source of the framing: Built-in (Read-Only) or User (Editable).
  */
-export enum TemplateSource {
+export enum FramingSource {
     BuiltIn = 'builtin',
     User = 'user'
 }
 
 /**
- * Represents a single system prompt template.
+ * Represents a single system prompt framing.
  */
-export interface Template {
-    /** Unique identifier for the template */
+export interface ModelFraming {
+    /** Unique identifier for the framing */
     id: string;
     
-    /** Display name of the template */
+    /** Display name of the framing */
     name: string;
     
-    /** Brief description of the template's purpose */
+    /** Brief description of the framing's purpose */
     description: string;
     
     /** The core system prompt */
@@ -34,11 +34,11 @@ export interface Template {
     /** System turn sent after the user message */
     systemTurnSuffix?: string;
     
-    /** Tags associated with this template for organization */
+    /** Tags associated with this framing for organization */
     tags: string[];
     
-    /** Source of the template */
-    source: TemplateSource;
+    /** Source of the framing */
+    source: FramingSource;
     
     /** Timestamp of creation */
     createdAt: number;
@@ -48,9 +48,9 @@ export interface Template {
 }
 
 /**
- * Represents a tag for organizing templates.
+ * Represents a tag for organizing framings.
  */
-export interface Tag {
+export interface FramingTag {
     /** Unique identifier for the tag */
     id: string;
     

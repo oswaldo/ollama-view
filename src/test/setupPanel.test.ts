@@ -2,12 +2,12 @@ import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { SetupPanel } from '../panels/setupPanel';
-import { TemplateSource } from '../models/template';
+import { FramingSource } from '../models/modelFraming';
 
 suite('SetupPanel Integration Test Suite', () => {
     let sandbox: sinon.SinonSandbox;
     let mockModelSettingsService: any;
-    let mockTemplateService: any;
+    let mockFramingService: any;
     let mockWebviewPanel: any;
 
     const mockModel = { name: 'llama3', size: 1024 * 1024 * 1024 };
@@ -20,8 +20,8 @@ suite('SetupPanel Integration Test Suite', () => {
             setSettings: sandbox.stub().resolves()
         };
 
-        mockTemplateService = {
-            getAllTemplates: sandbox.stub()
+        mockFramingService = {
+            getAllFramings: sandbox.stub()
         };
 
         // Mock WebviewPanel
@@ -46,27 +46,27 @@ suite('SetupPanel Integration Test Suite', () => {
     });
 
     test('createOrShow should create a new panel', () => {
-        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockTemplateService);
+        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService);
         assert.strictEqual(SetupPanel.panels.size, 1);
     });
 
-    test('should handle applyTemplate message and update fields', async () => {
-        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockTemplateService);
+    test('should handle applyFraming message and update fields', async () => {
+        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService);
         
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
-        const template = {
-            id: 't1',
-            name: 'Test Template',
+        const framing = {
+            id: 'f1',
+            name: 'Test Framing',
             systemMessage: 'System instructions',
             userMessagePrefix: 'User:',
-            source: TemplateSource.BuiltIn,
+            source: FramingSource.BuiltIn,
             tags: []
         };
 
-        mockTemplateService.getAllTemplates.returns([template]);
-        sandbox.stub(vscode.window, 'showQuickPick').resolves({ label: 'Test Template', template } as any);
+        mockFramingService.getAllFramings.returns([framing]);
+        sandbox.stub(vscode.window, 'showQuickPick').resolves({ label: 'Test Framing', framing } as any);
 
-        await messageHandler({ command: 'applyTemplate' });
+        await messageHandler({ command: 'applyFraming' });
 
         assert.ok(mockWebviewPanel.webview.postMessage.calledWith(sinon.match({
             command: 'updateFields',

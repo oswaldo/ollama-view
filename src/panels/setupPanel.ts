@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { ModelSettingsService } from '../modelSettingsService';
 import { OllamaModel } from '../ollamaApi';
-import { TemplateService } from '../services/templateService';
+import { FramingService } from '../services/framingService';
 
 export class SetupPanel {
     public static panels: Map<string, SetupPanel> = new Map();
@@ -14,9 +14,9 @@ export class SetupPanel {
     private _disposables: vscode.Disposable[] = [];
     private readonly _model: OllamaModel;
     private readonly _modelSettingsService: ModelSettingsService;
-    private readonly _templateService: TemplateService;
+    private readonly _framingService: FramingService;
 
-    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, templateService: TemplateService) {
+    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService) {
         if (SetupPanel.panels.has(model.name)) {
             SetupPanel.panels.get(model.name)!._panel.reveal();
             return;
@@ -36,16 +36,16 @@ export class SetupPanel {
             }
         );
 
-        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService, templateService);
+        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService, framingService);
         SetupPanel.panels.set(model.name, setupPanel);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, templateService: TemplateService) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._model = model;
         this._modelSettingsService = modelSettingsService;
-        this._templateService = templateService;
+        this._framingService = framingService;
 
         this._update();
 
@@ -57,8 +57,8 @@ export class SetupPanel {
                         vscode.window.showInformationMessage(`Settings saved for ${this._model.name}`);
                         this.dispose();
                         return;
-                    case 'applyTemplate':
-                        await this._handleApplyTemplate();
+                    case 'applyFraming':
+                        await this._handleApplyFraming();
                         return;
                     case 'cancel':
                         this.dispose();
@@ -72,31 +72,31 @@ export class SetupPanel {
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     }
 
-    private async _handleApplyTemplate() {
-        const templates = this._templateService.getAllTemplates();
-        const items = templates.map(t => ({
-            label: t.name,
-            description: t.description,
-            template: t
+    private async _handleApplyFraming() {
+        const framings = this._framingService.getAllFramings();
+        const items = framings.map(f => ({
+            label: f.name,
+            description: f.description,
+            framing: f
         }));
 
         const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Select a template to apply'
+            placeHolder: 'Select a model framing to apply'
         });
 
         if (selected) {
-            const t = selected.template;
+            const f = selected.framing;
             this._panel.webview.postMessage({
                 command: 'updateFields',
                 settings: {
-                    systemMessage: t.systemMessage,
-                    userMessagePrefix: t.userMessagePrefix,
-                    userMessageSuffix: t.userMessageSuffix,
-                    systemTurnPrefix: t.systemTurnPrefix,
-                    systemTurnSuffix: t.systemTurnSuffix
+                    systemMessage: f.systemMessage,
+                    userMessagePrefix: f.userMessagePrefix,
+                    userMessageSuffix: f.userMessageSuffix,
+                    systemTurnPrefix: f.systemTurnPrefix,
+                    systemTurnSuffix: f.systemTurnSuffix
                 }
             });
-            vscode.window.showInformationMessage(`Applied template: ${t.name}`);
+            vscode.window.showInformationMessage(`Applied framing: ${f.name}`);
         }
     }
 

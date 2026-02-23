@@ -32,22 +32,22 @@ window.addEventListener('message', event => {
     const message = event.data;
     switch (message.command) {
         case 'init': {
-            const template = message.template;
-            isBuiltIn = template.source === 'builtin';
+            const framing = message.framing;
+            isBuiltIn = framing.source === 'builtin';
 
-            headerTitle.textContent = isBuiltIn ? `View: ${template.name}` : `Edit: ${template.name}`;
-            templateSourceBadge.textContent = template.source === 'builtin' ? 'Built-in' : 'User';
+            headerTitle.textContent = isBuiltIn ? `View: ${framing.name}` : `Edit: ${framing.name}`;
+            templateSourceBadge.textContent = framing.source === 'builtin' ? 'Built-in' : 'User';
             templateSourceBadge.style.backgroundColor = isBuiltIn ? 'var(--vscode-badge-background)' : 'var(--vscode-charts-green)';
             
-            nameInput.value = template.name;
-            descriptionTextarea.value = template.description || '';
-            tagsInput.value = (template.tags || []).join(', ');
+            nameInput.value = framing.name;
+            descriptionTextarea.value = framing.description || '';
+            tagsInput.value = (framing.tags || []).join(', ');
             
-            systemMessageTextarea.value = template.systemMessage || '';
-            userPrefixTextarea.value = template.userMessagePrefix || '';
-            userSuffixTextarea.value = template.userMessageSuffix || '';
-            systemTurnPrefixTextarea.value = template.systemTurnPrefix || '';
-            systemTurnSuffixTextarea.value = template.systemTurnSuffix || '';
+            systemMessageTextarea.value = framing.systemMessage || '';
+            userPrefixTextarea.value = framing.userMessagePrefix || '';
+            userSuffixTextarea.value = framing.userMessageSuffix || '';
+            systemTurnPrefixTextarea.value = framing.systemTurnPrefix || '';
+            systemTurnSuffixTextarea.value = framing.systemTurnSuffix || '';
 
             const inputs = [nameInput, descriptionTextarea, tagsInput, systemMessageTextarea, userPrefixTextarea, userSuffixTextarea, systemTurnPrefixTextarea, systemTurnSuffixTextarea];
             
@@ -88,7 +88,7 @@ saveBtn.onclick = () => {
 
     vscode.postMessage({
         command: 'save',
-        template: {
+        framing: {
             name: nameInput.value,
             description: descriptionTextarea.value,
             tags: tags,

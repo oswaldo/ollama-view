@@ -1,39 +1,39 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { TemplateService } from '../services/templateService';
-import { Template, TemplateSource } from '../models/template';
-import { TemplateItem } from '../providers/templatesProvider';
+import { FramingService } from '../services/framingService';
+import { ModelFraming, FramingSource } from '../models/modelFraming';
+import { FramingItem } from '../providers/framingProvider';
 
 /**
- * Manages the Template Editor webview panel.
+ * Manages the Model Framing Editor webview panel.
  */
-export class TemplateEditorPanel {
-    public static panels: Map<string, TemplateEditorPanel> = new Map();
-    public static readonly viewType = 'ollamaTemplateEditor';
+export class FramingEditorPanel {
+    public static panels: Map<string, FramingEditorPanel> = new Map();
+    public static readonly viewType = 'ollamaFramingEditor';
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
-    private readonly _templateService: TemplateService;
-    private _template: Template;
+    private readonly _framingService: FramingService;
+    private _framing: ModelFraming;
 
     /**
-     * Creates or shows a template editor panel.
+     * Creates or shows a framing editor panel.
      */
-    public static createOrShow(extensionUri: vscode.Uri, template: Template, templateService: TemplateService) {
+    public static createOrShow(extensionUri: vscode.Uri, framing: ModelFraming, framingService: FramingService) {
         const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
-        // If we already have a panel for this template, show it.
-        if (TemplateEditorPanel.panels.has(template.id)) {
-            TemplateEditorPanel.panels.get(template.id)!._panel.reveal(column);
+        // If we already have a panel for this framing, show it.
+        if (FramingEditorPanel.panels.has(framing.id)) {
+            FramingEditorPanel.panels.get(framing.id)!._panel.reveal(column);
             return;
         }
 
         // Otherwise, create a new panel.
         const panel = vscode.window.createWebviewPanel(
-            TemplateEditorPanel.viewType,
-            `Template: ${template.name}`,
+            FramingEditorPanel.viewType,
+            `Framing: ${framing.name}`,
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -45,15 +45,15 @@ export class TemplateEditorPanel {
             }
         );
 
-        const templatePanel = new TemplateEditorPanel(panel, extensionUri, template, templateService);
-        TemplateEditorPanel.panels.set(template.id, templatePanel);
+        const framingPanel = new FramingEditorPanel(panel, extensionUri, framing, framingService);
+        FramingEditorPanel.panels.set(framing.id, framingPanel);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, template: Template, templateService: TemplateService) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, framing: ModelFraming, framingService: FramingService) {
         this._panel = panel;
         this._extensionUri = extensionUri;
-        this._template = template;
-        this._templateService = templateService;
+        this._framing = framing;
+        this._framingService = framingService;
 
         // Set the webview's initial html content
         this._update();
@@ -63,33 +63,33 @@ export class TemplateEditorPanel {
             async message => {
                 switch (message.command) {
                     case 'save': {
-                        if (this._template.source === TemplateSource.BuiltIn) {
-                            vscode.window.showErrorMessage('Built-in templates cannot be saved. Please duplicate it first.');
+                        if (this._framing.source === FramingSource.BuiltIn) {
+                            vscode.window.showErrorMessage('Built-in framings cannot be saved. Please duplicate it first.');
                             return;
                         }
-                        const updated = await this._templateService.updateTemplate(this._template.id, message.template);
+                        const updated = await this._framingService.updateFraming(this._framing.id, message.framing);
                         if (updated) {
-                            this._template = updated;
-                            vscode.window.showInformationMessage(`Template '${this._template.name}' saved.`);
+                            this._framing = updated;
+                            vscode.window.showInformationMessage(`Model Framing '${this._framing.name}' saved.`);
                             // Refresh tree view to reflect changes
                             vscode.commands.executeCommand('ollamaView.refresh');
                         }
                         return;
                     }
                     case 'duplicate': {
-                        const copy = await this._templateService.duplicateTemplate(this._template.id);
+                        const copy = await this._framingService.duplicateFraming(this._framing.id);
                         if (copy) {
-                            vscode.window.showInformationMessage(`Template duplicated as '${copy.name}'.`);
+                            vscode.window.showInformationMessage(`Model Framing duplicated as '${copy.name}'.`);
                             vscode.commands.executeCommand('ollamaView.refresh');
                             // Open the new copy
-                            TemplateEditorPanel.createOrShow(this._extensionUri, copy, this._templateService);
+                            FramingEditorPanel.createOrShow(this._extensionUri, copy, this._framingService);
                         }
                         return;
                     }
                     case 'delete': {
-                        if (this._template.source === TemplateSource.User) {
-                            // Trigger the global delete command with a temporary TemplateItem
-                            vscode.commands.executeCommand('ollamaView.deleteTemplate', new TemplateItem(this._template));
+                        if (this._framing.source === FramingSource.User) {
+                            // Trigger the global delete command with a temporary FramingItem
+                            vscode.commands.executeCommand('ollamaView.deleteFraming', new FramingItem(this._framing));
                         }
                         return;
                     }
@@ -104,12 +104,11 @@ export class TemplateEditorPanel {
         );
 
         // Listen for when the panel is disposed
-        // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     }
 
     public dispose() {
-        TemplateEditorPanel.panels.delete(this._template.id);
+        FramingEditorPanel.panels.delete(this._framing.id);
         this._panel.dispose();
         while (this._disposables.length) {
             const x = this._disposables.pop();
@@ -126,17 +125,17 @@ export class TemplateEditorPanel {
         setTimeout(() => {
             this._panel.webview.postMessage({
                 command: 'init',
-                template: this._template
+                framing: this._framing
             });
         }, 100);
     }
 
     private _getHtmlForWebview() {
-        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'template.html');
+        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'framing.html');
         let html = fs.readFileSync(htmlPath, 'utf8');
 
         const scriptUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'template.js'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'framing.js'))
         );
         const styleUri = this._panel.webview.asWebviewUri(
             vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
