@@ -34,14 +34,15 @@ Two new collapsible sections (using `<details>`, closed by default) will be adde
 - **Selection**: Users start a chat by selecting a specific instance from the expanded list.
 
 ### 5. Data Management & Compatibility
-- **Persistence**: All instance names, descriptions, and advanced parameters will be stored within the existing `globalState` model settings.
-- **Backward Compatibility**: Existing model settings (Version 1) must be transparently migrated or supported without user intervention.
-- **Forward Compatibility**: The data structure must be designed so that if a user downgrades the extension, the older version can still read the basic model information without crashing or corrupting the state.
-- **Lazy Loading**: "Original" values for reset functionality will be fetched from the Ollama API when the setup panel is first opened for a given model.
+-   **Persistence**: All instance names, descriptions, and advanced parameters will be stored within the existing `globalState` model settings.
+-   **Backward Compatibility**: Existing model settings (Version 1) must be transparently migrated or supported without user intervention.
+-   **Forward Compatibility & Data Preservation**: The data structure must be designed so that if a user downgrades the extension, the older version can still read the basic model information without crashing or corrupting the state. Crucially, the extension must **preserve unknown fields** when loading and saving settings to prevent data loss across versions or manual edits.
+-   **Lazy Loading**: "Original" values for reset functionality will be fetched from the Ollama API when the setup panel is first opened for a given model.
 
 ## Non-Functional Requirements
-- **Performance**: Fetching model defaults should be non-blocking and happen lazily.
-- **Consistency**: UI components should match the existing "Ollama View" aesthetic and VS Code's native look and feel.
+-   **Performance**: Fetching model defaults should be non-blocking and happen lazily.
+-   **Consistency**: UI components should match the existing "Ollama View" aesthetic and VS Code's native look and feel.
+-   **Atomicity**: Data updates should be atomic to avoid state corruption.
 
 ## Acceptance Criteria
 - [ ] Users can create and rename multiple instances of the same model.
@@ -49,7 +50,9 @@ Two new collapsible sections (using `<details>`, closed by default) will be adde
 - [ ] Advanced parameters are correctly persisted and applied during chat sessions.
 - [ ] The "Reset" button correctly restores original model values fetched from Ollama.
 - [ ] **Verification**: Unit tests prove that Version 1 data is correctly migrated.
-- [ ] **Verification**: Manual/Unit tests prove that a "downgraded" extension state remains stable.
+- [ ] **Verification**: Manual/Unit tests prove that unknown fields are preserved after a save operation.
+- [ ] **Verification**: Manual/Unit tests prove that a "downgraded" extension state remains stable and does not lose data.
+
 
 ## Out of Scope
 - Modifying the underlying model files on disk (all changes are session/instance-level configurations).

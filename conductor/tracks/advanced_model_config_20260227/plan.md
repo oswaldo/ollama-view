@@ -13,6 +13,7 @@ Implement the core data structures and service updates required to support multi
     - [ ] Add a versioning field to the model settings schema.
     - [ ] Write failing tests for Version 1 to Version 2 migration in `src/test/modelSettingsService.test.ts`.
     - [ ] Write "Downgrade Simulation" tests to ensure Version 1 code doesn't crash with Version 2 data.
+    - [ ] Write tests ensuring that fields unknown to the current version are **not deleted** when saving.
 - [ ] Task: Update `ModelSettingsService` for Instance Management
     - [ ] Update `ModelSettingsService` to handle `globalState` with instance-aware keys.
     - [ ] Implement unique naming enforcement logic.
