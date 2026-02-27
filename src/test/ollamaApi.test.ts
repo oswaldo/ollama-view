@@ -150,4 +150,38 @@ suite('OllamaApi', () => {
             assert.ok(err.message.includes('Status: 500'));
         }
     });
+
+    test('showModel should return model details', async () => {
+        const mockResponse = new PassThrough();
+        (mockResponse as any).statusCode = 200;
+        const mockDetails = {
+            modelfile: '# Modelfile',
+            parameters: 'stop "</s>"',
+            template: '{{ .Prompt }}',
+            details: {
+                parent_model: '',
+                format: 'gguf',
+                family: 'llama',
+                families: ['llama'],
+                parameter_size: '3B',
+                quantization_level: 'Q4_0'
+            }
+        };
+        mockResponse.push(JSON.stringify(mockDetails));
+        mockResponse.end();
+
+        const mockReq = new EventEmitter();
+        (mockReq as any).write = sinon.stub();
+        (mockReq as any).end = sinon.stub();
+
+        httpRequestStub.returns(mockReq as any);
+
+        setTimeout(() => {
+            httpRequestStub.callArgWith(2, mockResponse);
+        }, 10);
+
+        const details = await api.showModel('test-model');
+        assert.strictEqual(details.modelfile, '# Modelfile');
+        assert.strictEqual(details.details.parameter_size, '3B');
+    });
 });

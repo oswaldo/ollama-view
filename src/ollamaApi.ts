@@ -197,6 +197,7 @@ export class OllamaApi {
         model: string,
         messages: { role: string; content: string }[],
         onToken: (token: string) => void,
+        options?: any,
     ): Promise<void> {
         return new Promise((resolve, reject) => {
             const request = http.request(
@@ -244,7 +245,46 @@ export class OllamaApi {
                 },
             );
             request.on('error', reject);
-            request.write(JSON.stringify({ model, messages, stream: true }));
+            request.write(JSON.stringify({ model, messages, options, stream: true }));
+            request.end();
+        });
+    }
+
+    async showModel(name: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const body = JSON.stringify({ name });
+            const request = http.request(
+                `${this.baseUrl}/api/show`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(body),
+                    },
+                },
+                (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => (data += chunk));
+                    res.on('end', () => {
+                        if (res.statusCode === 200) {
+                            try {
+                                resolve(JSON.parse(data));
+                            } catch (e) {
+                                reject(e);
+                            }
+                        } else {
+                            try {
+                                const json = JSON.parse(data);
+                                reject(new Error(json.error || `Status: ${res.statusCode} - ${data}`));
+                            } catch {
+                                reject(new Error(`Status: ${res.statusCode} - ${data}`));
+                            }
+                        }
+                    });
+                },
+            );
+            request.on('error', reject);
+            request.write(body);
             request.end();
         });
     }
