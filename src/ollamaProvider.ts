@@ -3,6 +3,7 @@ import * as path from 'path';
 import { OllamaApi, OllamaModel } from './ollamaApi';
 import { ChatService, Chat } from './chatService';
 import { ModelSettingsService } from './modelSettingsService';
+import { ModelInstance } from './models/modelInstance';
 
 export class OllamaChatItem extends vscode.TreeItem {
     constructor(
@@ -23,19 +24,17 @@ export class OllamaChatItem extends vscode.TreeItem {
     }
 }
 
-export class OllamaModelItem extends vscode.TreeItem {
+export class OllamaInstanceItem extends vscode.TreeItem {
     constructor(
-        public readonly model: OllamaModel,
+        public readonly instance: ModelInstance,
         public readonly isRunning: boolean,
-        public readonly hasChildren: boolean,
         public readonly isStarting: boolean = false,
         public readonly isStopping: boolean = false
     ) {
-        // Collapsible to show chats
-        super(model.name, hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
+        super(instance.name, vscode.TreeItemCollapsibleState.Collapsed);
 
         const statusText = isRunning ? 'Running' : (isStarting ? 'Starting' : (isStopping ? 'Stopping' : 'Stopped'));
-        this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB\nStatus: ${statusText}`;
+        this.tooltip = `${instance.name} (${instance.modelName})\nStatus: ${statusText}`;
         this.description = isRunning ? 'Running' : (isStarting ? 'Starting...' : (isStopping ? 'Stopping...' : 'Stopped'));
 
         // Context value for menus
@@ -56,10 +55,23 @@ export class OllamaModelItem extends vscode.TreeItem {
     }
 }
 
-export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem | OllamaChatItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<OllamaModelItem | OllamaChatItem | undefined | null | void> =
-        new vscode.EventEmitter<OllamaModelItem | OllamaChatItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<OllamaModelItem | OllamaChatItem | undefined | null | void> =
+export class OllamaModelItem extends vscode.TreeItem {
+    constructor(
+        public readonly model: OllamaModel,
+    ) {
+        // Collapsible to show instances
+        super(model.name, vscode.TreeItemCollapsibleState.Collapsed);
+
+        this.tooltip = `${model.name}\nSize: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB`;
+        this.contextValue = 'ollama-model';
+        this.iconPath = new vscode.ThemeIcon('library');
+    }
+}
+
+export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem | OllamaInstanceItem | OllamaChatItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void> =
+        new vscode.EventEmitter<OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
 
     private cleanModels: OllamaModel[] = [];
@@ -136,15 +148,26 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         return element;
     }
 
-    async getChildren(element?: OllamaModelItem | OllamaChatItem): Promise<(OllamaModelItem | OllamaChatItem)[]> {
+    async getChildren(element?: OllamaModelItem | OllamaInstanceItem | OllamaChatItem): Promise<(OllamaModelItem | OllamaInstanceItem | OllamaChatItem)[]> {
         if (element instanceof OllamaChatItem) {
             return [];
         }
 
-        if (element instanceof OllamaModelItem) {
-            // Return chats for this model
-            const chats = this.chatService.getChatsForModel(element.model.name);
+        if (element instanceof OllamaInstanceItem) {
+            // Return chats for this instance
+            const chats = this.chatService.getChatsForModel(element.instance.id);
             return chats.map(c => new OllamaChatItem(c));
+        }
+
+        if (element instanceof OllamaModelItem) {
+            // Return instances for this model
+            const instances = this.modelSettingsService.getInstancesForModel(element.model.name);
+            return instances.map(inst => {
+                const isStart = this.startingModels.has(inst.modelName);
+                const isStop = this.stoppingModels.has(inst.modelName);
+                const isRun = this.runningModels.has(inst.modelName) && !isStart && !isStop;
+                return new OllamaInstanceItem(inst, isRun, isStart, isStop);
+            });
         }
 
         // Root elements: Models
@@ -155,13 +178,7 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         // Cleanup settings for models that no longer exist
         this.modelSettingsService.cleanupOrphanedSettings(models.map(m => m.name));
 
-        return models.map((m) => {
-            const isStart = this.startingModels.has(m.name);
-            const isStop = this.stoppingModels.has(m.name);
-            const isRun = this.runningModels.has(m.name) && !isStart && !isStop;
-            const hasChildren = this.chatService.getChatsForModel(m.name).length > 0;
-            return new OllamaModelItem(m, isRun, hasChildren, isStart, isStop);
-        });
+        return models.map((m) => new OllamaModelItem(m));
     }
 
     getApi(): OllamaApi {

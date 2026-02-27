@@ -46,12 +46,12 @@ suite('SetupPanel Integration Test Suite', () => {
     });
 
     test('createOrShow should create a new panel', () => {
-        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService);
+        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService, 'llama3');
         assert.strictEqual(SetupPanel.panels.size, 1);
     });
 
     test('should handle applyFraming message and update fields', async () => {
-        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService);
+        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService, 'llama3');
         
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
         const framing = {
@@ -75,5 +75,19 @@ suite('SetupPanel Integration Test Suite', () => {
                 userMessagePrefix: 'User:'
             })
         })));
+    });
+
+    test('should handle save message and call setSettings', async () => {
+        SetupPanel.createOrShow(vscode.Uri.file(''), mockModel as any, mockModelSettingsService, mockFramingService, 'llama3');
+        const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
+
+        const instance = {
+            name: 'My Instance',
+            config: { temperature: 0.5 }
+        };
+
+        await messageHandler({ command: 'save', instance });
+
+        assert.ok(mockModelSettingsService.setSettings.calledWith('llama3', instance));
     });
 });

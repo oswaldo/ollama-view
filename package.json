@@ -104,6 +104,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "ollamaView.createInstance",
+        "title": "Create New Instance",
+        "category": "ollama-view",
+        "icon": "$(add)"
+      },
+      {
         "command": "ollamaView.setup",
         "title": "Setup",
         "category": "ollama-view",
@@ -179,8 +185,13 @@
           "group": "inline@2"
         },
         {
+          "command": "ollamaView.createInstance",
+          "when": "viewItem == ollama-model",
+          "group": "ollama@0"
+        },
+        {
           "command": "ollamaView.showMoreActions",
-          "when": "viewItem == variable-running || viewItem == variable-stopped",
+          "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
           "group": "inline@3"
         },
         {
@@ -190,7 +201,7 @@
         },
         {
           "command": "ollamaView.delete",
-          "when": "viewItem == variable-running || viewItem == variable-stopped",
+          "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
           "group": "ollama@2"
         },
         {

@@ -39,6 +39,28 @@ h1 {
     font-weight: bold;
 }
 
+.title-input {
+    font-size: 1.5rem;
+    font-family: var(--vscode-font-family);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--vscode-foreground);
+    padding: 2px 5px;
+    margin-left: -5px;
+    width: 100%;
+}
+
+.title-input:hover {
+    border-color: var(--vscode-input-border);
+    background-color: var(--vscode-input-background);
+}
+
+.title-input:focus {
+    border-color: var(--vscode-focusBorder);
+    background-color: var(--vscode-input-background);
+    outline: none;
+}
+
 .details-subtitle {
     font-size: 0.9rem;
     color: var(--vscode-descriptionForeground);
@@ -75,10 +97,110 @@ summary:hover {
 }
 
 .section-content {
-    padding: 0 10px;
+    padding: 15px 10px;
     display: flex;
     flex-direction: column;
     gap: 15px; /* Consistent gap between form groups inside sections */
+}
+
+.form-group-horizontal {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.form-group.small {
+    flex: 1;
+}
+
+.input-with-slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-with-slider input[type="range"] {
+    flex: 1;
+    height: 4px;
+    background: var(--vscode-progressBar-background);
+    outline: none;
+    cursor: pointer;
+}
+
+.small-number-input {
+    width: 80px !important;
+}
+
+/* Switch / Toggle styles */
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--vscode-button-secondaryBackground);
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--vscode-button-background);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--vscode-focusBorder);
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(14px);
+  -ms-transform: translateX(14px);
+  transform: translateX(14px);
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.small-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    align-self: flex-start;
 }
 
 .form-group {
