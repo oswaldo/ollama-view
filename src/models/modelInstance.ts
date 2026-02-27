@@ -52,6 +52,13 @@ export interface ModelInstance {
     /** Advanced configuration parameters */
     config: AdvancedModelConfig;
 
+    // Framing / Setup Settings
+    systemMessage?: string;
+    userMessagePrefix?: string;
+    userMessageSuffix?: string;
+    systemTurnPrefix?: string;
+    systemTurnSuffix?: string;
+
     /** Timestamp of creation */
     createdAt: number;
 
@@ -64,4 +71,7 @@ export interface ModelInstance {
      * 2: Advanced configuration added
      */
     dataVersion?: number;
+
+    /** Allow for unknown fields to be preserved */
+    [key: string]: any;
 }

@@ -236,13 +236,14 @@ export class ChatPanel {
             this._panel.webview.postMessage({ command: 'updateFraming', framingId: framingIdOverride, framingName: name });
         }
 
-        let settings = this._modelSettingsService.getSettings(this._chat.modelName);
+        let settings: any = this._modelSettingsService.getSettings(this._chat.modelName);
         let activeFraming: any = undefined;
 
         if (this._chat.activeFramingId) {
             activeFraming = this._framingService.getFraming(this._chat.activeFramingId);
             if (activeFraming) {
                 settings = {
+                    ...settings,
                     systemMessage: activeFraming.systemMessage,
                     userMessagePrefix: activeFraming.userMessagePrefix,
                     userMessageSuffix: activeFraming.userMessageSuffix,
@@ -263,6 +264,7 @@ export class ChatPanel {
                         activeFraming = this._framingService.getFraming(this._chat.activeFramingId);
                         if (activeFraming) {
                             settings = {
+                                ...settings,
                                 systemMessage: activeFraming.systemMessage,
                                 userMessagePrefix: activeFraming.userMessagePrefix,
                                 userMessageSuffix: activeFraming.userMessageSuffix,
@@ -295,10 +297,10 @@ export class ChatPanel {
                 }
 
                 const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, trimmedText, {
+                    ...settings,
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
-                    modelName: this._chat.modelName,
-                    ...settings
+                    modelName: this._chat.modelName
                 });
                 if (updatedChat) {
                     this._chat = updatedChat;
@@ -308,10 +310,10 @@ export class ChatPanel {
                 }
             } else if (editOptions.mode === 'fork') {
                 const newChat = await this._chatService.forkChat(this._chat.id, editOptions.index, trimmedText, {
+                    ...settings,
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
-                    modelName: this._chat.modelName,
-                    ...settings
+                    modelName: this._chat.modelName
                 });
                 if (newChat) {
                     const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._framingService, this._onStateChange);
@@ -341,6 +343,7 @@ export class ChatPanel {
             }
 
             const metadata = {
+                ...settings,
                 systemTurnPrefix: settings.systemTurnPrefix,
                 userPrefix: settings.userMessagePrefix,
                 userSuffix: settings.userMessageSuffix,
