@@ -39,6 +39,7 @@ const topPInput = document.getElementById('top_p') as HTMLInputElement;
 const topKInput = document.getElementById('top_k') as HTMLInputElement;
 const repeatPenaltyInput = document.getElementById('repeat_penalty') as HTMLInputElement;
 const seedInput = document.getElementById('seed') as HTMLInputElement;
+const generateSeedBtn = document.getElementById('generate-seed-btn') as HTMLSpanElement;
 const stopInput = document.getElementById('stop') as HTMLInputElement;
 const resetInferenceBtn = document.getElementById('reset-inference-btn') as HTMLButtonElement;
 
@@ -50,6 +51,11 @@ const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
 
 let defaultMessage = '';
 let originalParams: any = null;
+
+generateSeedBtn.onclick = () => {
+    const randomSeed = Math.floor(Math.random() * 1000000);
+    seedInput.value = randomSeed.toString();
+};
 
 function syncSliderAndInput(slider: HTMLInputElement, input: HTMLInputElement) {
     slider.addEventListener('input', () => {

@@ -76,9 +76,6 @@ let truncatedMessagesBackup: ChatMessage[] | null = null;
 let framingBackupId: string | undefined = undefined;
 let framingBackupName: string | undefined = undefined;
 
-const CopyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-const MoreIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle><circle cx="5" cy="12" r="1.5"></circle></svg>';
-
 function updateLoadMoreVisibility() {
     if (editState && (editState.mode === 'truncate' || editState.mode === 'fork')) {
         loadMoreContainer.style.display = 'none';
@@ -207,9 +204,8 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
         btns.className = 'buttons-container';
         
         const copyBtn = document.createElement('button');
-        copyBtn.className = 'icon-btn';
+        copyBtn.className = 'icon-btn copy-icon';
         copyBtn.title = 'Copy';
-        copyBtn.innerHTML = CopyIcon;
         copyBtn.onclick = (e) => {
             e.stopPropagation();
             navigator.clipboard.writeText(content);
@@ -218,9 +214,8 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
         btns.appendChild(copyBtn);
 
         const optsBtn = document.createElement('button');
-        optsBtn.className = 'icon-btn';
+        optsBtn.className = 'icon-btn more-icon';
         optsBtn.title = 'Options';
-        optsBtn.innerHTML = MoreIcon;
         optsBtn.onclick = (e) => {
             e.stopPropagation();
             toggleDropdown(e, index, m);

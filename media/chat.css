@@ -202,15 +202,53 @@ input:checked + .slider:before {
     border: none;
     color: var(--vscode-descriptionForeground);
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 2px;
     border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 24px;
+    height: 24px;
 }
 .icon-btn:hover {
     background: var(--vscode-toolbar-hoverBackground);
     color: var(--vscode-editor-foreground);
+}
+
+.copy-icon, .more-icon {
+    mask-repeat: no-repeat;
+    mask-size: 14px;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 14px;
+    -webkit-mask-position: center;
+    background-color: currentColor;
+    width: 14px;
+    height: 14px;
+}
+
+.copy-icon {
+    mask-image: url('./copy-icon.svg');
+    -webkit-mask-image: url('./copy-icon.svg');
+}
+
+.more-icon {
+    mask-image: url('./more-icon.svg');
+    -webkit-mask-image: url('./more-icon.svg');
+}
+
+.revert-icon {
+    mask-image: url('./revert-icon.svg');
+    -webkit-mask-image: url('./revert-icon.svg');
+    width: 12px;
+    height: 12px;
+}
+
+.more-actions-icon {
+    mask-image: url('./more-actions-icon.svg');
+    -webkit-mask-image: url('./more-actions-icon.svg');
+    width: 16px;
+    height: 16px;
 }
 
 /* Dropdown Menu */
