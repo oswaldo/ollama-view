@@ -93,7 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (instanceName) {
             const newInstance = await modelSettingsService.createInstance(node.model.name, instanceName);
             ollamaProvider.refresh();
-            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, framingService, newInstance.id);
+            SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, framingService, newInstance.id, () => ollamaProvider.refresh());
         }
     }));
 
@@ -286,10 +286,10 @@ export function activate(context: vscode.ExtensionContext) {
                 const models = await api.listModels();
                 const model = models.find(m => m.name === node.instance.modelName);
                 if (model) {
-                    SetupPanel.createOrShow(context.extensionUri, model, modelSettingsService, framingService, node.instance.id);
+                    SetupPanel.createOrShow(context.extensionUri, model, modelSettingsService, framingService, node.instance.id, () => ollamaProvider.refresh());
                 }
             } else {
-                SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, framingService);
+                SetupPanel.createOrShow(context.extensionUri, node.model, modelSettingsService, framingService, undefined, () => ollamaProvider.refresh());
             }
         }),
     );

@@ -41,15 +41,15 @@ export class OllamaInstanceItem extends vscode.TreeItem {
         this.contextValue = isRunning ? 'variable-running' : (isStarting ? 'variable-starting' : (isStopping ? 'variable-stopping' : 'variable-stopped'));
 
         if (isRunning) {
-            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-running.svg'));
+            this.iconPath = vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-running.svg'));
         } else if (isStarting) {
-            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-starting.svg'));
+            this.iconPath = vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-starting.svg'));
         } else if (isStopping) {
-            this.iconPath = vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-stopping.svg'));
+            this.iconPath = vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-stopping.svg'));
         } else {
             this.iconPath = {
-                light: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-light.svg')),
-                dark: vscode.Uri.file(path.join(__filename, '..', '..', 'media', 'model-icon-dark.svg'))
+                light: vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-light.svg')),
+                dark: vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-dark.svg'))
             };
         }
     }
@@ -128,18 +128,22 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         }
     }
 
-    async chat(modelName: string, messages: { role: string; content: string }[], onToken: (token: string) => void): Promise<void> {
+    async chat(instanceId: string, messages: { role: string; content: string }[], onToken: (token: string) => void): Promise<void> {
+        const settings = this.modelSettingsService.getSettings(instanceId);
+        const baseModelName = settings.modelName;
+        const options = settings.config;
+
         // If we know it's not running, show starting state
-        const wasRunning = this.runningModels.has(modelName);
+        const wasRunning = this.runningModels.has(baseModelName);
         if (!wasRunning) {
-            this.setStarting(modelName, true);
+            this.setStarting(baseModelName, true);
         }
 
         try {
-            await this.api.chat(modelName, messages, onToken);
+            await this.api.chat(baseModelName, messages, onToken, options);
         } finally {
             if (!wasRunning) {
-                this.setStarting(modelName, false);
+                this.setStarting(baseModelName, false);
             }
         }
     }

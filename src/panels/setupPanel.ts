@@ -17,18 +17,22 @@ export class SetupPanel {
     private readonly _instanceId: string;
     private readonly _modelSettingsService: ModelSettingsService;
     private readonly _framingService: FramingService;
+    private readonly _onStateChange?: () => void;
     private _originalValues: any = null;
 
-    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService, instanceId?: string) {
+    public static createOrShow(extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService, instanceId?: string, onStateChange?: () => void) {
         const id = instanceId || model.name;
         if (SetupPanel.panels.has(id)) {
             SetupPanel.panels.get(id)!._panel.reveal();
             return;
         }
 
+        const instance = modelSettingsService.getSettings(id);
+        const title = `${instance.name} - ${model.name}`;
+
         const panel = vscode.window.createWebviewPanel(
             SetupPanel.viewType,
-            `Setup: ${id === model.name ? model.name : id}`,
+            `Setup: ${title}`,
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -40,17 +44,18 @@ export class SetupPanel {
             }
         );
 
-        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService, framingService, id);
+        const setupPanel = new SetupPanel(panel, extensionUri, model, modelSettingsService, framingService, id, onStateChange);
         SetupPanel.panels.set(id, setupPanel);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService, instanceId: string) {
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, model: OllamaModel, modelSettingsService: ModelSettingsService, framingService: FramingService, instanceId: string, onStateChange?: () => void) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._model = model;
         this._instanceId = instanceId;
         this._modelSettingsService = modelSettingsService;
         this._framingService = framingService;
+        this._onStateChange = onStateChange;
 
         this._update();
 
@@ -60,6 +65,9 @@ export class SetupPanel {
                     case 'save':
                         await this._modelSettingsService.setSettings(this._instanceId, message.instance);
                         vscode.window.showInformationMessage(`Settings saved for ${message.instance.name}`);
+                        if (this._onStateChange) {
+                            this._onStateChange();
+                        }
                         this.dispose();
                         return;
                     case 'applyFraming':
@@ -85,29 +93,7 @@ export class SetupPanel {
             this._originalValues = await new OllamaApi().showModel(this._model.name);
         }
 
-        const modelfile = this._originalValues.modelfile || '';
-        const params: any = {};
-        
-        // Simple regex to extract parameters from modelfile
-        const lines = modelfile.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('PARAMETER ')) {
-                const parts = line.substring(10).trim().split(/\s+/);
-                if (parts.length >= 2) {
-                    const key = parts[0];
-                    const val = parts.slice(1).join(' ');
-                    try {
-                        if (val === 'true') params[key] = true;
-                        else if (val === 'false') params[key] = false;
-                        else if (!isNaN(Number(val))) params[key] = Number(val);
-                        else params[key] = val.replace(/^"|"$/g, '');
-                    } catch (e) {
-                        params[key] = val;
-                    }
-                }
-            }
-        }
-
+        const params = this._extractParams(this._originalValues);
         const instance = this._modelSettingsService.getSettings(this._instanceId);
         if (group === 'hardware') {
             instance.config.num_gpu = params.num_gpu;
@@ -122,7 +108,7 @@ export class SetupPanel {
             instance.config.top_k = params.top_k;
             instance.config.repeat_penalty = params.repeat_penalty;
             instance.config.seed = params.seed;
-            instance.config.stop = params.stop ? [params.stop] : undefined;
+            instance.config.stop = params.stop ? (Array.isArray(params.stop) ? params.stop : [params.stop]) : undefined;
         }
 
         this._panel.webview.postMessage({
@@ -132,6 +118,43 @@ export class SetupPanel {
             originalValues: this._originalValues,
             defaultMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE
         });
+    }
+
+    private _extractParams(showData: any): any {
+        const params: any = {};
+        const modelfile = showData.modelfile || '';
+        const parameters = showData.parameters || '';
+
+        // Helper to parse a single line
+        const parseLine = (line: string) => {
+            const match = line.match(/^\s*(?:PARAMETER\s+)?(\w+)\s+(.+)$/i);
+            if (match) {
+                const key = match[1].toLowerCase();
+                let val: any = match[2].trim();
+                try {
+                    if (val === 'true') val = true;
+                    else if (val === 'false') val = false;
+                    else if (!isNaN(Number(val))) val = Number(val);
+                    else val = val.replace(/^"|"$/g, '');
+                } catch (e) {
+                    // Ignore parsing errors for individual parameters
+                }
+                
+                if (key === 'stop') {
+                    if (!params.stop) params.stop = [];
+                    params.stop.push(val);
+                } else {
+                    params[key] = val;
+                }
+            }
+        };
+
+        modelfile.split('\n').forEach((l: string) => {
+            if (l.toUpperCase().startsWith('PARAMETER ')) parseLine(l);
+        });
+        parameters.split('\n').forEach((l: string) => parseLine(l));
+
+        return params;
     }
 
     private async _handleApplyFraming() {
@@ -186,12 +209,17 @@ export class SetupPanel {
         }
 
         setTimeout(() => {
+            const instance = this._modelSettingsService.getSettings(this._instanceId);
+            const originalParams = this._extractParams(this._originalValues || {});
+            
             this._panel.webview.postMessage({
                 command: 'init',
                 model: this._model,
-                settings: this._modelSettingsService.getSettings(this._instanceId),
+                settings: instance,
                 originalValues: this._originalValues,
-                defaultMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE
+                originalParams: originalParams,
+                defaultMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE,
+                isRunning: true // TODO: check actual status
             });
         }, 100);
     }

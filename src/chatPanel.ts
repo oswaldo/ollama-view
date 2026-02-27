@@ -31,14 +31,16 @@ export class ChatPanel {
         if (ChatPanel.panels.has(chat.id)) {
             const existing = ChatPanel.panels.get(chat.id)!;
             existing._chat = chat;
-            existing._panel.title = `${chat.name} - ${chat.modelName}`;
+            const instance = modelSettingsService.getSettings(chat.modelName);
+            existing._panel.title = `${chat.name} - ${instance.name}`;
             existing._panel.reveal(column);
             return existing;
         }
 
+        const instance = modelSettingsService.getSettings(chat.modelName);
         const panel = vscode.window.createWebviewPanel(
             ChatPanel.viewType,
-            `${chat.name} - ${chat.modelName}`,
+            `${chat.name} - ${instance.name}`,
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -409,7 +411,8 @@ export class ChatPanel {
                 if (!hasStarted) {
                     hasStarted = true;
                     this._panel.webview.postMessage({ command: 'setLoading', loading: false });
-                    this._panel.webview.postMessage({ command: 'startAssistantMessage' });
+                    const instName = this._modelSettingsService.getSettings(this._chat.modelName).name;
+                    this._panel.webview.postMessage({ command: 'startAssistantMessage', modelName: instName });
                     if (this._onStateChange) {
                         this._onStateChange();
                     }
@@ -443,12 +446,21 @@ export class ChatPanel {
             if (err.message.includes('ECONNREFUSED')) {
                 errorMessage = 'Could not connect to Ollama. Is it running?';
             } else if (err.message.toLowerCase().includes('not found')) {
-                errorMessage = `Model '${this._chat.modelName}' not found.`;
+                const instance = this._modelSettingsService.getSettings(this._chat.modelName);
+                errorMessage = `Model '${instance.modelName}' not found.`;
                 options.push('Pull Model');
             }
 
+            const errorText = `Error: ${errorMessage}`;
             this._panel.webview.postMessage({ command: 'addErrorMessage', content: errorMessage });
             
+            // Persist the error message so it survives restart
+            await this._chatService.addMessage(this._chat.id, 'assistant', errorText, {
+                modelName: this._chat.modelName,
+                isError: true
+            });
+            this._chat = this._chatService.getChat(this._chat.id) || this._chat;
+
             const selection = await vscode.window.showErrorMessage(`Chat Error: ${errorMessage}`, ...options);
             
             if (selection === 'Retry') {
@@ -496,7 +508,8 @@ export class ChatPanel {
     }
 
     private _updateTitle() {
-        this._panel.title = `${this._chat.name} - ${this._chat.modelName}`;
+        const instance = this._modelSettingsService.getSettings(this._chat.modelName);
+        this._panel.title = `${this._chat.name} - ${instance.name}`;
     }
 
     private _update() {
@@ -513,7 +526,7 @@ export class ChatPanel {
 
             this._panel.webview.postMessage({
                 command: 'initState',
-                modelName: this._chat.modelName,
+                modelName: this._modelSettingsService.getSettings(this._chat.modelName).name,
                 messages: paginated.messages,
                 total: paginated.total,
                 activeFramingId: this._chat.activeFramingId,

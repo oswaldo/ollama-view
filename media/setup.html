@@ -61,6 +61,7 @@
                     <div class="form-group">
                         <div class="label-with-reset">
                             <label for="num_gpu">GPU Layers (num_gpu)</label>
+                            <span class="reset-icon" data-field="num_gpu" title="Reset to original"></span>
                         </div>
                         <div class="input-with-slider">
                             <input type="range" id="num_gpu-slider" min="0" max="100" step="1">
@@ -68,7 +69,10 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="num_thread">Threads (num_thread)</label>
+                        <div class="label-with-reset">
+                            <label for="num_thread">Threads (num_thread)</label>
+                            <span class="reset-icon" data-field="num_thread" title="Reset to original"></span>
+                        </div>
                         <div class="input-with-slider">
                             <input type="range" id="num_thread-slider" min="1" max="64" step="1">
                             <input type="number" id="num_thread" min="1" max="64" class="small-number-input">
@@ -81,6 +85,7 @@
                                 <input type="checkbox" id="use_mmap">
                                 <span class="slider round"></span>
                             </label>
+                            <span class="reset-icon" data-field="use_mmap" title="Reset to original"></span>
                         </div>
                         <div class="toggle-group">
                             <label for="use_mlock" class="toggle-label">Use MLOCK</label>
@@ -88,9 +93,10 @@
                                 <input type="checkbox" id="use_mlock">
                                 <span class="slider round"></span>
                             </label>
+                            <span class="reset-icon" data-field="use_mlock" title="Reset to original"></span>
                         </div>
                     </div>
-                    <button id="reset-hardware-btn" class="secondary small-btn">Reset to Original</button>
+                    <button id="reset-hardware-btn" class="secondary small-btn">Reset Hardware Group</button>
                 </div>
             </details>
 
@@ -98,21 +104,30 @@
                 <summary>Inference & Generation Limits</summary>
                 <div class="section-content">
                     <div class="form-group">
-                        <label for="num_ctx">Context Window (num_ctx)</label>
+                        <div class="label-with-reset">
+                            <label for="num_ctx">Context Window (num_ctx)</label>
+                            <span class="reset-icon" data-field="num_ctx" title="Reset to original"></span>
+                        </div>
                         <div class="input-with-slider">
                             <input type="range" id="num_ctx-slider" min="512" max="131072" step="512">
                             <input type="number" id="num_ctx" min="512" max="131072" class="small-number-input">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="num_predict">Max Prediction (num_predict)</label>
+                        <div class="label-with-reset">
+                            <label for="num_predict">Max Prediction (num_predict)</label>
+                            <span class="reset-icon" data-field="num_predict" title="Reset to original"></span>
+                        </div>
                         <div class="input-with-slider">
                             <input type="range" id="num_predict-slider" min="-1" max="8192" step="1">
                             <input type="number" id="num_predict" min="-1" max="8192" class="small-number-input">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="temperature">Temperature</label>
+                        <div class="label-with-reset">
+                            <label for="temperature">Temperature</label>
+                            <span class="reset-icon" data-field="temperature" title="Reset to original"></span>
+                        </div>
                         <div class="input-with-slider">
                             <input type="range" id="temperature-slider" min="0" max="2" step="0.1">
                             <input type="number" id="temperature" min="0" max="2" step="0.1" class="small-number-input">
@@ -120,27 +135,42 @@
                     </div>
                     <div class="form-group-horizontal">
                         <div class="form-group small">
-                            <label for="top_p">Top P</label>
+                            <div class="label-with-reset">
+                                <label for="top_p">Top P</label>
+                                <span class="reset-icon" data-field="top_p" title="Reset to original"></span>
+                            </div>
                             <input type="number" id="top_p" min="0" max="1" step="0.05">
                         </div>
                         <div class="form-group small">
-                            <label for="top_k">Top K</label>
+                            <div class="label-with-reset">
+                                <label for="top_k">Top K</label>
+                                <span class="reset-icon" data-field="top_k" title="Reset to original"></span>
+                            </div>
                             <input type="number" id="top_k" min="0" max="200" step="1">
                         </div>
                         <div class="form-group small">
-                            <label for="repeat_penalty">Repeat Penalty</label>
+                            <div class="label-with-reset">
+                                <label for="repeat_penalty">Repeat Penalty</label>
+                                <span class="reset-icon" data-field="repeat_penalty" title="Reset to original"></span>
+                            </div>
                             <input type="number" id="repeat_penalty" min="0" max="2" step="0.1">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="seed">Seed</label>
+                        <div class="label-with-reset">
+                            <label for="seed">Seed</label>
+                            <span class="reset-icon" data-field="seed" title="Reset to original"></span>
+                        </div>
                         <input type="number" id="seed" placeholder="Random seed">
                     </div>
                     <div class="form-group">
-                        <label for="stop">Stop Tokens (Comma separated)</label>
+                        <div class="label-with-reset">
+                            <label for="stop">Stop Tokens</label>
+                            <span class="reset-icon" data-field="stop" title="Reset to original"></span>
+                        </div>
                         <input type="text" id="stop" placeholder='e.g. "</s>", "User:"'>
                     </div>
-                    <button id="reset-inference-btn" class="secondary small-btn">Reset to Original</button>
+                    <button id="reset-inference-btn" class="secondary small-btn">Reset Inference Group</button>
                 </div>
             </details>
             

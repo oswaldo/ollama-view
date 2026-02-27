@@ -197,6 +197,36 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
+.label-with-reset {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.label-with-reset label {
+    margin-bottom: 0;
+}
+
+.reset-icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    opacity: 0.6;
+    background-color: var(--vscode-foreground);
+    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" d="M13.5 2l-.7.7 1.1 1.2H8.1c-2.3 0-4.3 1.6-4.8 3.8l.9.2c.4-1.8 2-3.1 3.9-3.1h5.8l-1.1 1.2.7.7 2.1-2.2L13.5 2zM2.5 14l.7-.7-1.1-1.2h5.8c2.3 0 4.3-1.6 4.8-3.8l-.9-.2c-.4 1.8-2 3.1-3.9 3.1H2.1l1.1-1.2-.7-.7-2.1 2.2L2.5 14z"/></svg>');
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" d="M13.5 2l-.7.7 1.1 1.2H8.1c-2.3 0-4.3 1.6-4.8 3.8l.9.2c.4-1.8 2-3.1 3.9-3.1h5.8l-1.1 1.2.7.7 2.1-2.2L13.5 2zM2.5 14l.7-.7-1.1-1.2h5.8c2.3 0 4.3-1.6 4.8-3.8l-.9-.2c-.4 1.8-2 3.1-3.9 3.1H2.1l1.1-1.2-.7-.7-2.1 2.2L2.5 14z"/></svg>');
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+
+.reset-icon:hover {
+    opacity: 1;
+    background-color: var(--vscode-button-background);
+}
+
 .small-btn {
     padding: 4px 8px;
     font-size: 0.8rem;

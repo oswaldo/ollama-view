@@ -17,6 +17,7 @@ interface ChatMessage {
     framingId?: string;
     framingName?: string;
     modelName?: string;
+    isError?: boolean;
 }
 
 const messagesDiv = document.getElementById('messages') as HTMLDivElement;
@@ -194,7 +195,8 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
 
     const header = document.createElement('div');
     header.className = 'message-header';
-    header.textContent = role === 'user' ? 'You' : (role === 'error' ? 'Error' : (role === 'system' ? 'System' : modelName));
+    const displayName = m.modelName || modelName;
+    header.textContent = role === 'user' ? 'You' : (m.isError || role === 'error' ? 'Error' : (role === 'system' ? 'System' : displayName));
     wrapper.appendChild(header);
 
     const div = document.createElement('div');
@@ -554,7 +556,8 @@ window.addEventListener('message', event => {
                 systemTurnSuffix: message.systemTurnSuffix,
                 framingId: message.framingId,
                 framingName: message.framingName,
-                modelName: message.modelName
+                modelName: message.modelName,
+                isError: message.isError
             };
             messages.push(newMessage);
             totalMessages++;
@@ -565,10 +568,11 @@ window.addEventListener('message', event => {
         }
         case 'startAssistantMessage': {
             hideTypingIndicator();
+            const displayName = message.modelName || modelName;
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper assistant';
             wrapper.innerHTML = `
-                <div class="message-header">${modelName}</div>
+                <div class="message-header">${displayName}</div>
                 <div class="message assistant">
                     <div style="white-space: pre-wrap;" id="current-streaming-response"></div>
                 </div>

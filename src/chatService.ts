@@ -15,6 +15,7 @@ export interface ChatMessage {
     framingName?: string;
     // Turn metadata
     modelName?: string;
+    isError?: boolean;
 }
 
 export interface Chat {
@@ -105,6 +106,7 @@ export class ChatService {
             framingId?: string;
             framingName?: string;
             modelName?: string;
+            isError?: boolean;
         }
     ): Promise<Chat | undefined> {
         const chats = this.getAllChats();

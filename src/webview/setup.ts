@@ -49,7 +49,7 @@ const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
 
 let defaultMessage = '';
-let originalValues: any = null;
+let originalParams: any = null;
 
 function syncSliderAndInput(slider: HTMLInputElement, input: HTMLInputElement) {
     slider.addEventListener('input', () => {
@@ -66,54 +66,58 @@ syncSliderAndInput(numCtxSlider, numCtxInput);
 syncSliderAndInput(numPredictSlider, numPredictInput);
 syncSliderAndInput(temperatureSlider, temperatureInput);
 
+function updateUI(settings: any, isRunning: boolean, model: any) {
+    instanceNameInput.value = settings.name || model.name;
+    instanceDescriptionTextarea.value = settings.description || '';
+    modelDetailsDiv.textContent = `Model: ${model.name} | Size: ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB`;
+    
+    if (isRunning) {
+        statusBadge.classList.remove('hidden');
+        statusBadge.textContent = 'Running';
+    } else {
+        statusBadge.classList.add('hidden');
+    }
+
+    // Prompt Config
+    systemMessageTextarea.value = settings.systemMessage || '';
+    userPrefixTextarea.value = settings.userMessagePrefix || '';
+    userSuffixTextarea.value = settings.userMessageSuffix || '';
+    systemTurnPrefixTextarea.value = settings.systemTurnPrefix || '';
+    systemTurnSuffixTextarea.value = settings.systemTurnSuffix || '';
+    
+    // Hardware Config
+    const config = settings.config || {};
+    
+    const setVal = (input: HTMLInputElement, slider: HTMLInputElement | null, val: any, def: string) => {
+        const finalVal = (val ?? '').toString();
+        input.value = finalVal;
+        if (slider) slider.value = finalVal || def;
+    };
+
+    setVal(numGpuInput, numGpuSlider, config.num_gpu, '0');
+    setVal(numThreadInput, numThreadSlider, config.num_thread, '1');
+    useMmapCheckbox.checked = config.use_mmap ?? originalParams?.use_mmap ?? true;
+    useMlockCheckbox.checked = !!config.use_mlock;
+
+    // Inference Config
+    setVal(numCtxInput, numCtxSlider, config.num_ctx, '2048');
+    setVal(numPredictInput, numPredictSlider, config.num_predict, '128');
+    setVal(temperatureInput, temperatureSlider, config.temperature, '0.8');
+    
+    topPInput.value = (config.top_p ?? '').toString();
+    topKInput.value = (config.top_k ?? '').toString();
+    repeatPenaltyInput.value = (config.repeat_penalty ?? '').toString();
+    seedInput.value = (config.seed ?? '').toString();
+    stopInput.value = (config.stop || []).join(', ');
+}
+
 window.addEventListener('message', event => {
     const message = event.data;
     switch (message.command) {
         case 'init': {
-            const instance = message.settings;
-            instanceNameInput.value = instance.name || message.model.name;
-            instanceDescriptionTextarea.value = instance.description || '';
-            modelDetailsDiv.textContent = `Model: ${message.model.name} | Size: ${(message.model.size / 1024 / 1024 / 1024).toFixed(2)} GB`;
-            
-            // Set Status Badge
-            if (message.isRunning) {
-                statusBadge.classList.remove('hidden');
-                statusBadge.textContent = 'Running';
-            } else {
-                statusBadge.classList.add('hidden');
-            }
-
-            // Prompt Config
-            systemMessageTextarea.value = instance.systemMessage || '';
-            userPrefixTextarea.value = instance.userMessagePrefix || '';
-            userSuffixTextarea.value = instance.userMessageSuffix || '';
-            systemTurnPrefixTextarea.value = instance.systemTurnPrefix || '';
-            systemTurnSuffixTextarea.value = instance.systemTurnSuffix || '';
-            
-            // Hardware Config
-            const config = instance.config || {};
-            numGpuInput.value = (config.num_gpu ?? '').toString();
-            numGpuSlider.value = numGpuInput.value || '0';
-            numThreadInput.value = (config.num_thread ?? '').toString();
-            numThreadSlider.value = numThreadInput.value || '1';
-            useMmapCheckbox.checked = !!config.use_mmap;
-            useMlockCheckbox.checked = !!config.use_mlock;
-
-            // Inference Config
-            numCtxInput.value = (config.num_ctx ?? '').toString();
-            numCtxSlider.value = numCtxInput.value || '2048';
-            numPredictInput.value = (config.num_predict ?? '').toString();
-            numPredictSlider.value = numPredictInput.value || '128';
-            temperatureInput.value = (config.temperature ?? '').toString();
-            temperatureSlider.value = temperatureInput.value || '0.8';
-            topPInput.value = (config.top_p ?? '').toString();
-            topKInput.value = (config.top_k ?? '').toString();
-            repeatPenaltyInput.value = (config.repeat_penalty ?? '').toString();
-            seedInput.value = (config.seed ?? '').toString();
-            stopInput.value = (config.stop || []).join(', ');
-
+            originalParams = message.originalParams;
             defaultMessage = message.defaultMessage;
-            originalValues = message.originalValues;
+            updateUI(message.settings, message.isRunning, message.model);
             break;
         }
         case 'updateFields': {
@@ -128,6 +132,30 @@ window.addEventListener('message', event => {
     }
 });
 
+// Individual Reset logic
+document.querySelectorAll('.reset-icon').forEach(icon => {
+    icon.addEventListener('click', () => {
+        const field = icon.getAttribute('data-field');
+        if (!field || !originalParams) return;
+
+        const val = originalParams[field];
+        switch (field) {
+            case 'num_gpu': numGpuInput.value = (val ?? '').toString(); numGpuSlider.value = numGpuInput.value || '0'; break;
+            case 'num_thread': numThreadInput.value = (val ?? '').toString(); numThreadSlider.value = numThreadInput.value || '1'; break;
+            case 'use_mmap': useMmapCheckbox.checked = !!val; break;
+            case 'use_mlock': useMlockCheckbox.checked = !!val; break;
+            case 'num_ctx': numCtxInput.value = (val ?? '').toString(); numCtxSlider.value = numCtxInput.value || '2048'; break;
+            case 'num_predict': numPredictInput.value = (val ?? '').toString(); numPredictSlider.value = numPredictInput.value || '128'; break;
+            case 'temperature': temperatureInput.value = (val ?? '').toString(); temperatureSlider.value = temperatureInput.value || '0.8'; break;
+            case 'top_p': topPInput.value = (val ?? '').toString(); break;
+            case 'top_k': topKInput.value = (val ?? '').toString(); break;
+            case 'repeat_penalty': repeatPenaltyInput.value = (val ?? '').toString(); break;
+            case 'seed': seedInput.value = (val ?? '').toString(); break;
+            case 'stop': stopInput.value = (Array.isArray(val) ? val : (val ? [val] : [])).join(', '); break;
+        }
+    });
+});
+
 applyFramingBtn.onclick = () => {
     vscode.postMessage({ command: 'applyFraming' });
 };
@@ -137,15 +165,11 @@ resetBtn.onclick = () => {
 };
 
 resetHardwareBtn.onclick = () => {
-    if (originalValues && originalValues.modelfile) {
-        vscode.postMessage({ command: 'resetGroup', group: 'hardware' });
-    }
+    vscode.postMessage({ command: 'resetGroup', group: 'hardware' });
 };
 
 resetInferenceBtn.onclick = () => {
-    if (originalValues && originalValues.modelfile) {
-        vscode.postMessage({ command: 'resetGroup', group: 'inference' });
-    }
+    vscode.postMessage({ command: 'resetGroup', group: 'inference' });
 };
 
 cancelBtn.onclick = () => {
@@ -154,18 +178,23 @@ cancelBtn.onclick = () => {
 
 saveBtn.onclick = () => {
     const config: any = {};
-    if (numGpuInput.value) config.num_gpu = parseInt(numGpuInput.value);
-    if (numThreadInput.value) config.num_thread = parseInt(numThreadInput.value);
+    const parse = (val: string, isFloat = false) => {
+        if (val === '') return undefined;
+        return isFloat ? parseFloat(val) : parseInt(val);
+    };
+
+    config.num_gpu = parse(numGpuInput.value);
+    config.num_thread = parse(numThreadInput.value);
     config.use_mmap = useMmapCheckbox.checked;
     config.use_mlock = useMlockCheckbox.checked;
 
-    if (numCtxInput.value) config.num_ctx = parseInt(numCtxInput.value);
-    if (numPredictInput.value) config.num_predict = parseInt(numPredictInput.value);
-    if (temperatureInput.value) config.temperature = parseFloat(temperatureInput.value);
-    if (topPInput.value) config.top_p = parseFloat(topPInput.value);
-    if (topKInput.value) config.top_k = parseInt(topKInput.value);
-    if (repeatPenaltyInput.value) config.repeat_penalty = parseFloat(repeatPenaltyInput.value);
-    if (seedInput.value) config.seed = parseInt(seedInput.value);
+    config.num_ctx = parse(numCtxInput.value);
+    config.num_predict = parse(numPredictInput.value);
+    config.temperature = parse(temperatureInput.value, true);
+    config.top_p = parse(topPInput.value, true);
+    config.top_k = parse(topKInput.value);
+    config.repeat_penalty = parse(repeatPenaltyInput.value, true);
+    config.seed = parse(seedInput.value);
     if (stopInput.value) {
         config.stop = stopInput.value.split(',').map(s => s.trim()).filter(s => s !== '');
     }
