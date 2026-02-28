@@ -60,4 +60,21 @@ suite('ModelSettingsService Migration and Compatibility', () => {
         assert.strictEqual(savedData['tinyllama:latest'].systemMessage, 'Updated message');
         assert.strictEqual(savedData['tinyllama:latest'].futureField, 'I should survive', 'Unknown fields should be preserved');
     });
+
+    test('getSettings should resolve correct base model name for instances', async () => {
+        const instanceId = 'test-uuid-123';
+        const instanceData = {
+            id: instanceId,
+            name: 'My Custom Instance',
+            modelName: 'llama3', // The actual base model
+            config: {}
+        };
+        
+        const allSettings = { [instanceId]: instanceData };
+        await mockContext.globalState.update('ollama-view.modelSettings', allSettings);
+
+        const resolved = service.getSettings(instanceId);
+        assert.strictEqual(resolved.modelName, 'llama3', 'Base model name should be llama3');
+        assert.strictEqual(resolved.id, instanceId, 'Instance ID should be the UUID');
+    });
 });

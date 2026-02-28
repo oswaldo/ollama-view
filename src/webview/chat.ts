@@ -378,6 +378,14 @@ function showInfoModal(m: ChatMessage) {
             <div class="metadata-value">${m.modelName || 'Unknown'}</div>
         </div>
         <div class="metadata-group">
+            <span class="metadata-label">Instance</span>
+            <div class="metadata-value">${m.instanceName || 'Primary Instance'}</div>
+        </div>
+        <div class="metadata-group">
+            <span class="metadata-label">Instance ID</span>
+            <div class="metadata-value">${m.instanceId || 'None'}</div>
+        </div>
+        <div class="metadata-group">
             <span class="metadata-label">Active Framing</span>
             <div class="metadata-value">${m.framingName || 'Default Model Setup'}</div>
         </div>
@@ -385,6 +393,10 @@ function showInfoModal(m: ChatMessage) {
             <span class="metadata-label">Timestamp</span>
             <div class="metadata-value">${formatTime(m.timestamp)}</div>
         </div>
+        <details class="info-details">
+            <summary>Raw Message Data</summary>
+            <textarea class="raw-data-textarea" readonly>${JSON.stringify(m, null, 2)}</textarea>
+        </details>
     `;
     modalContent.innerHTML = metaHtml;
     modalOverlay.classList.add('visible');

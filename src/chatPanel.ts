@@ -238,7 +238,8 @@ export class ChatPanel {
             this._panel.webview.postMessage({ command: 'updateFraming', framingId: framingIdOverride, framingName: name });
         }
 
-        let settings: any = this._modelSettingsService.getSettings(this._chat.modelName);
+        const instance = this._modelSettingsService.getSettings(this._chat.modelName);
+        let settings: any = instance;
         let activeFraming: any = undefined;
 
         if (this._chat.activeFramingId) {
@@ -302,7 +303,9 @@ export class ChatPanel {
                     ...settings,
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
-                    modelName: this._chat.modelName
+                    modelName: instance.modelName,
+                    instanceName: instance.name,
+                    instanceId: instance.id
                 });
                 if (updatedChat) {
                     this._chat = updatedChat;
@@ -315,7 +318,9 @@ export class ChatPanel {
                     ...settings,
                     framingId: activeFraming?.id,
                     framingName: activeFraming?.name,
-                    modelName: this._chat.modelName
+                    modelName: instance.modelName,
+                    instanceName: instance.name,
+                    instanceId: instance.id
                 });
                 if (newChat) {
                     const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._framingService, this._onStateChange);
@@ -335,11 +340,10 @@ export class ChatPanel {
 
         if (!messageProcessed) {
             const lastSystemPrompt = this._chat.messages.filter(m => m.role === 'system').pop()?.content;
-            const instance = this._modelSettingsService.getSettings(this._chat.modelName);
             
             if (this._chat.messages.length === 0 || (settings.systemMessage && settings.systemMessage !== lastSystemPrompt)) {
                 await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage || '', {
-                    modelName: this._chat.modelName,
+                    modelName: instance.modelName,
                     instanceName: instance.name,
                     instanceId: instance.id,
                     framingId: activeFraming?.id,
@@ -355,7 +359,7 @@ export class ChatPanel {
                 systemTurnSuffix: settings.systemTurnSuffix,
                 framingId: activeFraming?.id,
                 framingName: activeFraming?.name,
-                modelName: this._chat.modelName,
+                modelName: instance.modelName,
                 instanceName: instance.name,
                 instanceId: instance.id
             };
@@ -433,7 +437,7 @@ export class ChatPanel {
             const instance = this._modelSettingsService.getSettings(this._chat.modelName);
 
             await this._chatService.addMessage(this._chat.id, 'assistant', fullResponse, {
-                modelName: this._chat.modelName,
+                modelName: instance.modelName,
                 instanceName: instance.name,
                 instanceId: instance.id,
                 framingId: activeFraming?.id,
@@ -464,7 +468,7 @@ export class ChatPanel {
             
             // Persist the error message so it survives restart
             await this._chatService.addMessage(this._chat.id, 'assistant', errorText, {
-                modelName: this._chat.modelName,
+                modelName: instance.modelName,
                 instanceName: instance.name,
                 instanceId: instance.id,
                 isError: true
