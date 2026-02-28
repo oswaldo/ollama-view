@@ -15,6 +15,8 @@ export interface ChatMessage {
     framingName?: string;
     // Turn metadata
     modelName?: string;
+    instanceName?: string;
+    instanceId?: string;
     isError?: boolean;
 }
 
@@ -106,6 +108,8 @@ export class ChatService {
             framingId?: string;
             framingName?: string;
             modelName?: string;
+            instanceName?: string;
+            instanceId?: string;
             isError?: boolean;
         }
     ): Promise<Chat | undefined> {

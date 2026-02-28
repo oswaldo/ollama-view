@@ -182,6 +182,9 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
 
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper ' + role;
+    if (m.isError) {
+        wrapper.classList.add('error');
+    }
 
     if (showInjections && m.systemTurnPrefix) {
         const inj = document.createElement('div');
@@ -192,7 +195,7 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
 
     const header = document.createElement('div');
     header.className = 'message-header';
-    const displayName = m.modelName || modelName;
+    const displayName = m.instanceName || m.modelName || modelName;
     header.textContent = role === 'user' ? 'You' : (m.isError || role === 'error' ? 'Error' : (role === 'system' ? 'System' : displayName));
     wrapper.appendChild(header);
 
