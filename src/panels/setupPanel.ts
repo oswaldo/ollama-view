@@ -2,12 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
+import { SetupExtensionToWebviewCommand, SetupWebviewToExtensionCommand } from '../contracts/IWebviewMessages';
 import { Logger } from '../logger';
 import { ModelInstance } from '../models/modelInstance';
 import { OllamaModel, OllamaShowResponse } from '../ollamaApi';
 import { OllamaProvider } from '../ollamaProvider';
 import { FramingService } from '../services/framingService';
 import { ModelService } from '../services/modelService';
+import { assertNever } from '../utils';
 
 export class SetupPanel {
     public static panels: Map<string, SetupPanel> = new Map();
@@ -86,7 +88,7 @@ export class SetupPanel {
         this._update();
 
         this._panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: SetupWebviewToExtensionCommand) => {
                 switch (message.command) {
                     case 'save': {
                         const settings = this._modelService.getSettings(this._instanceId);
@@ -116,11 +118,13 @@ export class SetupPanel {
                         await this._handleApplyFraming();
                         return;
                     case 'resetGroup':
-                        await this._handleResetGroup(message.group as 'hardware' | 'inference');
+                        await this._handleResetGroup(message.group);
                         return;
                     case 'cancel':
                         this.dispose();
                         return;
+                    default:
+                        assertNever(message);
                 }
             },
             null,
@@ -128,6 +132,10 @@ export class SetupPanel {
         );
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    }
+
+    private async _postMessage(message: SetupExtensionToWebviewCommand) {
+        await this._panel.webview.postMessage(message);
     }
 
     private async _handleResetGroup(group: 'hardware' | 'inference') {
@@ -161,12 +169,14 @@ export class SetupPanel {
                 : undefined;
         }
 
-        this._panel.webview.postMessage({
+        this._postMessage({
             command: 'init',
             model: this._model,
             settings: instance,
             originalValues: this._originalValues,
+            originalParams: params,
             defaultMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
+            isRunning: this._ollamaProvider.isModelRunning(instance.ollamaModelName || instance.modelName),
         });
     }
 
@@ -228,7 +238,7 @@ export class SetupPanel {
 
         if (selected) {
             const f = selected.framing;
-            this._panel.webview.postMessage({
+            this._postMessage({
                 command: 'updateFields',
                 settings: {
                     systemMessage: f.systemMessage,
@@ -269,11 +279,11 @@ export class SetupPanel {
             const instance = this._modelService.getSettings(this._instanceId);
             const originalParams = this._originalValues ? this._extractParams(this._originalValues) : {};
 
-            this._panel.webview.postMessage({
+            this._postMessage({
                 command: 'init',
                 model: this._model,
                 settings: instance,
-                originalValues: this._originalValues,
+                originalValues: this._originalValues || undefined,
                 originalParams: originalParams,
                 defaultMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
                 isRunning: this._ollamaProvider.isModelRunning(instance.ollamaModelName || instance.modelName),

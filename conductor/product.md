@@ -5,7 +5,9 @@ The primary purpose of this Visual Studio Code extension is to provide a compreh
 
 ## Key Features
 *   **Model Management**: View, pull, start, stop, and delete local Ollama models.
+*   **Named Model Instances**: Create and manage multiple customized instances of the same base model with unique names and descriptions.
 *   **Model Setup**: Configure model-specific system prompts and injection templates (prefixes/suffixes). Includes the ability to apply saved configurations for quick configuration.
+*   **Advanced Configuration**: Deep control over Ollama model parameters, including Hardware (GPU/Threads/Memory) and Inference (Temperature/Context/Predict) limits.
 *   **Model Framing**: Create, edit, and manage a library of system configurations (system prompts, injections) organized by tags. Built-in framings provide a starting point for specialized AI personas.
 *   **Interactive Chat**: Engage in persistent, multi-turn conversations with Ollama models directly within VS Code, including message editing, regeneration, conversation branching, and chat-level framing overrides.
 *   **Prompt Engineering Tools**: Visibility toggle for hidden system turns and injections, providing transparency for advanced prompt debugging.

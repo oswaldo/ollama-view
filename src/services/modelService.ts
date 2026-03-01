@@ -4,6 +4,7 @@ import { IModelSettingsRepository } from '../contracts/IModelSettingsRepository'
 import { IOllamaClient } from '../contracts/IOllamaClient';
 import { Logger } from '../logger';
 import { ModelInstance } from '../models/modelInstance';
+import { ChatService } from './chatService';
 
 export interface ModelSettings {
     systemMessage?: string;
@@ -24,6 +25,7 @@ export class ModelService {
     constructor(
         private repository: IModelSettingsRepository,
         private api: IOllamaClient,
+        private chatService: ChatService,
     ) {}
 
     /**
@@ -40,7 +42,7 @@ export class ModelService {
         }
 
         // Migration from V1 (ModelSettings) to V2 (ModelInstance)
-        if (!entry.id || !entry.modelName) {
+        if (!entry.id || !entry.modelName || entry.isManaged === undefined) {
             entry = this.migrateToInstance(instanceIdOrModelName, entry as unknown as ModelSettings);
         }
 
@@ -55,6 +57,7 @@ export class ModelService {
             ollamaModelName: modelName, // Primary instance uses the base name
             config: {},
             systemMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
+            isManaged: false, // Default instances are base models
             createdAt: Date.now(),
             updatedAt: Date.now(),
             dataVersion: ModelService.CURRENT_VERSION,
@@ -69,6 +72,7 @@ export class ModelService {
             modelName: modelName,
             ollamaModelName: modelName,
             config: {},
+            isManaged: false,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             dataVersion: ModelService.CURRENT_VERSION,
@@ -129,6 +133,35 @@ export class ModelService {
         return instances.sort((a, b) => a.createdAt - b.createdAt);
     }
 
+    /**
+     * Finds an instance (primary or custom) by its internal Ollama name.
+     */
+    getInstanceByOllamaName(ollamaModelName: string): ModelInstance | undefined {
+        const allSettings = this.repository.getAll();
+        const nameToMatch = ollamaModelName.replace(/:latest$/, '');
+
+        // 1. Check primary instances (keys)
+        if (allSettings[ollamaModelName]) {
+            return this.getSettings(ollamaModelName);
+        }
+        if (allSettings[nameToMatch]) {
+            return this.getSettings(nameToMatch);
+        }
+
+        // 2. Check all custom instances
+        for (const key in allSettings) {
+            const instance = allSettings[key];
+            if (instance.ollamaModelName) {
+                const managedName = instance.ollamaModelName.replace(/:latest$/, '');
+                if (managedName === nameToMatch || instance.ollamaModelName === ollamaModelName) {
+                    return instance;
+                }
+            }
+        }
+
+        return undefined;
+    }
+
     async createInstance(modelName: string, name: string): Promise<ModelInstance> {
         const allSettings = this.repository.getAll();
 
@@ -160,6 +193,7 @@ export class ModelService {
             ollamaModelName: ollamaName,
             config: {},
             systemMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
+            isManaged: true, // Custom instances are managed
             createdAt: Date.now(),
             updatedAt: Date.now(),
             dataVersion: ModelService.CURRENT_VERSION,
@@ -187,8 +221,14 @@ export class ModelService {
                 }
             }
 
+            // Cascading delete for chats
+            await this.chatService.deleteChatsForModel(instanceId);
+
             delete allSettings[instanceId];
             await this.repository.save(allSettings);
+        } else {
+            // Even if no settings found, try to cleanup chats for this ID (might be primary instance ID)
+            await this.chatService.deleteChatsForModel(instanceId);
         }
     }
 
@@ -211,6 +251,10 @@ export class ModelService {
                         // Ignore deletion errors for orphaned managed models
                     }
                 }
+
+                // Cascading delete for chats of the orphaned instance
+                await this.chatService.deleteChatsForModel(key);
+
                 delete allSettings[key];
                 changed = true;
             }

@@ -1,126 +1,187 @@
-interface WebviewMessage {
-    command: string;
-    [key: string]: unknown;
-}
+import { SetupExtensionToWebviewCommand, SetupWebviewToExtensionCommand } from '../contracts/IWebviewMessages';
+import { ModelInstance } from '../models/modelInstance';
+import { assertNever } from '../utils';
 
 declare function acquireVsCodeApi(): {
-    postMessage(message: WebviewMessage): void;
+    postMessage(message: SetupWebviewToExtensionCommand): void;
     getState(): unknown;
     setState(state: unknown): void;
 };
 
 const vscode = acquireVsCodeApi();
 
-interface OllamaModel {
-    name: string;
-    size: number;
-}
-
-interface ModelInstance {
-    id: string;
-    name: string;
-    modelName: string;
-    ollamaModelName: string;
-    systemMessage: string;
-    config: {
-        num_gpu?: number;
-        num_thread?: number;
-        use_mmap?: boolean;
-        use_mlock?: boolean;
-        num_ctx?: number;
-        num_predict?: number;
-        temperature?: number;
-        top_p?: number;
-        top_k?: number;
-        repeat_penalty?: number;
-        seed?: number;
-        stop?: string[];
-    };
-}
-
-const headerTitle = document.getElementById('header-title') as HTMLHeadingElement;
-const modelNameSpan = document.getElementById('model-name') as HTMLSpanElement;
-const modelSizeSpan = document.getElementById('model-size') as HTMLSpanElement;
-const instanceStatus = document.getElementById('instance-status') as HTMLDivElement;
-
+// DOM Elements - Header & Details
 const instanceNameInput = document.getElementById('instance-name') as HTMLInputElement;
+const instanceDescriptionTextarea = document.getElementById('instance-description') as HTMLTextAreaElement;
+const modelDetailsDiv = document.getElementById('model-details') as HTMLDivElement;
+const statusBadge = document.getElementById('status-badge') as HTMLDivElement;
+
+// DOM Elements - Prompt Configuration
 const systemMessageTextarea = document.getElementById('system-message') as HTMLTextAreaElement;
+const userPrefixTextarea = document.getElementById('user-prefix') as HTMLTextAreaElement;
+const userSuffixTextarea = document.getElementById('user-suffix') as HTMLTextAreaElement;
+const systemTurnPrefixTextarea = document.getElementById('system-turn-prefix') as HTMLTextAreaElement;
+const systemTurnSuffixTextarea = document.getElementById('system-turn-suffix') as HTMLTextAreaElement;
 
-// Hardware Config
-const numGpuInput = document.getElementById('num-gpu') as HTMLInputElement;
-const numThreadInput = document.getElementById('num-thread') as HTMLInputElement;
-const useMmapCheckbox = document.getElementById('use-mmap') as HTMLInputElement;
-const useMlockCheckbox = document.getElementById('use-mlock') as HTMLInputElement;
+// DOM Elements - Hardware
+const numGpuInput = document.getElementById('num_gpu') as HTMLInputElement;
+const numGpuSlider = document.getElementById('num_gpu-slider') as HTMLInputElement;
+const numThreadInput = document.getElementById('num_thread') as HTMLInputElement;
+const numThreadSlider = document.getElementById('num_thread-slider') as HTMLInputElement;
+const useMmapCheckbox = document.getElementById('use_mmap') as HTMLInputElement;
+const useMlockCheckbox = document.getElementById('use_mlock') as HTMLInputElement;
 
-// Inference Config
-const numCtxInput = document.getElementById('num-ctx') as HTMLInputElement;
-const numPredictInput = document.getElementById('num-predict') as HTMLInputElement;
+// DOM Elements - Inference
+const numCtxInput = document.getElementById('num_ctx') as HTMLInputElement;
+const numCtxSlider = document.getElementById('num_ctx-slider') as HTMLInputElement;
+const numPredictInput = document.getElementById('num_predict') as HTMLInputElement;
+const numPredictSlider = document.getElementById('num_predict-slider') as HTMLInputElement;
 const temperatureInput = document.getElementById('temperature') as HTMLInputElement;
-const topPInput = document.getElementById('top-p') as HTMLInputElement;
-const topKInput = document.getElementById('top-k') as HTMLInputElement;
-const repeatPenaltyInput = document.getElementById('repeat-penalty') as HTMLInputElement;
+const temperatureSlider = document.getElementById('temperature-slider') as HTMLInputElement;
+const topPInput = document.getElementById('top_p') as HTMLInputElement;
+const topKInput = document.getElementById('top_k') as HTMLInputElement;
+const repeatPenaltyInput = document.getElementById('repeat_penalty') as HTMLInputElement;
 const seedInput = document.getElementById('seed') as HTMLInputElement;
 const stopInput = document.getElementById('stop') as HTMLInputElement;
 
-const applyFramingBtn = document.getElementById('apply-framing-btn') as HTMLButtonElement;
+// Buttons
+const applyTemplateBtn = document.getElementById('apply-template-btn') as HTMLButtonElement;
+const resetToDefaultBtn = document.getElementById('reset-btn') as HTMLButtonElement;
 const cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
-
-const resetHardwareBtn = document.getElementById('reset-hardware') as HTMLButtonElement;
-const resetInferenceBtn = document.getElementById('reset-inference') as HTMLButtonElement;
+const generateSeedBtn = document.getElementById('generate-seed-btn') as HTMLElement;
+const resetHardwareBtn = document.getElementById('reset-hardware-btn') as HTMLButtonElement;
+const resetInferenceBtn = document.getElementById('reset-inference-btn') as HTMLButtonElement;
 
 let currentInstance: ModelInstance;
 
+// Helper to sync slider and input
+function syncSliderInput(slider: HTMLInputElement, input: HTMLInputElement) {
+    if (!slider || !input) {
+        return;
+    }
+    slider.addEventListener('input', () => {
+        input.value = slider.value;
+    });
+    input.addEventListener('input', () => {
+        slider.value = input.value;
+    });
+}
+
+syncSliderInput(numGpuSlider, numGpuInput);
+syncSliderInput(numThreadSlider, numThreadInput);
+syncSliderInput(numCtxSlider, numCtxInput);
+syncSliderInput(numPredictSlider, numPredictInput);
+syncSliderInput(temperatureSlider, temperatureInput);
+
+// Handle messages from the extension
 window.addEventListener('message', (event) => {
-    const message = event.data;
+    const message = event.data as SetupExtensionToWebviewCommand;
     switch (message.command) {
         case 'init': {
-            const model = message.model as OllamaModel;
-            const settings = message.settings as ModelInstance;
+            const model = message.model;
+            const settings = message.settings;
             currentInstance = settings;
 
-            headerTitle.textContent = `Setup: ${settings.name}`;
-            modelNameSpan.textContent = model.name;
-            modelSizeSpan.textContent = (model.size / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+            instanceNameInput.value = settings.name || '';
+            instanceDescriptionTextarea.value = settings.description || '';
+            modelDetailsDiv.textContent = `${model.name} • ${(model.size / 1024 / 1024 / 1024).toFixed(2)} GB`;
 
             if (message.isRunning) {
-                instanceStatus.textContent = 'Running';
-                instanceStatus.className = 'status-badge status-running';
+                statusBadge.textContent = 'Running';
+                statusBadge.className = 'badge status-running';
+                statusBadge.classList.remove('hidden');
             } else {
-                instanceStatus.textContent = 'Stopped';
-                instanceStatus.className = 'status-badge status-stopped';
+                statusBadge.textContent = 'Stopped';
+                statusBadge.className = 'badge status-stopped';
+                statusBadge.classList.remove('hidden');
             }
 
-            instanceNameInput.value = settings.name;
-            systemMessageTextarea.value = settings.systemMessage || (message.defaultMessage as string);
+            // Prompt Config
+            systemMessageTextarea.value = settings.systemMessage || message.defaultMessage;
+            userPrefixTextarea.value = settings.userMessagePrefix || '';
+            userSuffixTextarea.value = settings.userMessageSuffix || '';
+            systemTurnPrefixTextarea.value = settings.systemTurnPrefix || '';
+            systemTurnSuffixTextarea.value = settings.systemTurnSuffix || '';
 
-            const c = settings.config;
-            numGpuInput.value = (c.num_gpu ?? '').toString();
-            numThreadInput.value = (c.num_thread ?? '').toString();
+            // Hardware Config
+            const c = settings.config || {};
+            const setVal = (input: HTMLInputElement, slider: HTMLInputElement, val: string | number | boolean | string[] | undefined) => {
+                const v = val !== undefined && val !== null ? val.toString() : '';
+                input.value = v;
+                if (slider) {
+                    slider.value = v;
+                }
+            };
+
+            setVal(numGpuInput, numGpuSlider, c.num_gpu);
+            setVal(numThreadInput, numThreadSlider, c.num_thread);
             useMmapCheckbox.checked = !!c.use_mmap;
             useMlockCheckbox.checked = !!c.use_mlock;
 
-            numCtxInput.value = (c.num_ctx ?? '').toString();
-            numPredictInput.value = (c.num_predict ?? '').toString();
-            temperatureInput.value = (c.temperature ?? '').toString();
+            // Inference Config
+            setVal(numCtxInput, numCtxSlider, c.num_ctx);
+            setVal(numPredictInput, numPredictSlider, c.num_predict);
+            setVal(temperatureInput, temperatureSlider, c.temperature);
+            
             topPInput.value = (c.top_p ?? '').toString();
             topKInput.value = (c.top_k ?? '').toString();
             repeatPenaltyInput.value = (c.repeat_penalty ?? '').toString();
             seedInput.value = (c.seed ?? '').toString();
             stopInput.value = (c.stop || []).join(', ');
+
+            // Setup Individual Reset Icons
+            document.querySelectorAll('.reset-icon').forEach(icon => {
+                (icon as HTMLElement).onclick = () => {
+                    const field = (icon as HTMLElement).dataset.field;
+                    const originalParams = message.originalParams || {};
+                    const originalVal = originalParams[field!];
+                    
+                    const input = document.getElementById(field!) as HTMLInputElement;
+                    const slider = document.getElementById(`${field}-slider`) as HTMLInputElement;
+                    
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            input.checked = !!originalVal;
+                        } else {
+                            const v = originalVal !== undefined && originalVal !== null ? originalVal.toString() : '';
+                            input.value = v;
+                            if (slider) {
+                                slider.value = v;
+                            }
+                        }
+                    }
+                };
+            });
+
             break;
         }
         case 'updateFields': {
-            const s = message.settings as Partial<ModelInstance>;
+            const s = message.settings;
             if (s.systemMessage !== undefined) {
                 systemMessageTextarea.value = s.systemMessage;
             }
+            if (s.userMessagePrefix !== undefined) {
+                userPrefixTextarea.value = s.userMessagePrefix;
+            }
+            if (s.userMessageSuffix !== undefined) {
+                userSuffixTextarea.value = s.userMessageSuffix;
+            }
+            if (s.systemTurnPrefix !== undefined) {
+                systemTurnPrefixTextarea.value = s.systemTurnPrefix;
+            }
+            if (s.systemTurnSuffix !== undefined) {
+                systemTurnSuffixTextarea.value = s.systemTurnSuffix;
+            }
             break;
         }
+        default:
+            assertNever(message);
     }
 });
 
-applyFramingBtn.onclick = () => {
+// Button Actions
+applyTemplateBtn.onclick = () => {
     vscode.postMessage({ command: 'applyFraming' });
 };
 
@@ -132,17 +193,36 @@ resetInferenceBtn.onclick = () => {
     vscode.postMessage({ command: 'resetGroup', group: 'inference' });
 };
 
+resetToDefaultBtn.onclick = () => {
+    // This is a full reset to extension defaults
+    vscode.postMessage({ command: 'resetGroup', group: 'hardware' });
+    vscode.postMessage({ command: 'resetGroup', group: 'inference' });
+    systemMessageTextarea.value = 'You are a helpful AI assistant.';
+    userPrefixTextarea.value = '';
+    userSuffixTextarea.value = '';
+    systemTurnPrefixTextarea.value = '';
+    systemTurnSuffixTextarea.value = '';
+};
+
 cancelBtn.onclick = () => {
     vscode.postMessage({ command: 'cancel' });
 };
 
-saveBtn.onclick = () => {
-    const config = currentInstance.config;
+generateSeedBtn.onclick = () => {
+    const randomSeed = Math.floor(Math.random() * 1000000);
+    seedInput.value = randomSeed.toString();
+};
 
-    // Helper to get numeric value or undefined
+saveBtn.onclick = () => {
+    const config = { ...currentInstance.config };
+
     const getNum = (input: HTMLInputElement) => {
         const val = input.value.trim();
-        return val === '' ? undefined : Number(val);
+        if (val === '') {
+            return undefined;
+        }
+        const num = Number(val);
+        return isNaN(num) ? undefined : num;
     };
 
     config.num_gpu = getNum(numGpuInput);
@@ -159,20 +239,19 @@ saveBtn.onclick = () => {
     config.seed = getNum(seedInput);
 
     const stopStr = stopInput.value.trim();
-    config.stop =
-        stopStr === ''
-            ? undefined
-            : stopStr
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0);
+    config.stop = stopStr === '' ? undefined : stopStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
     vscode.postMessage({
         command: 'save',
         instance: {
             ...currentInstance,
             name: instanceNameInput.value,
+            description: instanceDescriptionTextarea.value,
             systemMessage: systemMessageTextarea.value,
+            userMessagePrefix: userPrefixTextarea.value,
+            userMessageSuffix: userSuffixTextarea.value,
+            systemTurnPrefix: systemTurnPrefixTextarea.value,
+            systemTurnSuffix: systemTurnSuffixTextarea.value,
             config,
         },
     });

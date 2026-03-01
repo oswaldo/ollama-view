@@ -31,6 +31,9 @@ export interface ModelInstance {
     /** User-visible name for this configuration (e.g. 'Creative Writing', 'Fast Code') */
     name: string;
 
+    /** Optional notes about this instance */
+    description?: string;
+
     /** The base Ollama model name (e.g. 'llama3', 'mistral') */
     modelName: string;
 
@@ -47,8 +50,26 @@ export interface ModelInstance {
     /** Default system message for this instance */
     systemMessage?: string;
 
+    /** Text injected before every user message */
+    userMessagePrefix?: string;
+
+    /** Text injected after every user message */
+    userMessageSuffix?: string;
+
+    /** Separate system message turn sent before the user message */
+    systemTurnPrefix?: string;
+
+    /** Separate system message turn sent after the user message */
+    systemTurnSuffix?: string;
+
     /** Optional framing override ID */
     activeFramingId?: string;
+
+    /**
+     * Whether this is a managed custom instance created by the extension.
+     * If false, it represents a primary/base model instance.
+     */
+    isManaged: boolean;
 
     /** Timestamp when the instance was created */
     createdAt: number;

@@ -93,24 +93,30 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         this._onDidChangeTreeData.fire();
     }
 
+    private normalizeName(name: string): string {
+        return name.replace(/:latest$/, '');
+    }
+
     isModelRunning(modelName: string): boolean {
-        return this.runningModels.has(modelName);
+        return this.runningModels.has(this.normalizeName(modelName));
     }
 
     setStarting(modelName: string, starting: boolean) {
+        const name = this.normalizeName(modelName);
         if (starting) {
-            this.startingModels.add(modelName);
+            this.startingModels.add(name);
         } else {
-            this.startingModels.delete(modelName);
+            this.startingModels.delete(name);
         }
         this.refresh();
     }
 
     setStopping(modelName: string, stopping: boolean) {
+        const name = this.normalizeName(modelName);
         if (stopping) {
-            this.stoppingModels.add(modelName);
+            this.stoppingModels.add(name);
         } else {
-            this.stoppingModels.delete(modelName);
+            this.stoppingModels.delete(name);
         }
         this.refresh();
     }
@@ -154,9 +160,11 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
             // Return instances for this model
             const instances = this.modelService.getInstancesForModel(element.model.name);
             return instances.map((inst) => {
-                const isStart = this.startingModels.has(inst.modelName);
-                const isStop = this.stoppingModels.has(inst.modelName);
-                const isRun = this.runningModels.has(inst.modelName) && !isStart && !isStop;
+                const actualName = inst.ollamaModelName || inst.modelName;
+                const normName = this.normalizeName(actualName);
+                const isStart = this.startingModels.has(normName);
+                const isStop = this.stoppingModels.has(normName);
+                const isRun = this.runningModels.has(normName) && !isStart && !isStop;
                 return new OllamaInstanceItem(inst, isRun, isStart, isStop);
             });
         }
@@ -164,12 +172,20 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         // Root elements: Models
         const [models, running] = await Promise.all([this.api.listModels(), this.api.listRunning()]);
 
-        this.runningModels = new Set(running.map((r) => r.model));
+        this.runningModels = new Set(running.map((r) => this.normalizeName(r.model)));
 
         // Cleanup settings for models that no longer exist
         this.modelService.cleanupOrphanedSettings(models.map((m) => m.name));
 
-        return models.map((m) => new OllamaModelItem(m));
+        // Filter out models that are actually managed instances of other models
+        return models.filter(m => {
+            const instance = this.modelService.getInstanceByOllamaName(m.name);
+            if (!instance) {
+                return true; // External model, show at root
+            }
+            // If it's ours, only show at root if it's NOT a managed custom instance
+            return !instance.isManaged;
+        }).map((m) => new OllamaModelItem(m));
     }
 
     getApi(): IOllamaClient {

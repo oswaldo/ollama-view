@@ -45,7 +45,7 @@ Enhance the Model Setup webview with the new instance naming fields and collapsi
     - [x] Implement the "Reset" button logic for each group.
     - [x] Write failing tests for the reset functionality in `src/test/setupPanel.test.ts`.
     - [x] Confirm all tests pass.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: UI - Model Setup Panel' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 2: UI - Model Setup Panel' (Protocol in workflow.md)
 
 ## Phase 3: Sidebar and Instance Selection
 Update the extension's sidebar to support grouping model instances and navigating between them.
@@ -81,7 +81,7 @@ Finalize the track with updated visuals and documentation.
     - [ ] Take screenshots of the new sidebar grouping.
     - [ ] Take screenshots of the advanced Setup panel (expanded sections, reset icons, dice icon).
     - [ ] Take screenshots of the updated Chat panel (tab titles, error messages).
-- [ ] Task: Review README and Product Documentation
-    - [ ] Update README.md to highlight "Advanced Model Configuration" and "Named Instances".
-    - [ ] Ensure wording is compelling for developers.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Post-Implementation & Documentation' (Protocol in workflow.md)
+- [x] Task: Review README and Product Documentation (docs synchronized)
+    - [x] Update README.md to highlight "Advanced Model Configuration" and "Named Instances".
+    - [x] Ensure wording is compelling for developers.
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Post-Implementation & Documentation' (Protocol in workflow.md)

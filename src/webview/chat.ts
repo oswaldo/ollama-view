@@ -1,10 +1,8 @@
-interface WebviewMessage {
-    command: string;
-    [key: string]: unknown;
-}
+import { ChatExtensionToWebviewCommand, ChatWebviewToExtensionCommand } from '../contracts/IChatWebviewMessages';
+import { assertNever } from '../utils';
 
 declare function acquireVsCodeApi(): {
-    postMessage(message: WebviewMessage): void;
+    postMessage(message: ChatWebviewToExtensionCommand): void;
     getState(): unknown;
     setState(state: unknown): void;
 };
@@ -22,6 +20,8 @@ interface ChatMessage {
     framingId?: string;
     framingName?: string;
     modelName?: string;
+    instanceName?: string;
+    instanceId?: string;
     isError?: boolean;
 }
 
@@ -550,7 +550,7 @@ input.addEventListener('keydown', (e) => {
 
 // Handle messages from extension
 window.addEventListener('message', (event) => {
-    const message = event.data;
+    const message = event.data as ChatExtensionToWebviewCommand;
     switch (message.command) {
         case 'initState': {
             modelName = message.modelName;
@@ -664,5 +664,7 @@ window.addEventListener('message', (event) => {
             renderMessages(true);
             break;
         }
+        default:
+            assertNever(message);
     }
 });

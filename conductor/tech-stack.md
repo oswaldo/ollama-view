@@ -33,14 +33,16 @@ Contains pure domain logic and state management.
 Coordinates multiple services and infrastructure to execute complex workflows.
 *   **Goal**: Centralize end-to-end flows (e.g., preparing messages, calling APIs, persisting results) to prevent logic duplication and regressions.
 
-### 5. UI Layer (`src/panels`, `src/providers`)
-Webview controllers and Tree Data Providers.
+### 5. UI Layer (`src/panels`, `src/providers`, `src/webview`)
+Webview controllers, Tree Data Providers, and frontend logic.
 *   **Goal**: Handle user interaction and VS Code UI events, delegating all domain logic to the Orchestrator or Services.
 *   **Key Classes**: `ChatPanel`, `SetupPanel`, `OllamaProvider`.
+*   **Pattern: Discriminated Unions for UI Communication**: All webview-to-extension communication uses rigorous type-safe contracts (`SetupWebviewToExtensionCommand`, etc.) with exhaustiveness checking (`assertNever`) to ensure no message is left unhandled.
 
 ## Ollama API Communication
 A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
 *   **Guideline**: Always verify API endpoints and JSON structures against the [latest Ollama API documentation](https://raw.githubusercontent.com/ollama/ollama/refs/heads/main/docs/api.md) before implementation. Prefer structured `parameters` objects over raw `Modelfile` strings when possible.
+*   **Managed Instance Persistence**: Custom model instances utilize Ollama's `api/create` endpoint to persist custom hardware and parameter configurations as unique model files on the host system.
 
 ## Development Tools
 *   **Build Tools**:

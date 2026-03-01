@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Services
     const chatService = new ChatService(chatRepository);
-    const modelService = new ModelService(modelSettingsRepository, ollamaApi);
+    const modelService = new ModelService(modelSettingsRepository, ollamaApi, chatService);
     const framingService = new FramingService(context);
     const chatOrchestrator = new ChatOrchestrator(chatService, modelService, framingService, ollamaApi);
 
@@ -307,7 +307,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.start', async (node?: OllamaInstanceItem | OllamaModelItem) => {
-            let modelName = node instanceof OllamaInstanceItem ? node.instance.modelName : node?.model.name;
+            let modelName = node instanceof OllamaInstanceItem ? (node.instance.ollamaModelName || node.instance.modelName) : node?.model.name;
             if (!modelName) {
                 const api = ollamaProvider.getApi();
                 const [allModels, runningModels] = await Promise.all([api.listModels(), api.listRunning()]);
@@ -354,7 +354,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('ollamaView.stop', async (node?: OllamaInstanceItem | OllamaModelItem) => {
-            let modelName = node instanceof OllamaInstanceItem ? node.instance.modelName : node?.model.name;
+            let modelName = node instanceof OllamaInstanceItem ? (node.instance.ollamaModelName || node.instance.modelName) : node?.model.name;
 
             if (!modelName) {
                 const api = ollamaProvider.getApi();
@@ -466,11 +466,20 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 const confirm = await vscode.window.showWarningMessage(
-                    `Delete instance "${node.instance.name}"?`,
+                    `Delete instance "${node.instance.name}"? All associated chats will be permanently deleted. This action cannot be undone.`,
                     { modal: true },
                     'Delete',
                 );
                 if (confirm === 'Delete') {
+                    // Close any open chat panels for this instance
+                    const chats = chatService.getChatsForModel(node.instance.id);
+                    for (const chat of chats) {
+                        const panel = ChatPanel.panels.get(chat.id);
+                        if (panel) {
+                            panel.dispose();
+                        }
+                    }
+
                     await modelService.deleteSettings(node.instance.id);
                     ollamaProvider.refresh();
                 }
@@ -501,7 +510,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             const confirm = await vscode.window.showWarningMessage(
-                `Are you sure you want to delete model ${modelName} and all its instances?`,
+                `Delete model "${modelName}"? This will permanently delete the model, all its instances, and all associated chats. This action cannot be undone.`,
                 { modal: true },
                 'Delete',
             );
@@ -515,12 +524,20 @@ export function activate(context: vscode.ExtensionContext) {
                             cancellable: false,
                         },
                         async () => {
-                            await ollamaProvider.getApi().deleteModel(modelName!);
-                            // Cleanup all instances
+                            // Close any open chat panels for this model (all instances)
                             const instances = modelService.getInstancesForModel(modelName!);
                             for (const inst of instances) {
+                                const chats = chatService.getChatsForModel(inst.id);
+                                for (const chat of chats) {
+                                    const panel = ChatPanel.panels.get(chat.id);
+                                    if (panel) {
+                                        panel.dispose();
+                                    }
+                                }
                                 await modelService.deleteSettings(inst.id);
                             }
+                            
+                            await ollamaProvider.getApi().deleteModel(modelName!);
                         },
                     );
                     ollamaProvider.refresh();

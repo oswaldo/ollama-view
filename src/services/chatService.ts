@@ -80,6 +80,12 @@ export class ChatService {
         await this.repository.save(chats);
     }
 
+    async deleteChatsForModel(modelId: string): Promise<void> {
+        let chats = this.repository.getAll();
+        chats = chats.filter((c) => c.modelName !== modelId);
+        await this.repository.save(chats);
+    }
+
     async setActiveFraming(chatId: string, framingId: string | undefined): Promise<void> {
         const chat = this.repository.getById(chatId);
         if (chat) {

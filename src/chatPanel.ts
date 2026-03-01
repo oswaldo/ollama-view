@@ -2,17 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
+import { ChatExtensionToWebviewCommand, ChatWebviewToExtensionCommand } from './contracts/IChatWebviewMessages';
 import { Logger } from './logger';
 import { OllamaProvider } from './ollamaProvider';
 import { ChatOrchestrator } from './services/chatOrchestrator';
 import { Chat, ChatService } from './services/chatService';
 import { FramingService } from './services/framingService';
 import { ModelService } from './services/modelService';
-
-interface WebviewMessage {
-    command: string;
-    [key: string]: unknown;
-}
+import { assertNever } from './utils';
 
 export class ChatPanel {
     public static panels: Map<string, ChatPanel> = new Map();
@@ -106,41 +103,41 @@ export class ChatPanel {
         this._update();
 
         this._panel.webview.onDidReceiveMessage(
-            async (message: WebviewMessage) => {
+            async (message: ChatWebviewToExtensionCommand) => {
                 switch (message.command) {
                     case 'sendMessage':
                         await this.handleUserMessage(
-                            message.text as string,
-                            message.editOptions as { mode: 'truncate' | 'fork'; index: number },
-                            message.framingId as string,
+                            message.text,
+                            message.editOptions,
+                            message.framingId,
                         );
                         return;
                     case 'requestTruncate':
                         await this._handleHistoryAction(
                             'truncate',
-                            message.index as number,
-                            message.content as string,
-                            message.framingId as string,
-                            message.framingName as string,
+                            message.index,
+                            message.content,
+                            message.framingId,
+                            message.framingName,
                         );
                         return;
                     case 'requestFork':
                         await this._handleHistoryAction(
                             'fork',
-                            message.index as number,
-                            message.content as string,
-                            message.framingId as string,
-                            message.framingName as string,
+                            message.index,
+                            message.content,
+                            message.framingId,
+                            message.framingName,
                         );
                         return;
                     case 'requestRegenerate':
-                        await this._handleRequestRegenerate(message.index as number);
+                        await this._handleRequestRegenerate(message.index);
                         return;
                     case 'requestForkAssistant':
-                        await this._handleRequestForkAssistant(message.index as number);
+                        await this._handleRequestForkAssistant(message.index);
                         return;
                     case 'requestLoadMore':
-                        await this._handleRequestLoadMore(message.offset as number);
+                        await this._handleRequestLoadMore(message.offset);
                         return;
                     case 'requestFraming':
                         await this._handleRequestFraming();
@@ -151,6 +148,8 @@ export class ChatPanel {
                     case 'requestMoreActions':
                         await this._handleRequestMoreActions();
                         return;
+                    default:
+                        assertNever(message);
                 }
             },
             null,
@@ -175,7 +174,7 @@ export class ChatPanel {
         if (selected) {
             await this._chatService.setActiveFraming(this._chat.id, selected.framing.id);
             this._chat.activeFramingId = selected.framing.id;
-            this._panel.webview.postMessage({
+            await this.postMessage({
                 command: 'updateFraming',
                 framingId: selected.framing.id,
                 framingName: selected.framing.name,
@@ -187,7 +186,7 @@ export class ChatPanel {
     private async _handleRevertFraming() {
         await this._chatService.setActiveFraming(this._chat.id, undefined);
         this._chat.activeFramingId = undefined;
-        this._panel.webview.postMessage({
+        await this.postMessage({
             command: 'updateFraming',
             framingId: undefined,
             framingName: undefined,
@@ -239,7 +238,7 @@ export class ChatPanel {
             }
         }
 
-        this._panel.webview.postMessage({
+        await this.postMessage({
             command: 'enterEditMode',
             mode,
             index,
@@ -252,15 +251,15 @@ export class ChatPanel {
     private async _handleRequestLoadMore(offset: number) {
         const PAGE_SIZE = 50;
         const paginated = this._chatService.getPaginatedMessages(this._chat.id, PAGE_SIZE, offset);
-        this._panel.webview.postMessage({
+        await this.postMessage({
             command: 'moreMessagesLoaded',
             messages: paginated.messages,
             total: paginated.total,
         });
     }
 
-    public postMessage(message: WebviewMessage) {
-        this._panel.webview.postMessage(message);
+    public async postMessage(message: ChatExtensionToWebviewCommand) {
+        await this._panel.webview.postMessage(message);
     }
 
     public dispose() {
@@ -295,7 +294,7 @@ export class ChatPanel {
             await this._chatService.setActiveFraming(this._chat.id, framingIdOverride);
             this._chat.activeFramingId = framingIdOverride;
             const name = framingIdOverride ? this._framingService.getFraming(framingIdOverride)?.name : undefined;
-            this._panel.webview.postMessage({
+            await this.postMessage({
                 command: 'updateFraming',
                 framingId: framingIdOverride,
                 framingName: name,
@@ -370,37 +369,37 @@ export class ChatPanel {
         this._updateTitle();
 
         // Refresh view to show added messages
-        this._panel.webview.postMessage({ command: 'setMessages', messages: this._chat.messages });
+        await this.postMessage({ command: 'setMessages', messages: this._chat.messages });
 
         await this._generateResponse();
     }
 
     private async _generateResponse() {
         try {
-            this._panel.webview.postMessage({ command: 'setLoading', loading: true });
+            await this.postMessage({ command: 'setLoading', loading: true });
 
             await this._orchestrator.generateResponse(
                 this._chat.id,
-                (token) => {
-                    this._panel.webview.postMessage({ command: 'appendToken', content: token });
+                async (token) => {
+                    await this.postMessage({ command: 'appendToken', content: token });
                 },
-                () => {
-                    this._panel.webview.postMessage({ command: 'setLoading', loading: false });
+                async () => {
+                    await this.postMessage({ command: 'setLoading', loading: false });
                     const instName = this._modelService.getSettings(this._chat.modelName).name;
-                    this._panel.webview.postMessage({ command: 'startAssistantMessage', modelName: instName });
+                    await this.postMessage({ command: 'startAssistantMessage', modelName: instName });
                     if (this._onStateChange) {
                         this._onStateChange();
                     }
                 },
             );
 
-            this._panel.webview.postMessage({ command: 'setLoading', loading: false });
+            await this.postMessage({ command: 'setLoading', loading: false });
             this._chat = this._chatService.getChat(this._chat.id) || this._chat;
-            this._panel.webview.postMessage({ command: 'endAssistantMessage' });
+            await this.postMessage({ command: 'endAssistantMessage' });
         } catch (err: unknown) {
             const error = err as Error;
-            this._panel.webview.postMessage({ command: 'setLoading', loading: false });
-            this._panel.webview.postMessage({ command: 'endAssistantMessage' });
+            await this.postMessage({ command: 'setLoading', loading: false });
+            await this.postMessage({ command: 'endAssistantMessage' });
             Logger.error('Chat generation error', error);
 
             let errorMessage = error.message;
@@ -414,7 +413,7 @@ export class ChatPanel {
                 options.push('Pull Model');
             }
 
-            this._panel.webview.postMessage({ command: 'addErrorMessage', content: errorMessage });
+            await this.postMessage({ command: 'addErrorMessage', content: errorMessage });
 
             // Persist the error message
             await this._chatService.addMessage(this._chat.id, 'assistant', `Error: ${errorMessage}`, {
@@ -448,7 +447,7 @@ export class ChatPanel {
         if (updatedChat) {
             this._chat = updatedChat;
             this._updateTitle();
-            this._panel.webview.postMessage({ command: 'setMessages', messages: this._chat.messages });
+            await this.postMessage({ command: 'setMessages', messages: this._chat.messages });
             await this._generateResponse();
         }
     }
@@ -494,7 +493,7 @@ export class ChatPanel {
                 activeFramingName = this._framingService.getFraming(this._chat.activeFramingId)?.name;
             }
 
-            this._panel.webview.postMessage({
+            this.postMessage({
                 command: 'initState',
                 modelName: this._modelService.getSettings(this._chat.modelName).name,
                 messages: paginated.messages,

@@ -78,6 +78,19 @@ suite('ChatService Test Suite', () => {
         assert.ok(mockRepo.save.calledWith([]));
     });
 
+    test('deleteChatsForModel should remove all chats for a specific model/instance', async () => {
+        const chats: Chat[] = [
+            { id: '1', modelName: 'model-a', name: 'C1', messages: [], createdAt: 1 },
+            { id: '2', modelName: 'model-a', name: 'C2', messages: [], createdAt: 2 },
+            { id: '3', modelName: 'model-b', name: 'C3', messages: [], createdAt: 3 },
+        ];
+        mockRepo.getAll.returns(chats);
+
+        await chatService.deleteChatsForModel('model-a');
+
+        assert.ok(mockRepo.save.calledWith([{ id: '3', modelName: 'model-b', name: 'C3', messages: [], createdAt: 3 }]));
+    });
+
     test('setActiveFraming should update chat activeFramingId', async () => {
         const chat: Chat = {
             id: '1',

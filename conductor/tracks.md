@@ -14,5 +14,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Advanced model configuration with named instances and performance/inference controls.**
+- [x] **Track: Advanced model configuration with named instances and performance/inference controls.**
 *Link: [./tracks/advanced_model_config_20260227/](./tracks/advanced_model_config_20260227/)*
