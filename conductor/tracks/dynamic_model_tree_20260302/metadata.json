@@ -1,0 +1,8 @@
+{
+  "track_id": "dynamic_model_tree_20260302",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-02T10:00:00Z",
+  "updated_at": "2026-03-02T10:00:00Z",
+  "description": "Dynamic model tree hierarchy. Flatten the hierarchy when only a single instance exists for a model."
+}

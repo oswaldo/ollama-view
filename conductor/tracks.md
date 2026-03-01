@@ -11,3 +11,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [ ] **Track: Suggest next message feature for the chat triple-dot menu.**
 *Link: [./tracks/suggest_next_message_20260222/](./tracks/suggest_next_message_20260222/)*
+
+---
+
+- [ ] **Track: Dynamic model tree hierarchy. Flatten the hierarchy when only a single instance exists for a model.**
+*Link: [./tracks/dynamic_model_tree_20260302/](./tracks/dynamic_model_tree_20260302/)*
+
