@@ -11,8 +11,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [ ] **Track: Suggest next message feature for the chat triple-dot menu.**
 *Link: [./tracks/suggest_next_message_20260222/](./tracks/suggest_next_message_20260222/)*
-
----
-
-- [x] **Track: Advanced model configuration with named instances and performance/inference controls.**
-*Link: [./tracks/advanced_model_config_20260227/](./tracks/advanced_model_config_20260227/)*
