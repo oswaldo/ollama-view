@@ -58,6 +58,26 @@ You can install this extension from the following sources:
 - **Prompt Debugging**: Visibility toggle to show/hide "hidden" system turns and prompt injections in the chat history.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
+## Architecture
+
+The extension follows a clean, layered architecture to ensure maintainability and testability.
+
+```mermaid
+graph TD
+    UI[UI Layer: Panels & Providers] --> Orch[Orchestration: ChatOrchestrator]
+    UI --> Srv[Service Layer: Domain Logic]
+    Orch --> Srv
+    Orch --> Client[Infrastructure: Ollama API Client]
+    Srv --> Repo[Data Access: Repositories]
+    Repo --> VSCode[VS Code Persistence API]
+```
+
+-   **Contract Layer**: Defines stable interfaces for infrastructure (API, Storage).
+-   **Data Access Layer**: Handles persistence using VS Code's `globalState`.
+-   **Service Layer**: Encapsulates pure domain logic and business rules.
+-   **Orchestration Layer**: Coordinates complex flows (e.g., chat generation) across services.
+-   **UI Layer**: Managed via VS Code Webviews and Tree Data Providers.
+
 ## Requirements
 
 - [Ollama](https://ollama.ai) must be installed and running locally.

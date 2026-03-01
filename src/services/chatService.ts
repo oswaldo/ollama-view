@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import * as vscode from 'vscode';
+
+import { IChatRepository } from '../contracts/IChatRepository';
 
 export interface MessageMetadata {
     systemTurnPrefix?: string;
@@ -32,17 +33,7 @@ export interface Chat {
 }
 
 export class ChatService {
-    private static readonly STORAGE_KEY = 'ollama-view.chats';
-
-    constructor(private context: vscode.ExtensionContext) {}
-
-    private getAllChats(): Chat[] {
-        return this.context.globalState.get<Chat[]>(ChatService.STORAGE_KEY, []);
-    }
-
-    private async saveChats(chats: Chat[]): Promise<void> {
-        await this.context.globalState.update(ChatService.STORAGE_KEY, chats);
-    }
+    constructor(private repository: IChatRepository) {}
 
     private getUniqueChatName(baseName: string, chats: Chat[]): string {
         const existingNames = new Set(chats.map((c) => c.name));
@@ -61,7 +52,7 @@ export class ChatService {
     }
 
     async createChat(modelName: string): Promise<Chat> {
-        const chats = this.getAllChats();
+        const chats = this.repository.getAll();
         const newChat: Chat = {
             id: uuidv4(),
             modelName,
@@ -70,31 +61,30 @@ export class ChatService {
             createdAt: Date.now(),
         };
         chats.push(newChat);
-        await this.saveChats(chats);
+        await this.repository.save(chats);
         return newChat;
     }
 
     getChatsForModel(modelName: string): Chat[] {
-        const chats = this.getAllChats();
+        const chats = this.repository.getAll();
         return chats.filter((c) => c.modelName === modelName).sort((a, b) => b.createdAt - a.createdAt);
     }
 
     getChat(chatId: string): Chat | undefined {
-        return this.getAllChats().find((c) => c.id === chatId);
+        return this.repository.getById(chatId);
     }
 
     async deleteChat(chatId: string): Promise<void> {
-        let chats = this.getAllChats();
+        let chats = this.repository.getAll();
         chats = chats.filter((c) => c.id !== chatId);
-        await this.saveChats(chats);
+        await this.repository.save(chats);
     }
 
     async setActiveFraming(chatId: string, framingId: string | undefined): Promise<void> {
-        const chats = this.getAllChats();
-        const chat = chats.find((c) => c.id === chatId);
+        const chat = this.repository.getById(chatId);
         if (chat) {
             chat.activeFramingId = framingId;
-            await this.saveChats(chats);
+            await this.repository.saveOne(chat);
         }
     }
 
@@ -104,13 +94,10 @@ export class ChatService {
         content: string,
         metadata?: MessageMetadata,
     ): Promise<Chat | undefined> {
-        const chats = this.getAllChats();
-        const chatIndex = chats.findIndex((c) => c.id === chatId);
-        if (chatIndex === -1) {
+        const chat = this.repository.getById(chatId);
+        if (!chat) {
             return undefined;
         }
-
-        const chat = chats[chatIndex];
 
         // Default modelName from chat if not provided in metadata
         const finalMetadata = {
@@ -132,12 +119,11 @@ export class ChatService {
             chat.name.startsWith('New Chat')
         ) {
             const baseName = content.slice(0, 30) + (content.length > 30 ? '...' : '');
-            const otherChats = chats.filter((c) => c.id !== chatId);
+            const otherChats = this.repository.getAll().filter((c: Chat) => c.id !== chatId);
             chat.name = this.getUniqueChatName(baseName, otherChats);
         }
 
-        chats[chatIndex] = chat;
-        await this.saveChats(chats);
+        await this.repository.saveOne(chat);
         return chat;
     }
 
@@ -150,13 +136,11 @@ export class ChatService {
         if (!newContent || newContent.trim() === '') {
             return this.getChat(chatId);
         }
-        const chats = this.getAllChats();
-        const chatIndex = chats.findIndex((c) => c.id === chatId);
-        if (chatIndex === -1) {
+        const chat = this.repository.getById(chatId);
+        if (!chat) {
             return undefined;
         }
 
-        const chat = chats[chatIndex];
         chat.messages = chat.messages.slice(0, messageIndex);
 
         const finalMetadata = {
@@ -171,8 +155,7 @@ export class ChatService {
             ...finalMetadata,
         });
 
-        chats[chatIndex] = chat;
-        await this.saveChats(chats);
+        await this.repository.saveOne(chat);
         return chat;
     }
 
@@ -191,7 +174,7 @@ export class ChatService {
         }
 
         const baseName = newContent.slice(0, 30) + (newContent.length > 30 ? '...' : '');
-        const chats = this.getAllChats();
+        const chats = this.repository.getAll();
 
         const newChat: Chat = {
             id: uuidv4(),
@@ -215,22 +198,18 @@ export class ChatService {
         });
 
         chats.push(newChat);
-        await this.saveChats(chats);
+        await this.repository.save(chats);
         return newChat;
     }
 
     async deleteMessagesFrom(chatId: string, index: number): Promise<Chat | undefined> {
-        const chats = this.getAllChats();
-        const chatIndex = chats.findIndex((c) => c.id === chatId);
-        if (chatIndex === -1) {
+        const chat = this.repository.getById(chatId);
+        if (!chat) {
             return undefined;
         }
 
-        const chat = chats[chatIndex];
         chat.messages = chat.messages.slice(0, index);
-
-        chats[chatIndex] = chat;
-        await this.saveChats(chats);
+        await this.repository.saveOne(chat);
         return chat;
     }
 
@@ -241,7 +220,7 @@ export class ChatService {
         }
 
         const messagesToKeep = sourceChat.messages.slice(0, index);
-        const chats = this.getAllChats();
+        const chats = this.repository.getAll();
         const baseName = sourceChat.name;
 
         const newChat: Chat = {
@@ -254,7 +233,7 @@ export class ChatService {
         };
 
         chats.push(newChat);
-        await this.saveChats(chats);
+        await this.repository.save(chats);
         return newChat;
     }
 

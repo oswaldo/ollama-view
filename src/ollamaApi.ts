@@ -1,3 +1,4 @@
+import { IOllamaClient } from './contracts/IOllamaClient';
 import { Logger } from './logger';
 
 /**
@@ -105,7 +106,7 @@ export interface OllamaCreateResponse extends BaseStreamResponse {
  * Robust Ollama API Client.
  * Uses native fetch (Node 18+) and AsyncGenerators for streaming.
  */
-export class OllamaApi {
+export class OllamaApi implements IOllamaClient {
     private readonly baseUrl: string;
 
     constructor(baseUrl: string = 'http://localhost:11434') {

@@ -1,10 +1,11 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { Chat, ChatService } from './chatService';
+import { IOllamaClient } from './contracts/IOllamaClient';
 import { ModelInstance } from './models/modelInstance';
-import { ModelSettingsService } from './modelSettingsService';
-import { OllamaApi, OllamaModel } from './ollamaApi';
+import { OllamaModel } from './ollamaApi';
+import { Chat, ChatService } from './services/chatService';
+import { ModelService } from './services/modelService';
 
 export class OllamaChatItem extends vscode.TreeItem {
     constructor(public readonly chat: Chat) {
@@ -81,15 +82,12 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
     private runningModels: Set<string> = new Set();
     private startingModels: Set<string> = new Set();
     private stoppingModels: Set<string> = new Set();
-    private api: OllamaApi;
-    private chatService: ChatService;
-    private modelSettingsService: ModelSettingsService;
 
-    constructor(chatService: ChatService, modelSettingsService: ModelSettingsService) {
-        this.api = new OllamaApi();
-        this.chatService = chatService;
-        this.modelSettingsService = modelSettingsService;
-    }
+    constructor(
+        private chatService: ChatService,
+        private modelService: ModelService,
+        private api: IOllamaClient,
+    ) {}
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -135,30 +133,6 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         }
     }
 
-    async chat(
-        instanceId: string,
-        messages: { role: string; content: string }[],
-        onToken: (token: string) => void,
-    ): Promise<void> {
-        const settings = this.modelSettingsService.getSettings(instanceId);
-        const ollamaName = settings.ollamaModelName || settings.modelName;
-        const options = settings.config;
-
-        // If we know it's not running, show starting state
-        const wasRunning = this.runningModels.has(ollamaName);
-        if (!wasRunning) {
-            this.setStarting(ollamaName, true);
-        }
-
-        try {
-            await this.api.chat(ollamaName, messages, onToken, options);
-        } finally {
-            if (!wasRunning) {
-                this.setStarting(ollamaName, false);
-            }
-        }
-    }
-
     getTreeItem(element: OllamaModelItem | OllamaChatItem): vscode.TreeItem {
         return element;
     }
@@ -178,7 +152,7 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
 
         if (element instanceof OllamaModelItem) {
             // Return instances for this model
-            const instances = this.modelSettingsService.getInstancesForModel(element.model.name);
+            const instances = this.modelService.getInstancesForModel(element.model.name);
             return instances.map((inst) => {
                 const isStart = this.startingModels.has(inst.modelName);
                 const isStop = this.stoppingModels.has(inst.modelName);
@@ -193,12 +167,12 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         this.runningModels = new Set(running.map((r) => r.model));
 
         // Cleanup settings for models that no longer exist
-        this.modelSettingsService.cleanupOrphanedSettings(models.map((m) => m.name));
+        this.modelService.cleanupOrphanedSettings(models.map((m) => m.name));
 
         return models.map((m) => new OllamaModelItem(m));
     }
 
-    getApi(): OllamaApi {
+    getApi(): IOllamaClient {
         return this.api;
     }
 }

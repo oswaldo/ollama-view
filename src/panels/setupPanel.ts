@@ -4,10 +4,10 @@ import * as vscode from 'vscode';
 
 import { Logger } from '../logger';
 import { ModelInstance } from '../models/modelInstance';
-import { ModelSettingsService } from '../modelSettingsService';
-import { OllamaApi, OllamaModel, OllamaShowResponse } from '../ollamaApi';
+import { OllamaModel, OllamaShowResponse } from '../ollamaApi';
 import { OllamaProvider } from '../ollamaProvider';
 import { FramingService } from '../services/framingService';
+import { ModelService } from '../services/modelService';
 
 export class SetupPanel {
     public static panels: Map<string, SetupPanel> = new Map();
@@ -18,7 +18,7 @@ export class SetupPanel {
     private _disposables: vscode.Disposable[] = [];
     private readonly _model: OllamaModel;
     private readonly _instanceId: string;
-    private readonly _modelSettingsService: ModelSettingsService;
+    private readonly _modelService: ModelService;
     private readonly _framingService: FramingService;
     private readonly _ollamaProvider: OllamaProvider;
     private readonly _onStateChange?: () => void;
@@ -27,7 +27,7 @@ export class SetupPanel {
     public static createOrShow(
         extensionUri: vscode.Uri,
         model: OllamaModel,
-        modelSettingsService: ModelSettingsService,
+        modelService: ModelService,
         framingService: FramingService,
         ollamaProvider: OllamaProvider,
         instanceId?: string,
@@ -39,7 +39,7 @@ export class SetupPanel {
             return;
         }
 
-        const instance = modelSettingsService.getSettings(id);
+        const instance = modelService.getSettings(id);
         const title = `${instance.name} - ${model.name}`;
 
         const panel = vscode.window.createWebviewPanel(SetupPanel.viewType, `Setup: ${title}`, vscode.ViewColumn.One, {
@@ -55,7 +55,7 @@ export class SetupPanel {
             panel,
             extensionUri,
             model,
-            modelSettingsService,
+            modelService,
             framingService,
             ollamaProvider,
             id,
@@ -68,7 +68,7 @@ export class SetupPanel {
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
         model: OllamaModel,
-        modelSettingsService: ModelSettingsService,
+        modelService: ModelService,
         framingService: FramingService,
         ollamaProvider: OllamaProvider,
         instanceId: string,
@@ -78,7 +78,7 @@ export class SetupPanel {
         this._extensionUri = extensionUri;
         this._model = model;
         this._instanceId = instanceId;
-        this._modelSettingsService = modelSettingsService;
+        this._modelService = modelService;
         this._framingService = framingService;
         this._ollamaProvider = ollamaProvider;
         this._onStateChange = onStateChange;
@@ -89,7 +89,7 @@ export class SetupPanel {
             async (message) => {
                 switch (message.command) {
                     case 'save': {
-                        const settings = this._modelSettingsService.getSettings(this._instanceId);
+                        const settings = this._modelService.getSettings(this._instanceId);
                         const ollamaName = settings.ollamaModelName || settings.modelName;
 
                         // If model is running, we should stop it so it restarts with new parameters
@@ -101,7 +101,7 @@ export class SetupPanel {
                             }
                         }
 
-                        await this._modelSettingsService.setSettings(
+                        await this._modelService.setSettings(
                             this._instanceId,
                             message.instance as Partial<ModelInstance>,
                         );
@@ -132,11 +132,15 @@ export class SetupPanel {
 
     private async _handleResetGroup(group: 'hardware' | 'inference') {
         if (!this._originalValues) {
-            this._originalValues = await new OllamaApi().showModel(this._model.name);
+            this._originalValues = await this._ollamaProvider.getApi().showModel(this._model.name);
+        }
+
+        if (!this._originalValues) {
+            return;
         }
 
         const params = this._extractParams(this._originalValues);
-        const instance = this._modelSettingsService.getSettings(this._instanceId);
+        const instance = this._modelService.getSettings(this._instanceId);
         if (group === 'hardware') {
             instance.config.num_gpu = params.num_gpu as number;
             instance.config.num_thread = params.num_thread as number;
@@ -162,7 +166,7 @@ export class SetupPanel {
             model: this._model,
             settings: instance,
             originalValues: this._originalValues,
-            defaultMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE,
+            defaultMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
         });
     }
 
@@ -255,14 +259,14 @@ export class SetupPanel {
         // Lazy load original values if needed
         if (!this._originalValues) {
             try {
-                this._originalValues = await new OllamaApi().showModel(this._model.name);
+                this._originalValues = await this._ollamaProvider.getApi().showModel(this._model.name);
             } catch (e: unknown) {
                 Logger.error('Failed to fetch original model values', e);
             }
         }
 
         setTimeout(() => {
-            const instance = this._modelSettingsService.getSettings(this._instanceId);
+            const instance = this._modelService.getSettings(this._instanceId);
             const originalParams = this._originalValues ? this._extractParams(this._originalValues) : {};
 
             this._panel.webview.postMessage({
@@ -271,7 +275,7 @@ export class SetupPanel {
                 settings: instance,
                 originalValues: this._originalValues,
                 originalParams: originalParams,
-                defaultMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE,
+                defaultMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
                 isRunning: this._ollamaProvider.isModelRunning(instance.ollamaModelName || instance.modelName),
             });
         }, 100);

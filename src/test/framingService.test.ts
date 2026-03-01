@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
@@ -18,7 +19,7 @@ suite('FramingService Test Suite', () => {
                 update: sandbox.stub().resolves(),
             },
         };
-        service = new FramingService(mockContext as unknown as vscode.ExtensionContext);
+        service = new FramingService(mockContext as any as vscode.ExtensionContext);
     });
 
     teardown(() => {

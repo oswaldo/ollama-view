@@ -12,15 +12,35 @@ This project, "Ollama View for VS Code," utilizes a modern web technology stack 
     *   **Rationale**: Powers the execution of the TypeScript code within the VS Code extension host, enabling rich functionality and access to Node.js APIs.
 
 ## Architecture and Core Components
-*   **Modular Architecture**: Organized into specialized directories:
-    - `src/services`: Core logic and data management (e.g., FramingService, ChatService).
-    - `src/providers`: Tree data providers for sidebar views.
-    - `src/panels`: Webview panel controllers.
-    - `src/models`: Shared interfaces and data structures (e.g., ModelFraming).
-*   **Webview Subsystem**: Highly decoupled webviews for Chat, Model Setup, and Framing Editor, sharing a unified `common-webview.css`.
-*   **Ollama API Communication**: A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
-    *   **Guideline**: Always verify API endpoints and JSON structures against the [latest Ollama API documentation](https://raw.githubusercontent.com/ollama/ollama/refs/heads/main/docs/api.md) before implementation. Prefer structured `parameters` objects over raw `Modelfile` strings when possible.
-*   **State Management**: Persists chat history and other extension state using the VS Code `globalState` API.
+The project follows a layered architecture to ensure separation of concerns, testability, and maintainability.
+
+### 1. Contract Layer (`src/contracts`)
+Defines stable interfaces for infrastructure and cross-layer communication.
+*   **Goal**: Decouple business logic from implementation details (e.g., storage, external APIs).
+*   **Key Interfaces**: `IChatRepository`, `IModelSettingsRepository`, `IOllamaClient`.
+
+### 2. Data Access Layer (`src/repositories`)
+Concrete implementations of repository contracts using VS Code's persistence APIs.
+*   **Goal**: Isolate storage-specific logic (e.g., `vscode.globalState`).
+*   **Key Classes**: `VscodeChatRepository`, `VscodeModelSettingsRepository`.
+
+### 3. Service Layer (`src/services`)
+Contains pure domain logic and state management.
+*   **Goal**: Implement business rules in a testable, platform-independent way.
+*   **Key Classes**: `ChatService`, `ModelService`, `FramingService`.
+
+### 4. Orchestration Layer (`src/services/chatOrchestrator.ts`)
+Coordinates multiple services and infrastructure to execute complex workflows.
+*   **Goal**: Centralize end-to-end flows (e.g., preparing messages, calling APIs, persisting results) to prevent logic duplication and regressions.
+
+### 5. UI Layer (`src/panels`, `src/providers`)
+Webview controllers and Tree Data Providers.
+*   **Goal**: Handle user interaction and VS Code UI events, delegating all domain logic to the Orchestrator or Services.
+*   **Key Classes**: `ChatPanel`, `SetupPanel`, `OllamaProvider`.
+
+## Ollama API Communication
+A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
+*   **Guideline**: Always verify API endpoints and JSON structures against the [latest Ollama API documentation](https://raw.githubusercontent.com/ollama/ollama/refs/heads/main/docs/api.md) before implementation. Prefer structured `parameters` objects over raw `Modelfile` strings when possible.
 
 ## Development Tools
 *   **Build Tools**:

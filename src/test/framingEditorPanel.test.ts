@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
@@ -37,7 +38,7 @@ suite('FramingEditorPanel Test Suite', () => {
             dispose: sandbox.stub(),
         };
 
-        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel as unknown as vscode.WebviewPanel);
+        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel as any as vscode.WebviewPanel);
     });
 
     teardown(() => {
@@ -60,7 +61,7 @@ suite('FramingEditorPanel Test Suite', () => {
             systemTurnPrefix: '',
             systemTurnSuffix: '',
         };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as any as FramingService);
         assert.strictEqual(FramingEditorPanel.panels.size, 1);
     });
 
@@ -79,7 +80,7 @@ suite('FramingEditorPanel Test Suite', () => {
             systemTurnPrefix: '',
             systemTurnSuffix: '',
         };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as any as FramingService);
 
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
         const updatedData = { name: 'Updated' };
@@ -103,7 +104,7 @@ suite('FramingEditorPanel Test Suite', () => {
             systemTurnPrefix: '',
             systemTurnSuffix: '',
         };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as any as FramingService);
 
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
         await messageHandler({ command: 'save', framing: {} });
@@ -125,7 +126,7 @@ suite('FramingEditorPanel Test Suite', () => {
             systemTurnPrefix: '',
             systemTurnSuffix: '',
         };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as any as FramingService);
 
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
         await messageHandler({ command: 'duplicate' });

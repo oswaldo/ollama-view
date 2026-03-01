@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 
 import { FramingSource, ModelFraming } from '../models/modelFraming';
 import { ModelInstance } from '../models/modelInstance';
-import { ModelSettingsService } from '../modelSettingsService';
 import { OllamaModel } from '../ollamaApi';
 import { OllamaProvider } from '../ollamaProvider';
 import { SetupPanel } from '../panels/setupPanel';
 import { FramingService } from '../services/framingService';
+import { ModelService } from '../services/modelService';
 
 interface WebviewPanelMock {
     webview: {
@@ -24,7 +25,7 @@ interface WebviewPanelMock {
 
 suite('SetupPanel Integration Test Suite', () => {
     let sandbox: sinon.SinonSandbox;
-    let mockModelSettingsService: sinon.SinonStubbedInstance<ModelSettingsService>;
+    let mockModelService: sinon.SinonStubbedInstance<ModelService>;
     let mockFramingService: sinon.SinonStubbedInstance<FramingService>;
     let mockWebviewPanel: WebviewPanelMock;
     let mockOllamaProvider: sinon.SinonStubbedInstance<OllamaProvider>;
@@ -34,22 +35,30 @@ suite('SetupPanel Integration Test Suite', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
 
-        mockModelSettingsService = sandbox.createStubInstance(ModelSettingsService);
-        mockModelSettingsService.getSettings.returns({
-            id: 'llama3',
-            name: 'llama3',
-            modelName: 'llama3',
-            ollamaModelName: 'llama3',
-            config: {},
-            systemMessage: '',
-            createdAt: 0,
-            updatedAt: 0,
-        });
+        mockModelService = {
+            getSettings: sandbox.stub().returns({
+                id: 'llama3',
+                name: 'llama3',
+                modelName: 'llama3',
+                ollamaModelName: 'llama3',
+                config: {},
+                systemMessage: '',
+                createdAt: 0,
+                updatedAt: 0,
+                dataVersion: 2,
+            }),
+            setSettings: sandbox.stub().resolves(),
+        } as any;
 
         mockFramingService = sandbox.createStubInstance(FramingService);
 
-        mockOllamaProvider = sandbox.createStubInstance(OllamaProvider);
-        mockOllamaProvider.isModelRunning.returns(false);
+        mockOllamaProvider = {
+            isModelRunning: sandbox.stub().returns(false),
+            getApi: sandbox.stub().returns({
+                showModel: sandbox.stub().resolves({ modelfile: '', parameters: '' }),
+            }),
+            stopModel: sandbox.stub().resolves(),
+        } as any;
 
         // Mock WebviewPanel
         mockWebviewPanel = {
@@ -64,7 +73,7 @@ suite('SetupPanel Integration Test Suite', () => {
             dispose: sandbox.stub(),
         };
 
-        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel as unknown as vscode.WebviewPanel);
+        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel as any as vscode.WebviewPanel);
     });
 
     teardown(() => {
@@ -76,9 +85,9 @@ suite('SetupPanel Integration Test Suite', () => {
         SetupPanel.createOrShow(
             vscode.Uri.file(''),
             mockModel,
-            mockModelSettingsService as unknown as ModelSettingsService,
-            mockFramingService as unknown as FramingService,
-            mockOllamaProvider as unknown as OllamaProvider,
+            mockModelService as any as ModelService,
+            mockFramingService as any as FramingService,
+            mockOllamaProvider as any as OllamaProvider,
             'llama3',
         );
         assert.strictEqual(SetupPanel.panels.size, 1);
@@ -88,9 +97,9 @@ suite('SetupPanel Integration Test Suite', () => {
         SetupPanel.createOrShow(
             vscode.Uri.file(''),
             mockModel,
-            mockModelSettingsService as unknown as ModelSettingsService,
-            mockFramingService as unknown as FramingService,
-            mockOllamaProvider as unknown as OllamaProvider,
+            mockModelService as any as ModelService,
+            mockFramingService as any as FramingService,
+            mockOllamaProvider as any as OllamaProvider,
             'llama3',
         );
 
@@ -113,7 +122,7 @@ suite('SetupPanel Integration Test Suite', () => {
         mockFramingService.getAllFramings.returns([framing]);
         sandbox
             .stub(vscode.window, 'showQuickPick')
-            .resolves({ label: 'Test Framing', framing } as unknown as vscode.QuickPickItem);
+            .resolves({ label: 'Test Framing', framing } as any as vscode.QuickPickItem);
 
         await messageHandler({ command: 'applyFraming' });
 
@@ -134,9 +143,9 @@ suite('SetupPanel Integration Test Suite', () => {
         SetupPanel.createOrShow(
             vscode.Uri.file(''),
             mockModel,
-            mockModelSettingsService as unknown as ModelSettingsService,
-            mockFramingService as unknown as FramingService,
-            mockOllamaProvider as unknown as OllamaProvider,
+            mockModelService as any as ModelService,
+            mockFramingService as any as FramingService,
+            mockOllamaProvider as any as OllamaProvider,
             'llama3',
         );
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
@@ -148,6 +157,6 @@ suite('SetupPanel Integration Test Suite', () => {
 
         await messageHandler({ command: 'save', instance });
 
-        assert.ok(mockModelSettingsService.setSettings.calledWith('llama3', instance));
+        assert.ok(mockModelService.setSettings.calledWith('llama3', instance));
     });
 });

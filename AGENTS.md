@@ -13,11 +13,13 @@
 - **Platform**: Visual Studio Code Extension (Node.js).
 - **Language**: TypeScript (**Strict Mode**).
 - **Runtime**: Node.js v18.x (as per `CONTRIBUTING.md`).
-- **Core Components**:
-    - **Sidebar Provider**: `TreeDataProvider` for listing models and chats.
-    - **Webview**: For the chat interface (HTML/CSS/JS running inside VS Code).
-    - **Ollama API**: HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
-    - **State Management**: VS Code `globalState` for persisting chat history.
+- **Core Architecture**: Layered approach for testability and maintainability:
+    - **Contract Layer**: Stable interfaces (`IChatRepository`, `IOllamaClient`).
+    - **Data Access Layer**: Persistence via VS Code `globalState`.
+    - **Service Layer**: Pure domain logic and state management.
+    - **Orchestration Layer**: End-to-end workflow management (`ChatOrchestrator`).
+    - **UI Layer**: VS Code `TreeDataProvider` and Webview controllers.
+- **Detailed Standards**: Refer to `conductor/tech-stack.md` for specific implementation guidelines and architectural deep-dives.
 
 ## 3. Development Workflow
 

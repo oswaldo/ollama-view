@@ -1,28 +1,40 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 
-import { ChatService } from '../chatService';
+import { IOllamaClient } from '../contracts/IOllamaClient';
 import { ModelInstance } from '../models/modelInstance';
-import { ModelSettingsService } from '../modelSettingsService';
-import { OllamaModel, OllamaProcess } from '../ollamaApi';
+import { OllamaModel } from '../ollamaApi';
 import { OllamaModelItem, OllamaProvider } from '../ollamaProvider';
+import { ChatService } from '../services/chatService';
+import { ModelService } from '../services/modelService';
 
 suite('OllamaProvider Tree Structure', () => {
     let sandbox: sinon.SinonSandbox;
     let mockChatService: sinon.SinonStubbedInstance<ChatService>;
-    let mockModelSettingsService: sinon.SinonStubbedInstance<ModelSettingsService>;
+    let mockModelService: sinon.SinonStubbedInstance<ModelService>;
+    let mockApi: sinon.SinonStubbedInstance<IOllamaClient>;
     let provider: OllamaProvider;
 
     setup(() => {
         sandbox = sinon.createSandbox();
 
-        mockChatService = sandbox.createStubInstance(ChatService);
-        mockModelSettingsService = sandbox.createStubInstance(ModelSettingsService);
+        mockChatService = {
+            getChatsForModel: sandbox.stub(),
+        } as any;
+        mockModelService = {
+            getInstancesForModel: sandbox.stub(),
+            getSettings: sandbox.stub(),
+            cleanupOrphanedSettings: sandbox.stub(),
+        } as any;
+        mockApi = {
+            listModels: sandbox.stub(),
+            listRunning: sandbox.stub(),
+            startModel: sandbox.stub(),
+            stopModel: sandbox.stub(),
+        } as any;
 
-        provider = new OllamaProvider(
-            mockChatService as unknown as ChatService,
-            mockModelSettingsService as unknown as ModelSettingsService,
-        );
+        provider = new OllamaProvider(mockChatService, mockModelService, mockApi);
     });
 
     teardown(() => {
@@ -30,10 +42,9 @@ suite('OllamaProvider Tree Structure', () => {
     });
 
     test('getChildren should return model items at root', async () => {
-        const api = provider.getApi();
         const mockModels: OllamaModel[] = [{ name: 'llama3', size: 100, digest: '', modified_at: '' }];
-        sandbox.stub(api, 'listModels').resolves(mockModels);
-        sandbox.stub(api, 'listRunning').resolves([] as OllamaProcess[]);
+        mockApi.listModels.resolves(mockModels);
+        mockApi.listRunning.resolves([]);
 
         const children = await provider.getChildren();
         assert.strictEqual(children.length, 1);
@@ -51,9 +62,10 @@ suite('OllamaProvider Tree Structure', () => {
             systemMessage: '',
             createdAt: Date.now(),
             updatedAt: Date.now(),
+            dataVersion: 2,
         };
 
-        mockModelSettingsService.getInstancesForModel.returns([mockInstance]);
+        mockModelService.getInstancesForModel.returns([mockInstance]);
 
         const modelItem = new OllamaModelItem(mockModel);
         const children = await provider.getChildren(modelItem);

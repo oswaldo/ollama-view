@@ -1,23 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
-import * as vscode from 'vscode';
 
-import { Chat, ChatService } from '../chatService';
+import { IChatRepository } from '../contracts/IChatRepository';
+import { Chat, ChatService } from '../services/chatService';
 
 suite('Chat History Optimizations', () => {
     let sandbox: sinon.SinonSandbox;
-    let mockContext: { globalState: { get: sinon.SinonStub; update: sinon.SinonStub } };
+    let mockRepo: sinon.SinonStubbedInstance<IChatRepository>;
     let chatService: ChatService;
 
     setup(() => {
         sandbox = sinon.createSandbox();
-        mockContext = {
-            globalState: {
-                get: sandbox.stub(),
-                update: sandbox.stub().resolves(),
-            },
-        };
-        chatService = new ChatService(mockContext as unknown as vscode.ExtensionContext);
+        mockRepo = {
+            getAll: sandbox.stub(),
+            getById: sandbox.stub(),
+            save: sandbox.stub().resolves(),
+            saveOne: sandbox.stub().resolves(),
+        } as any;
+        chatService = new ChatService(mockRepo);
     });
 
     teardown(() => {
@@ -39,7 +40,7 @@ suite('Chat History Optimizations', () => {
             createdAt: Date.now(),
         };
 
-        mockContext.globalState.get.returns([mockChat]);
+        mockRepo.getById.withArgs('1').returns(mockChat);
 
         const chat = chatService.getChat('1');
         assert.ok(chat);

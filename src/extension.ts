@@ -1,14 +1,18 @@
 import * as vscode from 'vscode';
 
 import { ChatPanel } from './chatPanel';
-import { ChatService } from './chatService';
 import { registerFramingCommands } from './commands/framingCommands';
 import { Logger } from './logger';
-import { ModelSettingsService } from './modelSettingsService';
+import { OllamaApi } from './ollamaApi';
 import { OllamaChatItem, OllamaInstanceItem, OllamaModelItem, OllamaProvider } from './ollamaProvider';
 import { SetupPanel } from './panels/setupPanel';
 import { FramingProvider } from './providers/framingProvider';
+import { VscodeChatRepository } from './repositories/VscodeChatRepository';
+import { VscodeModelSettingsRepository } from './repositories/VscodeModelSettingsRepository';
+import { ChatOrchestrator } from './services/chatOrchestrator';
+import { ChatService } from './services/chatService';
 import { FramingService } from './services/framingService';
+import { ModelService } from './services/modelService';
 
 // "Popular" models as of Feb 2026
 const POPULAR_MODELS = [
@@ -47,10 +51,20 @@ const getModelActions = (): ModelAction[] => [
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.init();
-    const chatService = new ChatService(context);
-    const modelSettingsService = new ModelSettingsService(context);
-    const ollamaProvider = new OllamaProvider(chatService, modelSettingsService);
+
+    // Infrastructure
+    const chatRepository = new VscodeChatRepository(context);
+    const modelSettingsRepository = new VscodeModelSettingsRepository(context);
+    const ollamaApi = new OllamaApi();
+
+    // Services
+    const chatService = new ChatService(chatRepository);
+    const modelService = new ModelService(modelSettingsRepository, ollamaApi);
     const framingService = new FramingService(context);
+    const chatOrchestrator = new ChatOrchestrator(chatService, modelService, framingService, ollamaApi);
+
+    // Providers
+    const ollamaProvider = new OllamaProvider(chatService, modelService, ollamaApi);
     const framingProvider = new FramingProvider(framingService);
 
     // Register TreeDataProvider
@@ -82,8 +96,9 @@ export function activate(context: vscode.ExtensionContext) {
                 chat,
                 chatService,
                 ollamaProvider,
-                modelSettingsService,
+                modelService,
                 framingService,
+                chatOrchestrator,
                 () => ollamaProvider.refresh(),
             );
 
@@ -134,12 +149,12 @@ export function activate(context: vscode.ExtensionContext) {
             });
 
             if (instanceName) {
-                const newInstance = await modelSettingsService.createInstance(node.model.name, instanceName);
+                const newInstance = await modelService.createInstance(node.model.name, instanceName);
                 ollamaProvider.refresh();
                 SetupPanel.createOrShow(
                     context.extensionUri,
                     node.model,
-                    modelSettingsService,
+                    modelService,
                     framingService,
                     ollamaProvider,
                     newInstance.id,
@@ -170,7 +185,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             // 1.5 Select Instance
-            const instances = modelSettingsService.getInstancesForModel(modelName);
+            const instances = modelService.getInstancesForModel(modelName);
             let instanceId = modelName; // Default
 
             if (instances.length > 1) {
@@ -205,8 +220,9 @@ export function activate(context: vscode.ExtensionContext) {
                 chat,
                 chatService,
                 ollamaProvider,
-                modelSettingsService,
+                modelService,
                 framingService,
+                chatOrchestrator,
                 () => ollamaProvider.refresh(),
             );
 
@@ -281,8 +297,9 @@ export function activate(context: vscode.ExtensionContext) {
                 node.chat,
                 chatService,
                 ollamaProvider,
-                modelSettingsService,
+                modelService,
                 framingService,
+                chatOrchestrator,
                 () => ollamaProvider.refresh(),
             );
         }),
@@ -397,7 +414,7 @@ export function activate(context: vscode.ExtensionContext) {
                     SetupPanel.createOrShow(
                         context.extensionUri,
                         model,
-                        modelSettingsService,
+                        modelService,
                         framingService,
                         ollamaProvider,
                         node.instance.id,
@@ -408,7 +425,7 @@ export function activate(context: vscode.ExtensionContext) {
                 SetupPanel.createOrShow(
                     context.extensionUri,
                     node.model,
-                    modelSettingsService,
+                    modelService,
                     framingService,
                     ollamaProvider,
                     undefined,
@@ -454,7 +471,7 @@ export function activate(context: vscode.ExtensionContext) {
                     'Delete',
                 );
                 if (confirm === 'Delete') {
-                    await modelSettingsService.deleteSettings(node.instance.id);
+                    await modelService.deleteSettings(node.instance.id);
                     ollamaProvider.refresh();
                 }
                 return;
@@ -500,9 +517,9 @@ export function activate(context: vscode.ExtensionContext) {
                         async () => {
                             await ollamaProvider.getApi().deleteModel(modelName!);
                             // Cleanup all instances
-                            const instances = modelSettingsService.getInstancesForModel(modelName!);
+                            const instances = modelService.getInstancesForModel(modelName!);
                             for (const inst of instances) {
-                                await modelSettingsService.deleteSettings(inst.id);
+                                await modelService.deleteSettings(inst.id);
                             }
                         },
                     );

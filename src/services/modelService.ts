@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import * as vscode from 'vscode';
 
-import { Logger } from './logger';
-import { ModelInstance } from './models/modelInstance';
-import { OllamaApi } from './ollamaApi';
+import { IModelSettingsRepository } from '../contracts/IModelSettingsRepository';
+import { IOllamaClient } from '../contracts/IOllamaClient';
+import { Logger } from '../logger';
+import { ModelInstance } from '../models/modelInstance';
 
 export interface ModelSettings {
     systemMessage?: string;
@@ -17,27 +17,21 @@ export interface ModelSettings {
     [key: string]: unknown;
 }
 
-export class ModelSettingsService {
-    private static readonly STORAGE_KEY = 'ollama-view.modelSettings';
+export class ModelService {
     public static readonly DEFAULT_SYSTEM_MESSAGE = 'You are a helpful AI assistant.';
     public static readonly CURRENT_VERSION = 2;
 
-    constructor(private context: vscode.ExtensionContext) {}
-
-    private getAllSettings(): Record<string, ModelInstance> {
-        return this.context.globalState.get<Record<string, ModelInstance>>(ModelSettingsService.STORAGE_KEY, {});
-    }
-
-    private async saveAllSettings(settings: Record<string, ModelInstance>): Promise<void> {
-        await this.context.globalState.update(ModelSettingsService.STORAGE_KEY, settings);
-    }
+    constructor(
+        private repository: IModelSettingsRepository,
+        private api: IOllamaClient,
+    ) {}
 
     /**
      * Gets settings for a specific instance.
      * If instanceId matches a modelName, it returns the primary instance for that model.
      */
     getSettings(instanceIdOrModelName: string): ModelInstance {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         let entry = allSettings[instanceIdOrModelName];
 
         if (!entry) {
@@ -60,10 +54,10 @@ export class ModelSettingsService {
             modelName: modelName,
             ollamaModelName: modelName, // Primary instance uses the base name
             config: {},
-            systemMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE,
+            systemMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            dataVersion: ModelSettingsService.CURRENT_VERSION,
+            dataVersion: ModelService.CURRENT_VERSION,
         };
     }
 
@@ -77,29 +71,29 @@ export class ModelSettingsService {
             config: {},
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            dataVersion: ModelSettingsService.CURRENT_VERSION,
+            dataVersion: ModelService.CURRENT_VERSION,
         } as ModelInstance;
     }
 
     async setSystemMessage(instanceId: string, message: string): Promise<void> {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         const instance = this.getSettings(instanceId);
         instance.systemMessage = message;
         instance.updatedAt = Date.now();
 
         allSettings[instanceId] = instance;
-        await this.saveAllSettings(allSettings);
+        await this.repository.save(allSettings);
     }
 
     async setSettings(instanceId: string, settings: Partial<ModelInstance>): Promise<void> {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         const existing = this.getSettings(instanceId);
 
         const updated: ModelInstance = {
             ...existing,
             ...settings,
             updatedAt: Date.now(),
-            dataVersion: ModelSettingsService.CURRENT_VERSION,
+            dataVersion: ModelService.CURRENT_VERSION,
         };
 
         // If it's a managed instance (not the primary one), update the model in Ollama
@@ -108,14 +102,14 @@ export class ModelSettingsService {
         }
 
         allSettings[instanceId] = updated;
-        await this.saveAllSettings(allSettings);
+        await this.repository.save(allSettings);
     }
 
     /**
      * Lists all instances for a specific base model.
      */
     getInstancesForModel(modelName: string): ModelInstance[] {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         const instances: ModelInstance[] = [];
 
         // Always include the default instance
@@ -136,7 +130,7 @@ export class ModelSettingsService {
     }
 
     async createInstance(modelName: string, name: string): Promise<ModelInstance> {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
 
         // Ensure name uniqueness within our UI
         const instances = this.getInstancesForModel(modelName);
@@ -165,41 +159,41 @@ export class ModelSettingsService {
             modelName: modelName,
             ollamaModelName: ollamaName,
             config: {},
-            systemMessage: ModelSettingsService.DEFAULT_SYSTEM_MESSAGE,
+            systemMessage: ModelService.DEFAULT_SYSTEM_MESSAGE,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            dataVersion: ModelSettingsService.CURRENT_VERSION,
+            dataVersion: ModelService.CURRENT_VERSION,
         };
 
         // Create the model in Ollama
         await this.syncWithOllama(newInstance);
 
         allSettings[newInstance.id] = newInstance;
-        await this.saveAllSettings(allSettings);
+        await this.repository.save(allSettings);
         return newInstance;
     }
 
     async deleteSettings(instanceId: string): Promise<void> {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         const instance = allSettings[instanceId];
 
         if (instance) {
             // Delete from Ollama if it's a managed instance
             if (instance.ollamaModelName && instance.ollamaModelName !== instance.modelName) {
                 try {
-                    await new OllamaApi().deleteModel(instance.ollamaModelName);
+                    await this.api.deleteModel(instance.ollamaModelName);
                 } catch (e: unknown) {
                     Logger.error(`Failed to delete managed model ${instance.ollamaModelName} from Ollama`, e);
                 }
             }
 
             delete allSettings[instanceId];
-            await this.saveAllSettings(allSettings);
+            await this.repository.save(allSettings);
         }
     }
 
     async cleanupOrphanedSettings(activeModelNames: string[]): Promise<void> {
-        const allSettings = this.getAllSettings();
+        const allSettings = this.repository.getAll();
         const activeSet = new Set(activeModelNames);
         let changed = false;
 
@@ -212,7 +206,7 @@ export class ModelSettingsService {
                 // and their Ollama models.
                 if (entry.ollamaModelName && entry.ollamaModelName !== entry.modelName) {
                     try {
-                        await new OllamaApi().deleteModel(entry.ollamaModelName);
+                        await this.api.deleteModel(entry.ollamaModelName);
                     } catch (e: unknown) {
                         // Ignore deletion errors for orphaned managed models
                     }
@@ -223,7 +217,7 @@ export class ModelSettingsService {
         }
 
         if (changed) {
-            await this.saveAllSettings(allSettings);
+            await this.repository.save(allSettings);
         }
     }
 
@@ -243,6 +237,6 @@ export class ModelSettingsService {
             },
         };
 
-        await new OllamaApi().createModel(options);
+        await this.api.createModel(options);
     }
 }

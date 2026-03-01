@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 
@@ -13,7 +14,7 @@ suite('FramingProvider Test Suite', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
         mockFramingService = sandbox.createStubInstance(FramingService);
-        provider = new FramingProvider(mockFramingService as unknown as FramingService);
+        provider = new FramingProvider(mockFramingService as any as FramingService);
     });
 
     teardown(() => {
