@@ -1,11 +1,7 @@
-import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
+import * as vscode from 'vscode';
 
-export interface ChatMessage {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    timestamp: number;
-    // Metadata for prompt engineering visibility
+export interface MessageMetadata {
     systemTurnPrefix?: string;
     userPrefix?: string;
     userSuffix?: string;
@@ -20,6 +16,12 @@ export interface ChatMessage {
     isError?: boolean;
 }
 
+export interface ChatMessage extends MessageMetadata {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: number;
+}
+
 export interface Chat {
     id: string;
     modelName: string;
@@ -32,7 +34,7 @@ export interface Chat {
 export class ChatService {
     private static readonly STORAGE_KEY = 'ollama-view.chats';
 
-    constructor(private context: vscode.ExtensionContext) { }
+    constructor(private context: vscode.ExtensionContext) {}
 
     private getAllChats(): Chat[] {
         return this.context.globalState.get<Chat[]>(ChatService.STORAGE_KEY, []);
@@ -43,7 +45,7 @@ export class ChatService {
     }
 
     private getUniqueChatName(baseName: string, chats: Chat[]): string {
-        const existingNames = new Set(chats.map(c => c.name));
+        const existingNames = new Set(chats.map((c) => c.name));
         if (!existingNames.has(baseName)) {
             return baseName;
         }
@@ -74,22 +76,22 @@ export class ChatService {
 
     getChatsForModel(modelName: string): Chat[] {
         const chats = this.getAllChats();
-        return chats.filter(c => c.modelName === modelName).sort((a, b) => b.createdAt - a.createdAt);
+        return chats.filter((c) => c.modelName === modelName).sort((a, b) => b.createdAt - a.createdAt);
     }
 
     getChat(chatId: string): Chat | undefined {
-        return this.getAllChats().find(c => c.id === chatId);
+        return this.getAllChats().find((c) => c.id === chatId);
     }
 
     async deleteChat(chatId: string): Promise<void> {
         let chats = this.getAllChats();
-        chats = chats.filter(c => c.id !== chatId);
+        chats = chats.filter((c) => c.id !== chatId);
         await this.saveChats(chats);
     }
 
     async setActiveFraming(chatId: string, framingId: string | undefined): Promise<void> {
         const chats = this.getAllChats();
-        const chat = chats.find(c => c.id === chatId);
+        const chat = chats.find((c) => c.id === chatId);
         if (chat) {
             chat.activeFramingId = framingId;
             await this.saveChats(chats);
@@ -97,47 +99,40 @@ export class ChatService {
     }
 
     async addMessage(
-        chatId: string, 
-        role: 'user' | 'assistant' | 'system', 
+        chatId: string,
+        role: 'user' | 'assistant' | 'system',
         content: string,
-        metadata?: {
-            systemTurnPrefix?: string;
-            userPrefix?: string;
-            userSuffix?: string;
-            systemTurnSuffix?: string;
-            framingId?: string;
-            framingName?: string;
-            modelName?: string;
-            instanceName?: string;
-            instanceId?: string;
-            isError?: boolean;
-        }
+        metadata?: MessageMetadata,
     ): Promise<Chat | undefined> {
         const chats = this.getAllChats();
-        const chatIndex = chats.findIndex(c => c.id === chatId);
+        const chatIndex = chats.findIndex((c) => c.id === chatId);
         if (chatIndex === -1) {
             return undefined;
         }
 
         const chat = chats[chatIndex];
-        
+
         // Default modelName from chat if not provided in metadata
         const finalMetadata = {
             modelName: chat.modelName,
-            ...metadata
+            ...metadata,
         };
 
         chat.messages.push({
             role,
             content,
             timestamp: Date.now(),
-            ...finalMetadata
+            ...finalMetadata,
         });
 
         // Update name if it's the first user message and name is still default (or default with number)
-        if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1 && chat.name.startsWith('New Chat')) {
+        if (
+            role === 'user' &&
+            chat.messages.filter((m) => m.role === 'user').length === 1 &&
+            chat.name.startsWith('New Chat')
+        ) {
             const baseName = content.slice(0, 30) + (content.length > 30 ? '...' : '');
-            const otherChats = chats.filter(c => c.id !== chatId);
+            const otherChats = chats.filter((c) => c.id !== chatId);
             chat.name = this.getUniqueChatName(baseName, otherChats);
         }
 
@@ -145,12 +140,18 @@ export class ChatService {
         await this.saveChats(chats);
         return chat;
     }
-    async truncateChat(chatId: string, messageIndex: number, newContent: string, metadata?: any): Promise<Chat | undefined> {
+
+    async truncateChat(
+        chatId: string,
+        messageIndex: number,
+        newContent: string,
+        metadata?: MessageMetadata,
+    ): Promise<Chat | undefined> {
         if (!newContent || newContent.trim() === '') {
             return this.getChat(chatId);
         }
         const chats = this.getAllChats();
-        const chatIndex = chats.findIndex(c => c.id === chatId);
+        const chatIndex = chats.findIndex((c) => c.id === chatId);
         if (chatIndex === -1) {
             return undefined;
         }
@@ -160,14 +161,14 @@ export class ChatService {
 
         const finalMetadata = {
             modelName: chat.modelName,
-            ...metadata
+            ...metadata,
         };
 
         chat.messages.push({
             role: 'user',
             content: newContent,
             timestamp: Date.now(),
-            ...finalMetadata
+            ...finalMetadata,
         });
 
         chats[chatIndex] = chat;
@@ -175,7 +176,12 @@ export class ChatService {
         return chat;
     }
 
-    async forkChat(chatId: string, messageIndex: number, newContent: string, metadata?: any): Promise<Chat | undefined> {
+    async forkChat(
+        chatId: string,
+        messageIndex: number,
+        newContent: string,
+        metadata?: MessageMetadata,
+    ): Promise<Chat | undefined> {
         if (!newContent || newContent.trim() === '') {
             return undefined;
         }
@@ -193,19 +199,19 @@ export class ChatService {
             name: this.getUniqueChatName(baseName, chats),
             messages: sourceChat.messages.slice(0, messageIndex),
             createdAt: Date.now(),
-            activeFramingId: sourceChat.activeFramingId
+            activeFramingId: sourceChat.activeFramingId,
         };
 
         const finalMetadata = {
             modelName: newChat.modelName,
-            ...metadata
+            ...metadata,
         };
 
         newChat.messages.push({
             role: 'user',
             content: newContent,
             timestamp: Date.now(),
-            ...finalMetadata
+            ...finalMetadata,
         });
 
         chats.push(newChat);
@@ -215,7 +221,7 @@ export class ChatService {
 
     async deleteMessagesFrom(chatId: string, index: number): Promise<Chat | undefined> {
         const chats = this.getAllChats();
-        const chatIndex = chats.findIndex(c => c.id === chatId);
+        const chatIndex = chats.findIndex((c) => c.id === chatId);
         if (chatIndex === -1) {
             return undefined;
         }
@@ -244,7 +250,7 @@ export class ChatService {
             name: this.getUniqueChatName(baseName, chats),
             messages: messagesToKeep,
             createdAt: Date.now(),
-            activeFramingId: sourceChat.activeFramingId
+            activeFramingId: sourceChat.activeFramingId,
         };
 
         chats.push(newChat);
@@ -252,7 +258,7 @@ export class ChatService {
         return newChat;
     }
 
-    getPaginatedMessages(chatId: string, limit: number, offset: number): { messages: ChatMessage[], total: number } {
+    getPaginatedMessages(chatId: string, limit: number, offset: number): { messages: ChatMessage[]; total: number } {
         const chat = this.getChat(chatId);
         if (!chat) {
             return { messages: [], total: 0 };
@@ -260,10 +266,10 @@ export class ChatService {
         const total = chat.messages.length;
         const end = total - offset;
         const start = end - limit;
-        
+
         return {
             messages: chat.messages.slice(Math.max(0, start), Math.max(0, end)),
-            total
+            total,
         };
     }
 }

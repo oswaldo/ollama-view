@@ -1,80 +1,80 @@
 import * as assert from 'assert';
-import { ModelSettingsService, ModelSettings } from '../modelSettingsService';
+import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 
-class MockMemento implements vscode.Memento {
-    private data: Record<string, any> = {};
-    get<T>(key: string): T | undefined;
-    get<T>(key: string, defaultValue: T): T;
-    get(key: any, defaultValue?: any) {
-        return this.data[key] || defaultValue;
-    }
-    update(key: string, value: any): Thenable<void> {
-        this.data[key] = value;
-        return Promise.resolve();
-    }
-    keys(): readonly string[] {
-        return Object.keys(this.data);
-    }
-    setKeysForSync(keys: readonly string[]): void { }
-}
-
-class MockExtensionContext implements Partial<vscode.ExtensionContext> {
-    globalState = new MockMemento();
-}
+import { ModelInstance } from '../models/modelInstance';
+import { ModelSettingsService } from '../modelSettingsService';
 
 suite('ModelSettingsService Migration and Compatibility', () => {
-    let mockContext: MockExtensionContext;
+    let sandbox: sinon.SinonSandbox;
+    let mockContext: { globalState: { get: sinon.SinonStub; update: sinon.SinonStub } };
     let service: ModelSettingsService;
 
     setup(() => {
-        mockContext = new MockExtensionContext();
-        service = new ModelSettingsService(mockContext as any);
+        sandbox = sinon.createSandbox();
+        mockContext = {
+            globalState: {
+                get: sandbox.stub().returns({}),
+                update: sandbox.stub().resolves(),
+            },
+        };
+        service = new ModelSettingsService(mockContext as unknown as vscode.ExtensionContext);
+    });
+
+    teardown(() => {
+        sandbox.restore();
     });
 
     test('should migrate legacy settings (V1) to the new structure (V2)', async () => {
-        const legacyData: Record<string, ModelSettings> = {
-            'tinyllama:latest': {
+        const legacySettings = {
+            llama3: {
                 systemMessage: 'Legacy message',
-                userMessagePrefix: 'Pre:'
-            }
+                dataVersion: 1,
+            },
         };
-        await mockContext.globalState.update('ollama-view.modelSettings', legacyData);
+        mockContext.globalState.get.returns(legacySettings);
 
-        const settings = service.getSettings('tinyllama:latest');
+        const settings = service.getSettings('llama3');
+        assert.strictEqual(settings.id, 'llama3');
         assert.strictEqual(settings.systemMessage, 'Legacy message');
+        assert.strictEqual(settings.dataVersion, ModelSettingsService.CURRENT_VERSION);
     });
 
     test('should preserve unknown fields when saving (Forward Compatibility)', async () => {
-        const dataWithUnknownFields = {
-            'tinyllama:latest': {
-                systemMessage: 'V2 message',
-                futureField: 'I should survive'
-            }
+        const settingsWithExtra: ModelInstance = {
+            id: 'inst1',
+            name: 'Instance 1',
+            modelName: 'llama3',
+            ollamaModelName: 'llama3-inst1',
+            systemMessage: 'msg',
+            config: {},
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            extraField: 'should stay',
         };
-        await mockContext.globalState.update('ollama-view.modelSettings', dataWithUnknownFields);
+        mockContext.globalState.get.returns({ inst1: settingsWithExtra });
 
-        await service.setSystemMessage('tinyllama:latest', 'Updated message');
+        await service.setSettings('inst1', { systemMessage: 'new msg' });
 
-        const savedData = mockContext.globalState.get<any>('ollama-view.modelSettings');
-        assert.strictEqual(savedData['tinyllama:latest'].systemMessage, 'Updated message');
-        assert.strictEqual(savedData['tinyllama:latest'].futureField, 'I should survive', 'Unknown fields should be preserved');
+        const updateArgs = mockContext.globalState.update.getCall(0).args[1] as Record<string, ModelInstance>;
+        assert.strictEqual(updateArgs['inst1'].extraField, 'should stay');
+        assert.strictEqual(updateArgs['inst1'].systemMessage, 'new msg');
     });
 
-    test('getSettings should resolve correct base model name for instances', async () => {
-        const instanceId = 'test-uuid-123';
-        const instanceData = {
-            id: instanceId,
-            name: 'My Custom Instance',
-            modelName: 'llama3', // The actual base model
-            config: {}
+    test('getSettings should resolve correct base model name for instances', () => {
+        const mockInstance: ModelInstance = {
+            id: 'inst1',
+            name: 'Instance 1',
+            modelName: 'llama3',
+            ollamaModelName: 'llama3-inst1',
+            config: {},
+            systemMessage: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         };
-        
-        const allSettings = { [instanceId]: instanceData };
-        await mockContext.globalState.update('ollama-view.modelSettings', allSettings);
+        mockContext.globalState.get.returns({ inst1: mockInstance });
 
-        const resolved = service.getSettings(instanceId);
-        assert.strictEqual(resolved.modelName, 'llama3', 'Base model name should be llama3');
-        assert.strictEqual(resolved.id, instanceId, 'Instance ID should be the UUID');
+        const settings = service.getSettings('inst1');
+        assert.strictEqual(settings.modelName, 'llama3');
     });
 });

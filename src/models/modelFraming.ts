@@ -3,7 +3,7 @@
  */
 export enum FramingSource {
     BuiltIn = 'builtin',
-    User = 'user'
+    User = 'user',
 }
 
 /**
@@ -12,13 +12,13 @@ export enum FramingSource {
 export interface ModelFraming {
     /** Unique identifier for the framing */
     id: string;
-    
+
     /** Display name of the framing */
     name: string;
-    
+
     /** Brief description of the framing's purpose */
     description: string;
-    
+
     /** The core system prompt */
     systemMessage: string;
 
@@ -33,16 +33,16 @@ export interface ModelFraming {
 
     /** System turn sent after the user message */
     systemTurnSuffix?: string;
-    
+
     /** Tags associated with this framing for organization */
     tags: string[];
-    
+
     /** Source of the framing */
     source: FramingSource;
-    
+
     /** Timestamp of creation */
     createdAt: number;
-    
+
     /** Timestamp of last update */
     updatedAt: number;
 }
@@ -53,10 +53,10 @@ export interface ModelFraming {
 export interface FramingTag {
     /** Unique identifier for the tag */
     id: string;
-    
+
     /** Display name of the tag */
     name: string;
-    
+
     /** Whether this is a system-reserved tag (e.g., 'Untagged') */
     isReserved?: boolean;
 }

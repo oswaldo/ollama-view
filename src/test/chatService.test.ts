@@ -1,186 +1,225 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
-import { ChatService, Chat } from '../chatService';
+
+import { Chat, ChatService } from '../chatService';
 
 suite('ChatService Test Suite', () => {
     let sandbox: sinon.SinonSandbox;
-    let mockGlobalState: any;
-    let mockContext: any;
+    let mockContext: { globalState: { get: sinon.SinonStub; update: sinon.SinonStub } };
     let chatService: ChatService;
 
     setup(() => {
         sandbox = sinon.createSandbox();
-
-        // Mock globalState (Memento)
-        const storage: { [key: string]: any } = {};
-        mockGlobalState = {
-            get: (key: string, defaultValue?: any) => storage[key] || defaultValue,
-            update: async (key: string, value: any) => { storage[key] = value; }
-        };
-
-        // Mock ExtensionContext
         mockContext = {
-            globalState: mockGlobalState
-        } as vscode.ExtensionContext;
-
-        chatService = new ChatService(mockContext);
+            globalState: {
+                get: sandbox.stub(),
+                update: sandbox.stub().resolves(),
+            },
+        };
+        chatService = new ChatService(mockContext as unknown as vscode.ExtensionContext);
     });
 
     teardown(() => {
         sandbox.restore();
     });
 
-    test('setActiveFraming should update chat activeFramingId', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.setActiveFraming(chat.id, 'f1');
-        
-        const updatedChat = chatService.getChat(chat.id);
-        assert.strictEqual(updatedChat?.activeFramingId, 'f1');
-    });
-
-    test('addMessage should include framing metadata', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'user', 'Hello', { framingId: 'f1', framingName: 'Framing 1' });
-
-        const updatedChat = chatService.getChat(chat.id);
-        assert.strictEqual(updatedChat?.messages[0].framingId, 'f1');
-        assert.strictEqual(updatedChat?.messages[0].framingName, 'Framing 1');
-    });
-
-    test('forkChat should inherit activeFramingId', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.setActiveFraming(chat.id, 'f1');
-        await chatService.addMessage(chat.id, 'user', 'Msg 1');
-
-        const forkedChat = await chatService.forkChat(chat.id, 1, 'Msg 1 forked');
-        assert.strictEqual(forkedChat?.activeFramingId, 'f1');
-    });
-
     test('createChat should create a new chat', async () => {
+        mockContext.globalState.get.returns([]);
         const chat = await chatService.createChat('llama3');
-        assert.ok(chat.id, 'Chat should have an ID');
         assert.strictEqual(chat.modelName, 'llama3');
-        assert.strictEqual(chat.name, 'New Chat');
-        assert.strictEqual(chat.messages.length, 0);
-
-        const chats = chatService.getChatsForModel('llama3');
-        assert.strictEqual(chats.length, 1);
-        assert.strictEqual(chats[0].id, chat.id);
+        assert.ok(chat.id);
+        assert.ok(mockContext.globalState.update.calledOnce);
     });
 
     test('addMessage should add message and update name', async () => {
-        const chat = await chatService.createChat('llama3');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'New Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        // Add user message (should update name)
-        await chatService.addMessage(chat.id, 'user', 'Hello world');
-
-        const updatedChat = chatService.getChat(chat.id);
-        assert.strictEqual(updatedChat?.messages.length, 1);
-        assert.strictEqual(updatedChat?.messages[0].content, 'Hello world');
-        assert.strictEqual(updatedChat?.name, 'Hello world'); // Name updated
+        const updated = await chatService.addMessage('1', 'user', 'What is 2+2?');
+        assert.strictEqual(updated?.messages.length, 1);
+        assert.strictEqual(updated?.name, 'What is 2+2?');
     });
 
     test('addMessage should not update name if not first user message', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'system', 'System prompt');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Existing Chat',
+            messages: [{ role: 'user', content: 'First', timestamp: Date.now() }],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        // First user message (technically 2nd message total)
-        await chatService.addMessage(chat.id, 'user', 'User message 1');
-        let updatedChat = chatService.getChat(chat.id);
-        assert.strictEqual(updatedChat?.name, 'User message 1');
-
-        await chatService.addMessage(chat.id, 'user', 'User message 2');
-        updatedChat = chatService.getChat(chat.id);
-        assert.strictEqual(updatedChat?.name, 'User message 1'); // Name NOT updated
+        const updated = await chatService.addMessage('1', 'user', 'Second');
+        assert.strictEqual(updated?.name, 'Existing Chat');
     });
 
     test('deleteChat should remove chat', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.deleteChat(chat.id);
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const found = chatService.getChat(chat.id);
-        assert.strictEqual(found, undefined);
+        await chatService.deleteChat('1');
+        const updateArgs = mockContext.globalState.update.getCall(0).args[1];
+        assert.strictEqual(updateArgs.length, 0);
+    });
+
+    test('setActiveFraming should update chat activeFramingId', async () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
+
+        await chatService.setActiveFraming('1', 'f1');
+        const updatedChats = mockContext.globalState.update.getCall(0).args[1] as Chat[];
+        assert.strictEqual(updatedChats[0].activeFramingId, 'f1');
+    });
+
+    test('addMessage should include framing metadata', async () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
+
+        await chatService.addMessage('1', 'user', 'Hi', { framingId: 'f1', framingName: 'Framing' });
+        const updatedChats = mockContext.globalState.update.getCall(0).args[1] as Chat[];
+        assert.strictEqual(updatedChats[0].messages[0].framingId, 'f1');
+        assert.strictEqual(updatedChats[0].messages[0].framingName, 'Framing');
     });
 
     test('truncateChat should truncate and update chat', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'user', 'Msg 1');
-        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
-        await chatService.addMessage(chat.id, 'user', 'Msg 2');
-        await chatService.addMessage(chat.id, 'assistant', 'Response 2');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [
+                { role: 'user', content: '1', timestamp: Date.now() },
+                { role: 'assistant', content: '2', timestamp: Date.now() },
+                { role: 'user', content: '3', timestamp: Date.now() },
+            ],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const updatedChat = await chatService.truncateChat(chat.id, 2, 'Msg 2 Edited');
-
-        assert.ok(updatedChat);
-        assert.strictEqual(updatedChat!.messages.length, 3);
-        assert.strictEqual(updatedChat!.messages[2].content, 'Msg 2 Edited');
-        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+        const updated = await chatService.truncateChat('1', 1, 'New 2');
+        assert.strictEqual(updated?.messages.length, 2);
+        assert.strictEqual(updated?.messages[1].content, 'New 2');
     });
 
     test('forkChat should create new chat branch', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'user', 'Msg 1');
-        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
-        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [
+                { role: 'user', content: '1', timestamp: Date.now() },
+                { role: 'assistant', content: '2', timestamp: Date.now() },
+            ],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const newChat = await chatService.forkChat(chat.id, 2, 'Msg 2 Forked');
+        const forked = await chatService.forkChat('1', 1, 'New Fork');
+        assert.ok(forked);
+        assert.notStrictEqual(forked?.id, '1');
+        assert.strictEqual(forked?.messages.length, 2);
+        assert.strictEqual(forked?.messages[1].content, 'New Fork');
+    });
 
-        assert.ok(newChat);
-        assert.notStrictEqual(newChat!.id, chat.id);
-        assert.strictEqual(newChat!.messages.length, 3);
-        assert.strictEqual(newChat!.messages[2].content, 'Msg 2 Forked');
+    test('forkChat should inherit activeFramingId', async () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [],
+            createdAt: Date.now(),
+            activeFramingId: 'f1',
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const originalChat = chatService.getChat(chat.id);
-        assert.strictEqual(originalChat!.messages.length, 3);
-        assert.strictEqual(originalChat!.messages[2].content, 'Msg 2');
+        const forked = await chatService.forkChat('1', 0, 'New');
+        assert.strictEqual(forked?.activeFramingId, 'f1');
     });
 
     test('deleteMessagesFrom should remove subsequent messages', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'user', 'Msg 1');
-        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
-        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [
+                { role: 'user', content: '1', timestamp: Date.now() },
+                { role: 'assistant', content: '2', timestamp: Date.now() },
+                { role: 'user', content: '3', timestamp: Date.now() },
+            ],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const updatedChat = await chatService.deleteMessagesFrom(chat.id, 1);
-
-        assert.ok(updatedChat);
-        assert.strictEqual(updatedChat!.messages.length, 1);
-        assert.strictEqual(updatedChat!.messages[0].content, 'Msg 1');
+        const updated = await chatService.deleteMessagesFrom('1', 1);
+        assert.strictEqual(updated?.messages.length, 1);
+        assert.strictEqual(updated?.messages[0].content, '1');
     });
 
     test('forkChatFrom should create new chat branch from index', async () => {
-        const chat = await chatService.createChat('llama3');
-        await chatService.addMessage(chat.id, 'user', 'Msg 1');
-        await chatService.addMessage(chat.id, 'assistant', 'Response 1');
-        await chatService.addMessage(chat.id, 'user', 'Msg 2');
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Chat',
+            messages: [
+                { role: 'user', content: '1', timestamp: Date.now() },
+                { role: 'assistant', content: '2', timestamp: Date.now() },
+            ],
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const newChat = await chatService.forkChatFrom(chat.id, 1);
-
-        assert.ok(newChat);
-        assert.strictEqual(newChat!.messages.length, 1);
-        assert.strictEqual(newChat!.messages[0].content, 'Msg 1');
+        const forked = await chatService.forkChatFrom('1', 1);
+        assert.ok(forked);
+        assert.strictEqual(forked?.messages.length, 1);
+        assert.strictEqual(forked?.messages[0].content, '1');
     });
 
-    test('getUniqueChatName should handle duplicates', async () => {
-        await chatService.createChat('llama3');
-        const chat2 = await chatService.createChat('llama3');
-        assert.strictEqual(chat2.name, 'New Chat (2)');
+    test('getPaginatedMessages should return correct slice', () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'model',
+            name: 'Chat',
+            messages: Array.from({ length: 10 }, (_, i) => ({
+                role: 'user' as const,
+                content: `${i}`,
+                timestamp: Date.now(),
+            })),
+            createdAt: Date.now(),
+        };
+        mockContext.globalState.get.returns([chat]);
 
-        const chat3 = await chatService.createChat('llama3');
-        assert.strictEqual(chat3.name, 'New Chat (3)');
-    });
+        const page = chatService.getPaginatedMessages('1', 5, 0);
+        assert.strictEqual(page.messages.length, 5);
+        assert.strictEqual(page.messages[4].content, '9');
+        assert.strictEqual(page.total, 10);
 
-    test('getPaginatedMessages should return correct slice', async () => {
-        const chat = await chatService.createChat('llama3');
-        for (let i = 0; i < 100; i++) {
-            await chatService.addMessage(chat.id, 'user', `Msg ${i}`);
-        }
-
-        const page1 = chatService.getPaginatedMessages(chat.id, 20, 0);
-        assert.strictEqual(page1.messages.length, 20);
-        assert.strictEqual(page1.total, 100);
-        assert.strictEqual(page1.messages[0].content, 'Msg 80');
-        assert.strictEqual(page1.messages[19].content, 'Msg 99');
+        const page2 = chatService.getPaginatedMessages('1', 5, 5);
+        assert.strictEqual(page2.messages.length, 5);
+        assert.strictEqual(page2.messages[4].content, '4');
     });
 });

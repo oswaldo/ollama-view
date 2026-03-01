@@ -35,7 +35,7 @@ export class Logger {
         this.log('WARN', message);
     }
 
-    public static error(message: string, error?: any) {
+    public static error(message: string, error?: unknown) {
         let fullMessage = message;
         if (error) {
             if (error instanceof Error) {
@@ -46,14 +46,14 @@ export class Logger {
         }
         this.log('ERROR', fullMessage);
         if (this._outputChannel) {
-            this._outputChannel.show(true); 
+            this._outputChannel.show(true);
         }
     }
 
     private static log(level: string, message: string) {
         const timestamp = new Date().toISOString();
         const formattedMessage = `[${timestamp}] [${level}] ${message}`;
-        
+
         if (this.checkVscode()) {
             if (!this._outputChannel) {
                 this.init();

@@ -1,25 +1,23 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
-import { ChatService, Chat } from '../chatService';
+
+import { Chat, ChatService } from '../chatService';
 
 suite('Chat History Optimizations', () => {
     let sandbox: sinon.SinonSandbox;
-    let mockGlobalState: any;
-    let mockContext: any;
+    let mockContext: { globalState: { get: sinon.SinonStub; update: sinon.SinonStub } };
     let chatService: ChatService;
 
     setup(() => {
         sandbox = sinon.createSandbox();
-        const storage: { [key: string]: any } = {};
-        mockGlobalState = {
-            get: (key: string, defaultValue?: any) => storage[key] || defaultValue,
-            update: async (key: string, value: any) => { storage[key] = value; }
-        };
         mockContext = {
-            globalState: mockGlobalState
-        } as vscode.ExtensionContext;
-        chatService = new ChatService(mockContext);
+            globalState: {
+                get: sandbox.stub(),
+                update: sandbox.stub().resolves(),
+            },
+        };
+        chatService = new ChatService(mockContext as unknown as vscode.ExtensionContext);
     });
 
     teardown(() => {
@@ -27,14 +25,24 @@ suite('Chat History Optimizations', () => {
     });
 
     test('should handle large chat history', async () => {
-        const chat = await chatService.createChat('llama3');
-        const messageCount = 1000;
-        
-        for (let i = 0; i < messageCount; i++) {
-            await chatService.addMessage(chat.id, i % 2 === 0 ? 'user' : 'assistant', `Message ${i}`);
-        }
+        const largeMessages = Array.from({ length: 1000 }, (_, i) => ({
+            role: 'user' as const,
+            content: `Message ${i}`,
+            timestamp: Date.now(),
+        }));
 
-        const retrievedChat = chatService.getChat(chat.id);
-        assert.strictEqual(retrievedChat?.messages.length, messageCount);
+        const mockChat: Chat = {
+            id: '1',
+            modelName: 'model',
+            name: 'Large Chat',
+            messages: largeMessages,
+            createdAt: Date.now(),
+        };
+
+        mockContext.globalState.get.returns([mockChat]);
+
+        const chat = chatService.getChat('1');
+        assert.ok(chat);
+        assert.strictEqual(chat.messages.length, 1000);
     });
 });

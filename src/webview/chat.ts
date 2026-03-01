@@ -1,7 +1,12 @@
+interface WebviewMessage {
+    command: string;
+    [key: string]: unknown;
+}
+
 declare function acquireVsCodeApi(): {
-    postMessage(message: any): void;
-    getState(): any;
-    setState(state: any): void;
+    postMessage(message: WebviewMessage): void;
+    getState(): unknown;
+    setState(state: unknown): void;
 };
 
 const vscode = acquireVsCodeApi();
@@ -70,7 +75,7 @@ modalOverlay.onclick = (e) => {
     }
 };
 
-let editState: { mode: 'truncate' | 'fork', index: number } | null = null;
+let editState: { mode: 'truncate' | 'fork'; index: number } | null = null;
 let activeDropdown: HTMLElement | null = null;
 let truncatedMessagesBackup: ChatMessage[] | null = null;
 let framingBackupId: string | undefined = undefined;
@@ -97,20 +102,20 @@ function renderMessages(preserveScroll = false) {
     messagesDiv.appendChild(container);
 
     messages.forEach((m, i) => {
-        const absoluteIndex = (totalMessages - messages.length) + i;
+        const absoluteIndex = totalMessages - messages.length + i;
         if (m.role === 'system' && !showInjectionsToggle.checked) {
             return;
         }
         addMessageToDom(m, absoluteIndex, false);
     });
-    
+
     updateLoadMoreVisibility();
 
     if (preserveScroll) {
         messagesDiv.scrollTop = oldScrollTop + (messagesDiv.scrollHeight - oldScrollHeight);
     } else {
         if (oldScrollHeight === 0) {
-             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     }
 }
@@ -118,13 +123,15 @@ function renderMessages(preserveScroll = false) {
 loadMoreBtn.onclick = () => {
     vscode.postMessage({
         command: 'requestLoadMore',
-        offset: messages.length
+        offset: messages.length,
     });
 };
 
 let typingIndicator: HTMLElement | null = null;
 function showTypingIndicator() {
-    if (typingIndicator) return;
+    if (typingIndicator) {
+        return;
+    }
     typingIndicator = document.createElement('div');
     typingIndicator.className = 'message-wrapper assistant';
     typingIndicator.innerHTML = `
@@ -149,13 +156,15 @@ function hideTypingIndicator() {
 }
 
 function formatTime(ts: number) {
-    if (!ts) return '';
-    return new Date(ts).toLocaleString(undefined, { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    if (!ts) {
+        return '';
+    }
+    return new Date(ts).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
@@ -167,7 +176,7 @@ function showTooltip(target: HTMLElement, text: string) {
 
     const rect = target.getBoundingClientRect();
     tooltip.style.left = rect.left + 'px';
-    tooltip.style.top = (rect.top - 30) + 'px';
+    tooltip.style.top = rect.top - 30 + 'px';
     tooltip.classList.add('visible');
 
     setTimeout(() => {
@@ -196,16 +205,17 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
     const header = document.createElement('div');
     header.className = 'message-header';
     const displayName = m.instanceName || m.modelName || modelName;
-    header.textContent = role === 'user' ? 'You' : (m.isError || role === 'error' ? 'Error' : (role === 'system' ? 'System' : displayName));
+    header.textContent =
+        role === 'user' ? 'You' : m.isError || role === 'error' ? 'Error' : role === 'system' ? 'System' : displayName;
     wrapper.appendChild(header);
 
     const div = document.createElement('div');
     div.className = 'message';
-    
+
     if (typeof index === 'number' && role !== 'error' && role !== 'system') {
         const btns = document.createElement('div');
         btns.className = 'buttons-container';
-        
+
         const copyBtn = document.createElement('button');
         copyBtn.className = 'icon-btn copy-icon';
         copyBtn.title = 'Copy';
@@ -272,10 +282,10 @@ function addMessageToDom(m: ChatMessage, index?: number, shouldScroll = true) {
 
 function toggleDropdown(e: MouseEvent, index: number, m: ChatMessage) {
     closeDropdown();
-    
+
     const btn = e.currentTarget as HTMLElement;
-    const parent = btn.parentElement as HTMLElement; 
-    
+    const parent = btn.parentElement as HTMLElement;
+
     const menu = document.createElement('div');
     menu.className = 'dropdown-menu';
 
@@ -287,7 +297,7 @@ function toggleDropdown(e: MouseEvent, index: number, m: ChatMessage) {
         closeDropdown();
     };
     menu.appendChild(itemInfo);
-    
+
     if (m.role === 'user') {
         const itemTruncate = document.createElement('div');
         itemTruncate.className = 'dropdown-item';
@@ -296,48 +306,48 @@ function toggleDropdown(e: MouseEvent, index: number, m: ChatMessage) {
             const absoluteIndex = index;
             const localIndex = absoluteIndex - (totalMessages - messages.length);
             const targetMessage = messages[localIndex];
-            
-            vscode.postMessage({ 
-                command: 'requestTruncate', 
-                index: absoluteIndex, 
+
+            vscode.postMessage({
+                command: 'requestTruncate',
+                index: absoluteIndex,
                 content: m.content,
                 framingId: targetMessage?.framingId,
-                framingName: targetMessage?.framingName
+                framingName: targetMessage?.framingName,
             });
             closeDropdown();
         };
         menu.appendChild(itemTruncate);
-        
+
         const itemFork = document.createElement('div');
         itemFork.className = 'dropdown-item';
         itemFork.textContent = 'Edit / Fork';
         itemFork.onclick = () => {
-             const absoluteIndex = index;
-             const localIndex = absoluteIndex - (totalMessages - messages.length);
-             const targetMessage = messages[localIndex];
+            const absoluteIndex = index;
+            const localIndex = absoluteIndex - (totalMessages - messages.length);
+            const targetMessage = messages[localIndex];
 
-             vscode.postMessage({ 
-                 command: 'requestFork', 
-                 index: absoluteIndex, 
-                 content: m.content,
-                 framingId: targetMessage?.framingId,
-                 framingName: targetMessage?.framingName
-             });
-             closeDropdown();
+            vscode.postMessage({
+                command: 'requestFork',
+                index: absoluteIndex,
+                content: m.content,
+                framingId: targetMessage?.framingId,
+                framingName: targetMessage?.framingName,
+            });
+            closeDropdown();
         };
         menu.appendChild(itemFork);
     } else if (m.role === 'assistant') {
         const itemRegen = document.createElement('div');
         itemRegen.className = 'dropdown-item';
-        const isLast = index === (totalMessages - 1);
+        const isLast = index === totalMessages - 1;
         itemRegen.textContent = isLast ? 'Regenerate' : 'Regenerate (Truncate)';
-        
+
         itemRegen.onclick = () => {
-             vscode.postMessage({
-                 command: 'requestRegenerate',
-                 index
-             });
-             closeDropdown();
+            vscode.postMessage({
+                command: 'requestRegenerate',
+                index,
+            });
+            closeDropdown();
         };
         menu.appendChild(itemRegen);
 
@@ -345,19 +355,19 @@ function toggleDropdown(e: MouseEvent, index: number, m: ChatMessage) {
         itemFork.className = 'dropdown-item';
         itemFork.textContent = 'Fork';
         itemFork.onclick = () => {
-             vscode.postMessage({
-                 command: 'requestForkAssistant',
-                 index
-             });
-             closeDropdown();
+            vscode.postMessage({
+                command: 'requestForkAssistant',
+                index,
+            });
+            closeDropdown();
         };
         menu.appendChild(itemFork);
     }
-    
+
     parent.appendChild(menu);
     menu.style.display = 'block';
     activeDropdown = menu;
-    
+
     setTimeout(() => {
         document.addEventListener('click', closeDropdownOutside);
     }, 0);
@@ -416,20 +426,26 @@ function closeDropdownOutside(e: MouseEvent) {
     }
 }
 
-function enterEditMode(mode: 'truncate' | 'fork', index: number, content: string, framingId?: string, framingName?: string) {
+function enterEditMode(
+    mode: 'truncate' | 'fork',
+    index: number,
+    content: string,
+    framingId?: string,
+    framingName?: string,
+) {
     editState = { mode, index };
     input.value = content;
-    
+
     // Atomic framing backup
     framingBackupId = currentFramingId;
     framingBackupName = currentFramingName;
-    
+
     if (framingId !== undefined) {
         updateFramingUI(framingId, framingName);
     }
 
-    setTimeout(() => input.focus(), 0); 
-    
+    setTimeout(() => input.focus(), 0);
+
     inputArea.classList.add('editing');
     cancelBtn.style.display = 'inline-block';
     sendBtn.textContent = mode === 'truncate' ? 'Edit & Send' : 'Fork & Send';
@@ -479,16 +495,16 @@ function sendMessage() {
     }
 
     if (editState) {
-        vscode.postMessage({ 
-            command: 'sendMessage', 
-            text: trimmedText, 
+        vscode.postMessage({
+            command: 'sendMessage',
+            text: trimmedText,
             editOptions: editState,
-            framingId: currentFramingId 
+            framingId: currentFramingId,
         });
         truncatedMessagesBackup = null;
         framingBackupId = undefined;
         framingBackupName = undefined;
-        editState = null; 
+        editState = null;
         inputArea.classList.remove('editing');
         cancelBtn.style.display = 'none';
         sendBtn.textContent = 'Send';
@@ -533,9 +549,9 @@ input.addEventListener('keydown', (e) => {
 });
 
 // Handle messages from extension
-window.addEventListener('message', event => {
+window.addEventListener('message', (event) => {
     const message = event.data;
-    switch(message.command) {
+    switch (message.command) {
         case 'initState': {
             modelName = message.modelName;
             messages = message.messages;
@@ -556,9 +572,9 @@ window.addEventListener('message', event => {
             break;
         }
         case 'addMessage': {
-            const newMessage: ChatMessage = { 
-                role: message.role, 
-                content: message.content, 
+            const newMessage: ChatMessage = {
+                role: message.role,
+                content: message.content,
                 timestamp: Date.now(),
                 systemTurnPrefix: message.systemTurnPrefix,
                 userPrefix: message.userPrefix,
@@ -567,7 +583,7 @@ window.addEventListener('message', event => {
                 framingId: message.framingId,
                 framingName: message.framingName,
                 modelName: message.modelName,
-                isError: message.isError
+                isError: message.isError,
             };
             messages.push(newMessage);
             totalMessages++;
@@ -605,17 +621,17 @@ window.addEventListener('message', event => {
                 const wrapper = done.parentElement!.parentElement!;
                 const fullContent = done.textContent || '';
                 const timestamp = Date.now();
-                
+
                 if (!fullContent) {
                     wrapper.remove();
                 } else {
-                    const assistantMsg: ChatMessage = { 
-                        role: 'assistant', 
-                        content: fullContent, 
+                    const assistantMsg: ChatMessage = {
+                        role: 'assistant',
+                        content: fullContent,
                         timestamp: timestamp,
                         modelName: modelName,
                         framingId: currentFramingId,
-                        framingName: currentFramingName
+                        framingName: currentFramingName,
                     };
                     messages.push(assistantMsg);
                     totalMessages++;

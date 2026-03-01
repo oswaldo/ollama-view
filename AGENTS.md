@@ -22,14 +22,17 @@
 ## 3. Development Workflow
 
 ### Setup
+
 1.  **Install Dependencies**: `npm install`
 2.  **Build**: `npm run compile`
 
 ### Running
+
 - Press `F5` in VS Code to launch the **Extension Development Host**.
 - Ensure `ollama serve` is running locally.
 
 ### Testing
+
 - **Framework**: Mocha
 - **Run Tests**: `npm test`
 - **Linting**: `npm run lint` (ESLint) - **MUST PASS** before any commit.
@@ -47,8 +50,8 @@
 ## 5. File Structure and Navigation
 
 - `src/`: Source code.
-  - `extension.ts`: Entry point.
-  - `*Provider.ts`: Data providers for views.
+    - `extension.ts`: Entry point.
+    - `*Provider.ts`: Data providers for views.
 - `media/`: Static assets (icons, CSS/JS for webviews).
 - `package.json`: Manifest, command definitions, and view containers.
 - `scope.md`: Tracks project goals, requirements, and completed features. **Check this before starting new tasks.**

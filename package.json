@@ -1,271 +1,278 @@
 {
-  "name": "ollama-view",
-  "displayName": "Ollama View",
-  "description": "Manage local Ollama models",
-  "version": "0.0.6",
-  "publisher": "OswaldoDantas",
-  "license": "MIT",
-  "icon": "media/logo.png",
-  "galleryBanner": {
-    "color": "#1e1e1e",
-    "theme": "dark"
-  },
-  "categories": [
-    "Machine Learning",
-    "Other"
-  ],
-  "keywords": [
-    "ollama",
-    "llm",
-    "ai",
-    "chat",
-    "local-ai",
-    "llama3",
-    "mistral"
-  ],
-  "homepage": "https://github.com/oswaldo/ollama-view",
-  "bugs": {
-    "url": "https://github.com/oswaldo/ollama-view/issues"
-  },
-  "qna": "marketplace",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oswaldo/ollama-view.git"
-  },
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "ollama-view-container",
-          "title": "ollama-view",
-          "icon": "media/sidebar-icon.svg"
-        }
-      ]
+    "name": "ollama-view",
+    "displayName": "Ollama View",
+    "description": "Manage local Ollama models",
+    "version": "0.0.6",
+    "publisher": "OswaldoDantas",
+    "license": "MIT",
+    "icon": "media/logo.png",
+    "galleryBanner": {
+        "color": "#1e1e1e",
+        "theme": "dark"
     },
-    "views": {
-      "ollama-view-container": [
-        {
-          "id": "ollama-models-view",
-          "name": "Models",
-          "icon": "media/sidebar-icon.svg"
-        },
-        {
-          "id": "ollama-framing-view",
-          "name": "Model Framing",
-          "icon": "$(library)"
-        }
-      ]
-    },
-    "commands": [
-      {
-        "command": "ollamaView.refresh",
-        "title": "Refresh",
-        "category": "ollama-view",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "ollamaView.startChat",
-        "title": "Start Chat",
-        "category": "ollama-view"
-      },
-      {
-        "command": "ollamaView.pull",
-        "title": "Pull Model",
-        "category": "ollama-view",
-        "icon": "$(cloud-download)"
-      },
-      {
-        "command": "ollamaView.start",
-        "title": "Start",
-        "category": "ollama-view",
-        "icon": "$(play)"
-      },
-      {
-        "command": "ollamaView.stop",
-        "title": "Stop",
-        "category": "ollama-view",
-        "icon": "$(stop)"
-      },
-      {
-        "command": "ollamaView.delete",
-        "title": "Delete",
-        "category": "ollama-view",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "ollamaView.createChat",
-        "title": "New Chat",
-        "category": "ollama-view",
-        "icon": "$(add)"
-      },
-      {
-        "command": "ollamaView.createInstance",
-        "title": "Create New Instance",
-        "category": "ollama-view",
-        "icon": "$(add)"
-      },
-      {
-        "command": "ollamaView.setup",
-        "title": "Setup",
-        "category": "ollama-view",
-        "icon": "$(settings-gear)"
-      },
-      {
-        "command": "ollamaView.showMoreActions",
-        "title": "More Actions...",
-        "category": "ollama-view",
-        "icon": "$(more)"
-      },
-      {
-        "command": "ollamaView.deleteChat",
-        "title": "Delete Chat",
-        "category": "ollama-view",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "ollamaView.createFraming",
-        "title": "New Model Framing",
-        "category": "ollama-view",
-        "icon": "$(add)"
-      },
-      {
-        "command": "ollamaView.duplicateFraming",
-        "title": "Duplicate",
-        "category": "ollama-view",
-        "icon": "$(copy)"
-      },
-      {
-        "command": "ollamaView.deleteFraming",
-        "title": "Delete",
-        "category": "ollama-view",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "ollamaView.showMoreFramingActions",
-        "title": "More Actions...",
-        "category": "ollama-view",
-        "icon": "$(more)"
-      }
+    "categories": [
+        "Machine Learning",
+        "Other"
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "ollamaView.refresh",
-          "group": "navigation"
+    "keywords": [
+        "ollama",
+        "llm",
+        "ai",
+        "chat",
+        "local-ai",
+        "llama3",
+        "mistral"
+    ],
+    "homepage": "https://github.com/oswaldo/ollama-view",
+    "bugs": {
+        "url": "https://github.com/oswaldo/ollama-view/issues"
+    },
+    "qna": "marketplace",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/oswaldo/ollama-view.git"
+    },
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "ollama-view-container",
+                    "title": "ollama-view",
+                    "icon": "media/sidebar-icon.svg"
+                }
+            ]
         },
-        {
-          "command": "ollamaView.pull",
-          "group": "navigation"
+        "views": {
+            "ollama-view-container": [
+                {
+                    "id": "ollama-models-view",
+                    "name": "Models",
+                    "icon": "media/sidebar-icon.svg"
+                },
+                {
+                    "id": "ollama-framing-view",
+                    "name": "Model Framing",
+                    "icon": "$(library)"
+                }
+            ]
         },
-        {
-          "command": "ollamaView.createFraming",
-          "group": "navigation",
-          "when": "view == ollama-framing-view"
+        "commands": [
+            {
+                "command": "ollamaView.refresh",
+                "title": "Refresh",
+                "category": "ollama-view",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "ollamaView.startChat",
+                "title": "Start Chat",
+                "category": "ollama-view"
+            },
+            {
+                "command": "ollamaView.pull",
+                "title": "Pull Model",
+                "category": "ollama-view",
+                "icon": "$(cloud-download)"
+            },
+            {
+                "command": "ollamaView.start",
+                "title": "Start",
+                "category": "ollama-view",
+                "icon": "$(play)"
+            },
+            {
+                "command": "ollamaView.stop",
+                "title": "Stop",
+                "category": "ollama-view",
+                "icon": "$(stop)"
+            },
+            {
+                "command": "ollamaView.delete",
+                "title": "Delete",
+                "category": "ollama-view",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "ollamaView.createChat",
+                "title": "New Chat",
+                "category": "ollama-view",
+                "icon": "$(add)"
+            },
+            {
+                "command": "ollamaView.createInstance",
+                "title": "Create New Instance",
+                "category": "ollama-view",
+                "icon": "$(add)"
+            },
+            {
+                "command": "ollamaView.setup",
+                "title": "Setup",
+                "category": "ollama-view",
+                "icon": "$(settings-gear)"
+            },
+            {
+                "command": "ollamaView.showMoreActions",
+                "title": "More Actions...",
+                "category": "ollama-view",
+                "icon": "$(more)"
+            },
+            {
+                "command": "ollamaView.deleteChat",
+                "title": "Delete Chat",
+                "category": "ollama-view",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "ollamaView.createFraming",
+                "title": "New Model Framing",
+                "category": "ollama-view",
+                "icon": "$(add)"
+            },
+            {
+                "command": "ollamaView.duplicateFraming",
+                "title": "Duplicate",
+                "category": "ollama-view",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "ollamaView.deleteFraming",
+                "title": "Delete",
+                "category": "ollama-view",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "ollamaView.showMoreFramingActions",
+                "title": "More Actions...",
+                "category": "ollama-view",
+                "icon": "$(more)"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "ollamaView.refresh",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ollamaView.pull",
+                    "group": "navigation"
+                },
+                {
+                    "command": "ollamaView.createFraming",
+                    "group": "navigation",
+                    "when": "view == ollama-framing-view"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "ollamaView.start",
+                    "when": "viewItem == variable-stopped",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "ollamaView.stop",
+                    "when": "viewItem == variable-running",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "ollamaView.createChat",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "ollamaView.createInstance",
+                    "when": "viewItem == ollama-model",
+                    "group": "ollama@0"
+                },
+                {
+                    "command": "ollamaView.showMoreActions",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "ollamaView.setup",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped",
+                    "group": "ollama@1"
+                },
+                {
+                    "command": "ollamaView.delete",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
+                    "group": "ollama@2"
+                },
+                {
+                    "command": "ollamaView.deleteChat",
+                    "when": "viewItem == ollama-chat",
+                    "group": "inline"
+                },
+                {
+                    "command": "ollamaView.showMoreFramingActions",
+                    "when": "view == ollama-framing-view && viewItem =~ /framing-/",
+                    "group": "inline"
+                },
+                {
+                    "command": "ollamaView.duplicateFraming",
+                    "when": "view == ollama-framing-view && viewItem =~ /framing-/",
+                    "group": "framing@1"
+                },
+                {
+                    "command": "ollamaView.deleteFraming",
+                    "when": "view == ollama-framing-view && viewItem == framing-user",
+                    "group": "framing@2"
+                }
+            ]
         }
-      ],
-      "view/item/context": [
-        {
-          "command": "ollamaView.start",
-          "when": "viewItem == variable-stopped",
-          "group": "inline@1"
-        },
-        {
-          "command": "ollamaView.stop",
-          "when": "viewItem == variable-running",
-          "group": "inline@1"
-        },
-        {
-          "command": "ollamaView.createChat",
-          "when": "viewItem == variable-running || viewItem == variable-stopped",
-          "group": "inline@2"
-        },
-        {
-          "command": "ollamaView.createInstance",
-          "when": "viewItem == ollama-model",
-          "group": "ollama@0"
-        },
-        {
-          "command": "ollamaView.showMoreActions",
-          "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
-          "group": "inline@3"
-        },
-        {
-          "command": "ollamaView.setup",
-          "when": "viewItem == variable-running || viewItem == variable-stopped",
-          "group": "ollama@1"
-        },
-        {
-          "command": "ollamaView.delete",
-          "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
-          "group": "ollama@2"
-        },
-        {
-          "command": "ollamaView.deleteChat",
-          "when": "viewItem == ollama-chat",
-          "group": "inline"
-        },
-        {
-          "command": "ollamaView.showMoreFramingActions",
-          "when": "view == ollama-framing-view && viewItem =~ /framing-/",
-          "group": "inline"
-        },
-        {
-          "command": "ollamaView.duplicateFraming",
-          "when": "view == ollama-framing-view && viewItem =~ /framing-/",
-          "group": "framing@1"
-        },
-        {
-          "command": "ollamaView.deleteFraming",
-          "when": "view == ollama-framing-view && viewItem == framing-user",
-          "group": "framing@2"
-        }
-      ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "npm run webpack-dev && npm run build:webview",
+        "watch": "webpack --watch --mode development",
+        "package": "npm run webpack-prod && npm run build:webview",
+        "webpack-base": "webpack --config webpack.config.js",
+        "webpack-dev": "npm run webpack-base -- --mode development",
+        "webpack-prod": "npm run webpack-base -- --mode production",
+        "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:framing",
+        "build:webview:chat": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
+        "build:webview:setup": "esbuild src/webview/setup.ts --bundle --outfile=dist/webview/setup.js --platform=browser --target=es2020 --format=iife",
+        "build:webview:framing": "esbuild src/webview/framing.ts --bundle --outfile=dist/webview/framing.js --platform=browser --target=es2020 --format=iife",
+        "pretest": "npm run compile && npm run lint",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src",
+        "fix": "npm run fix:lint && npm run format",
+        "fix:lint": "eslint src --fix",
+        "format": "prettier --write \"src/**/*.{ts,js,json,css,html}\" \"*.{json,js,mjs,md}\"",
+        "build:tests": "tsc -p .",
+        "test": "node ./dist/test/runTest.js",
+        "test:integration": "npm run build:tests && node ./dist/test/runIntegrationTest.js"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.2",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "18.x",
+        "@types/sinon": "^21.0.0",
+        "@types/vscode": "^1.85.0",
+        "@typescript-eslint/eslint-plugin": "^8.54.0",
+        "@typescript-eslint/parser": "^8.54.0",
+        "esbuild": "^0.27.3",
+        "eslint": "^9.39.2",
+        "eslint-plugin-simple-import-sort": "^12.1.1",
+        "eslint-plugin-unused-imports": "^4.4.1",
+        "fast-glob": "^3.3.3",
+        "mocha": "^11.3.0",
+        "prettier": "^3.8.1",
+        "sinon": "^21.0.1",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.3.3",
+        "typescript-eslint": "^8.54.0",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "@types/uuid": "^11.0.0",
+        "uuid": "^13.0.0"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "npm run webpack-dev && npm run build:webview",
-    "watch": "webpack --watch --mode development",
-    "package": "npm run webpack-prod && npm run build:webview",
-    "webpack-base": "webpack --config webpack.config.js",
-    "webpack-dev": "npm run webpack-base -- --mode development",
-    "webpack-prod": "npm run webpack-base -- --mode production",
-    "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:framing",
-    "build:webview:chat": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
-    "build:webview:setup": "esbuild src/webview/setup.ts --bundle --outfile=dist/webview/setup.js --platform=browser --target=es2020 --format=iife",
-    "build:webview:framing": "esbuild src/webview/framing.ts --bundle --outfile=dist/webview/framing.js --platform=browser --target=es2020 --format=iife",
-    "pretest": "npm run compile && npm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "node ./dist/test/runTest.js"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "18.x",
-    "@types/sinon": "^21.0.0",
-    "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "esbuild": "^0.27.3",
-    "eslint": "^9.39.2",
-    "fast-glob": "^3.3.3",
-    "mocha": "^11.3.0",
-    "prettier": "^3.8.1",
-    "sinon": "^21.0.1",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.3.3",
-    "typescript-eslint": "^8.54.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
-    "@types/uuid": "^11.0.0",
-    "uuid": "^13.0.0"
-  }
 }

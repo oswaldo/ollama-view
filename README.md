@@ -35,6 +35,7 @@ You can install this extension from the following sources:
 ## Features
 
 ### Sidepanel View
+
 - **Model List**: View all your local Ollama models in a tree view.
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
 - **Status Indication**: Visual indicators for Running (Green) and Stopped (Grey) models.
@@ -43,16 +44,17 @@ You can install this extension from the following sources:
 - **Context Menu**: Safe model deletion and configuration access via the "More Actions" menu.
 
 ### Chat Interface
+
 - **Concurrent Chats**: Open multiple chat tabs simultaneously.
 - **History**: Chat history is automatically saved and persists across VS Code sessions.
 - **Auto-Start**: Sending a message to a stopped model continuously starts it.
 - **Message Editing**: Hover over user messages to **copy** content or access **edit options**:
-  - **Edit / Truncate**: Edit a message and remove all subsequent history (rewriting the conversation path).
-  - **Edit / Fork**: Edit a message and create a new chat branch, preserving the original conversation.
+    - **Edit / Truncate**: Edit a message and remove all subsequent history (rewriting the conversation path).
+    - **Edit / Fork**: Edit a message and create a new chat branch, preserving the original conversation.
 - **Model Actions**: Hover over model responses to:
-  - **Copy**: Copy response content to clipboard.
-  - **Regenerate**: Re-generate the answer. If it's not the last message, this will truncate the conversation.
-  - **Fork**: Create a new chat branching from this point.
+    - **Copy**: Copy response content to clipboard.
+    - **Regenerate**: Re-generate the answer. If it's not the last message, this will truncate the conversation.
+    - **Fork**: Create a new chat branching from this point.
 - **Prompt Debugging**: Visibility toggle to show/hide "hidden" system turns and prompt injections in the chat history.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 

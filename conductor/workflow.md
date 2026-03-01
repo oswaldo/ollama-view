@@ -345,6 +345,10 @@ A task is complete when:
 - Optimize for user happiness
 - Keep things simple and maintainable
 
+### Lessons Learned
+
+- **Test Compilation**: If `npm run compile` (which uses Webpack/esbuild) does not output files to `dist/test`, use `npx tsc` to ensure all TypeScript files, including tests, are compiled into the `dist` directory. This is especially important when running the automated test suite via `npm run test`.
+
 ## Publishing and Versioning
 
 ### 1. Release Preparation

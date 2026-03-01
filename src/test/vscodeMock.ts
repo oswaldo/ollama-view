@@ -1,11 +1,14 @@
 export enum TreeItemCollapsibleState {
     None = 0,
     Collapsed = 1,
-    Expanded = 2
+    Expanded = 2,
 }
 
 export class TreeItem {
-    constructor(public readonly label: string | { label: string }, public readonly collapsibleState?: TreeItemCollapsibleState) {}
+    constructor(
+        public readonly label: string | { label: string },
+        public readonly collapsibleState?: TreeItemCollapsibleState,
+    ) {}
 }
 
 export class ThemeIcon {
@@ -19,7 +22,7 @@ export class EventEmitter<T> {
         return { dispose: () => {} };
     };
     fire(data: T): void {
-        this._listeners.forEach(l => l(data));
+        this._listeners.forEach((l) => l(data));
     }
 }
 
@@ -29,6 +32,11 @@ export const window = {
     showErrorMessage: async () => {},
     showQuickPick: async () => {},
     createWebviewPanel: () => ({}),
+    createOutputChannel: () => ({
+        appendLine: () => {},
+        show: () => {},
+        dispose: () => {},
+    }),
 };
 
 export const commands = {
@@ -40,7 +48,7 @@ export enum ViewColumn {
     Beside = -2,
     One = 1,
     Two = 2,
-    Three = 3
+    Three = 3,
 }
 
 export class Uri {

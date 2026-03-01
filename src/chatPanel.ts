@@ -1,11 +1,19 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
-import { ChatService, Chat } from './chatService';
-import { OllamaProvider } from './ollamaProvider';
-import { ModelSettingsService } from './modelSettingsService';
-import { FramingService } from './services/framingService';
+import * as path from 'path';
+import * as vscode from 'vscode';
+
+import { Chat, ChatService, MessageMetadata } from './chatService';
 import { Logger } from './logger';
+import { ModelFraming } from './models/modelFraming';
+import { ModelInstance } from './models/modelInstance';
+import { ModelSettingsService } from './modelSettingsService';
+import { OllamaProvider } from './ollamaProvider';
+import { FramingService } from './services/framingService';
+
+interface WebviewMessage {
+    command: string;
+    [key: string]: unknown;
+}
 
 export class ChatPanel {
     public static panels: Map<string, ChatPanel> = new Map();
@@ -23,10 +31,16 @@ export class ChatPanel {
     private _framingService: FramingService;
     private _onStateChange?: () => void;
 
-    public static createOrShow(extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, modelSettingsService: ModelSettingsService, framingService: FramingService, onStateChange?: () => void) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+    public static createOrShow(
+        extensionUri: vscode.Uri,
+        chat: Chat,
+        chatService: ChatService,
+        provider: OllamaProvider,
+        modelSettingsService: ModelSettingsService,
+        framingService: FramingService,
+        onStateChange?: () => void,
+    ) {
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         if (ChatPanel.panels.has(chat.id)) {
             const existing = ChatPanel.panels.get(chat.id)!;
@@ -47,17 +61,35 @@ export class ChatPanel {
                 retainContextWhenHidden: true,
                 localResourceRoots: [
                     vscode.Uri.file(path.join(extensionUri.fsPath, 'media')),
-                    vscode.Uri.file(path.join(extensionUri.fsPath, 'dist'))
-                ]
-            }
+                    vscode.Uri.file(path.join(extensionUri.fsPath, 'dist')),
+                ],
+            },
         );
 
-        const chatPanel = new ChatPanel(panel, extensionUri, chat, chatService, provider, modelSettingsService, framingService, onStateChange);
+        const chatPanel = new ChatPanel(
+            panel,
+            extensionUri,
+            chat,
+            chatService,
+            provider,
+            modelSettingsService,
+            framingService,
+            onStateChange,
+        );
         ChatPanel.panels.set(chat.id, chatPanel);
         return chatPanel;
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, chat: Chat, chatService: ChatService, provider: OllamaProvider, modelSettingsService: ModelSettingsService, framingService: FramingService, onStateChange?: () => void) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        chat: Chat,
+        chatService: ChatService,
+        provider: OllamaProvider,
+        modelSettingsService: ModelSettingsService,
+        framingService: FramingService,
+        onStateChange?: () => void,
+    ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._chat = chat;
@@ -70,25 +102,41 @@ export class ChatPanel {
         this._update();
 
         this._panel.webview.onDidReceiveMessage(
-            async message => {
+            async (message: WebviewMessage) => {
                 switch (message.command) {
                     case 'sendMessage':
-                        await this.handleUserMessage(message.text, message.editOptions, message.framingId);
+                        await this.handleUserMessage(
+                            message.text as string,
+                            message.editOptions as { mode: 'truncate' | 'fork'; index: number },
+                            message.framingId as string,
+                        );
                         return;
                     case 'requestTruncate':
-                        await this._handleHistoryAction('truncate', message.index, message.content, message.framingId, message.framingName);
+                        await this._handleHistoryAction(
+                            'truncate',
+                            message.index as number,
+                            message.content as string,
+                            message.framingId as string,
+                            message.framingName as string,
+                        );
                         return;
                     case 'requestFork':
-                        await this._handleHistoryAction('fork', message.index, message.content, message.framingId, message.framingName);
+                        await this._handleHistoryAction(
+                            'fork',
+                            message.index as number,
+                            message.content as string,
+                            message.framingId as string,
+                            message.framingName as string,
+                        );
                         return;
                     case 'requestRegenerate':
-                        await this._handleRequestRegenerate(message.index);
+                        await this._handleRequestRegenerate(message.index as number);
                         return;
                     case 'requestForkAssistant':
-                        await this._handleRequestForkAssistant(message.index);
+                        await this._handleRequestForkAssistant(message.index as number);
                         return;
                     case 'requestLoadMore':
-                        await this._handleRequestLoadMore(message.offset);
+                        await this._handleRequestLoadMore(message.offset as number);
                         return;
                     case 'requestFraming':
                         await this._handleRequestFraming();
@@ -102,7 +150,7 @@ export class ChatPanel {
                 }
             },
             null,
-            this._disposables
+            this._disposables,
         );
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -110,14 +158,14 @@ export class ChatPanel {
 
     private async _handleRequestFraming() {
         const framings = this._framingService.getAllFramings();
-        const items = framings.map(f => ({
+        const items = framings.map((f) => ({
             label: f.name,
             description: f.description,
-            framing: f
+            framing: f,
         }));
 
         const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Select a model framing for this chat'
+            placeHolder: 'Select a model framing for this chat',
         });
 
         if (selected) {
@@ -126,7 +174,7 @@ export class ChatPanel {
             this._panel.webview.postMessage({
                 command: 'updateFraming',
                 framingId: selected.framing.id,
-                framingName: selected.framing.name
+                framingName: selected.framing.name,
             });
             vscode.window.showInformationMessage(`Applied framing override: ${selected.framing.name}`);
         }
@@ -138,18 +186,16 @@ export class ChatPanel {
         this._panel.webview.postMessage({
             command: 'updateFraming',
             framingId: undefined,
-            framingName: undefined
+            framingName: undefined,
         });
         vscode.window.showInformationMessage('Reverted to model default framing');
     }
 
     private async _handleRequestMoreActions() {
-        const actions = [
-            { label: '$(library) Apply Model Framing', id: 'applyFraming' }
-        ];
+        const actions = [{ label: '$(library) Apply Model Framing', id: 'applyFraming' }];
 
         const selected = await vscode.window.showQuickPick(actions, {
-            placeHolder: 'Chat Actions'
+            placeHolder: 'Chat Actions',
         });
 
         if (selected?.id === 'applyFraming') {
@@ -157,7 +203,13 @@ export class ChatPanel {
         }
     }
 
-    private async _handleHistoryAction(mode: 'truncate' | 'fork', index: number, content: string, msgFramingId?: string, msgFramingName?: string) {
+    private async _handleHistoryAction(
+        mode: 'truncate' | 'fork',
+        index: number,
+        content: string,
+        msgFramingId?: string,
+        msgFramingName?: string,
+    ) {
         const activeFramingId = this._chat.activeFramingId;
         const activeFramingName = activeFramingId ? this._framingService.getFraming(activeFramingId)?.name : undefined;
 
@@ -172,7 +224,7 @@ export class ChatPanel {
                 `Framing Mismatch: This message used "${msgName}", but the chat is currently using "${currentName}". Which framing should be active for the new turn?`,
                 { modal: true },
                 `Use "${msgName}"`,
-                `Keep "${currentName}"`
+                `Keep "${currentName}"`,
             );
 
             if (selection === `Use "${msgName}"`) {
@@ -189,7 +241,7 @@ export class ChatPanel {
             index,
             content,
             framingId: targetFramingId,
-            framingName: targetFramingName
+            framingName: targetFramingName,
         });
     }
 
@@ -199,11 +251,11 @@ export class ChatPanel {
         this._panel.webview.postMessage({
             command: 'moreMessagesLoaded',
             messages: paginated.messages,
-            total: paginated.total
+            total: paginated.total,
         });
     }
 
-    public postMessage(message: any) {
+    public postMessage(message: WebviewMessage) {
         this._panel.webview.postMessage(message);
     }
 
@@ -228,19 +280,35 @@ export class ChatPanel {
         }
     }
 
-    public async handleUserMessage(text: string, editOptions?: { mode: 'truncate' | 'fork', index: number }, framingIdOverride?: string) {
+    public async handleUserMessage(
+        text: string,
+        editOptions?: { mode: 'truncate' | 'fork'; index: number },
+        framingIdOverride?: string,
+    ) {
         const trimmedText = text.trim();
-        
+
         if (editOptions && framingIdOverride !== undefined && framingIdOverride !== this._chat.activeFramingId) {
             await this._chatService.setActiveFraming(this._chat.id, framingIdOverride);
             this._chat.activeFramingId = framingIdOverride;
             const name = framingIdOverride ? this._framingService.getFraming(framingIdOverride)?.name : undefined;
-            this._panel.webview.postMessage({ command: 'updateFraming', framingId: framingIdOverride, framingName: name });
+            this._panel.webview.postMessage({
+                command: 'updateFraming',
+                framingId: framingIdOverride,
+                framingName: name,
+            });
         }
 
         const instance = this._modelSettingsService.getSettings(this._chat.modelName);
-        let settings: any = instance;
-        let activeFraming: any = undefined;
+        let settings:
+            | ModelInstance
+            | (ModelInstance & {
+                  systemMessage: string;
+                  userMessagePrefix?: string;
+                  userMessageSuffix?: string;
+                  systemTurnPrefix?: string;
+                  systemTurnSuffix?: string;
+              }) = instance;
+        let activeFraming: ModelFraming | undefined = undefined;
 
         if (this._chat.activeFramingId) {
             activeFraming = this._framingService.getFraming(this._chat.activeFramingId);
@@ -251,14 +319,14 @@ export class ChatPanel {
                     userMessagePrefix: activeFraming.userMessagePrefix,
                     userMessageSuffix: activeFraming.userMessageSuffix,
                     systemTurnPrefix: activeFraming.systemTurnPrefix,
-                    systemTurnSuffix: activeFraming.systemTurnSuffix
+                    systemTurnSuffix: activeFraming.systemTurnSuffix,
                 };
             } else {
                 const selection = await vscode.window.showWarningMessage(
                     `The framing previously used in this chat was deleted. What would you like to do?`,
                     { modal: true },
                     'Select New Framing',
-                    'Use Model Defaults'
+                    'Use Model Defaults',
                 );
 
                 if (selection === 'Select New Framing') {
@@ -272,7 +340,7 @@ export class ChatPanel {
                                 userMessagePrefix: activeFraming.userMessagePrefix,
                                 userMessageSuffix: activeFraming.userMessageSuffix,
                                 systemTurnPrefix: activeFraming.systemTurnPrefix,
-                                systemTurnSuffix: activeFraming.systemTurnSuffix
+                                systemTurnSuffix: activeFraming.systemTurnSuffix,
                             };
                         }
                     }
@@ -292,21 +360,26 @@ export class ChatPanel {
                 const answer = await vscode.window.showWarningMessage(
                     'Are you sure? Editing this message will remove all subsequent messages in this chat.',
                     { modal: true },
-                    'Edit & Truncate'
+                    'Edit & Truncate',
                 );
 
                 if (answer !== 'Edit & Truncate') {
                     return;
                 }
 
-                const updatedChat = await this._chatService.truncateChat(this._chat.id, editOptions.index, trimmedText, {
-                    ...settings,
-                    framingId: activeFraming?.id,
-                    framingName: activeFraming?.name,
-                    modelName: instance.modelName,
-                    instanceName: instance.name,
-                    instanceId: instance.id
-                });
+                const updatedChat = await this._chatService.truncateChat(
+                    this._chat.id,
+                    editOptions.index,
+                    trimmedText,
+                    {
+                        ...settings,
+                        framingId: activeFraming?.id,
+                        framingName: activeFraming?.name,
+                        modelName: instance.modelName,
+                        instanceName: instance.name,
+                        instanceId: instance.id,
+                    },
+                );
                 if (updatedChat) {
                     this._chat = updatedChat;
                     this._updateTitle();
@@ -320,10 +393,18 @@ export class ChatPanel {
                     framingName: activeFraming?.name,
                     modelName: instance.modelName,
                     instanceName: instance.name,
-                    instanceId: instance.id
+                    instanceId: instance.id,
                 });
                 if (newChat) {
-                    const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._framingService, this._onStateChange);
+                    const newPanel = ChatPanel.createOrShow(
+                        this._extensionUri,
+                        newChat,
+                        this._chatService,
+                        this._provider,
+                        this._modelSettingsService,
+                        this._framingService,
+                        this._onStateChange,
+                    );
 
                     if (this._onStateChange) {
                         this._onStateChange();
@@ -339,39 +420,42 @@ export class ChatPanel {
         }
 
         if (!messageProcessed) {
-            const lastSystemPrompt = this._chat.messages.filter(m => m.role === 'system').pop()?.content;
-            
-            if (this._chat.messages.length === 0 || (settings.systemMessage && settings.systemMessage !== lastSystemPrompt)) {
+            const lastSystemPrompt = this._chat.messages.filter((m) => m.role === 'system').pop()?.content;
+
+            if (
+                this._chat.messages.length === 0 ||
+                (settings.systemMessage && settings.systemMessage !== lastSystemPrompt)
+            ) {
                 await this._chatService.addMessage(this._chat.id, 'system', settings.systemMessage || '', {
                     modelName: instance.modelName,
                     instanceName: instance.name,
                     instanceId: instance.id,
                     framingId: activeFraming?.id,
-                    framingName: activeFraming?.name
+                    framingName: activeFraming?.name,
                 });
             }
 
-            const metadata = {
+            const metadata: MessageMetadata = {
                 ...settings,
-                systemTurnPrefix: settings.systemTurnPrefix,
-                userPrefix: settings.userMessagePrefix,
-                userSuffix: settings.userMessageSuffix,
-                systemTurnSuffix: settings.systemTurnSuffix,
+                systemTurnPrefix: settings.systemTurnPrefix as string | undefined,
+                userPrefix: settings.userMessagePrefix as string | undefined,
+                userSuffix: settings.userMessageSuffix as string | undefined,
+                systemTurnSuffix: settings.systemTurnSuffix as string | undefined,
                 framingId: activeFraming?.id,
                 framingName: activeFraming?.name,
                 modelName: instance.modelName,
                 instanceName: instance.name,
-                instanceId: instance.id
+                instanceId: instance.id,
             };
 
             await this._chatService.addMessage(this._chat.id, 'user', trimmedText, metadata);
-            this._chat = this._chatService.getChat(this._chat.id) || this._chat; 
+            this._chat = this._chatService.getChat(this._chat.id) || this._chat;
             this._updateTitle();
-            this._panel.webview.postMessage({ 
-                command: 'addMessage', 
-                role: 'user', 
+            this._panel.webview.postMessage({
+                command: 'addMessage',
+                role: 'user',
                 content: trimmedText,
-                ...metadata
+                ...metadata,
             });
 
             if (this._chat.messages.length > 1 && this._chat.messages[0].role === 'system') {
@@ -414,7 +498,7 @@ export class ChatPanel {
 
         try {
             this._panel.webview.postMessage({ command: 'setLoading', loading: true });
-            
+
             let hasStarted = false;
             await this._provider.chat(this._chat.modelName, apiMessages, (token) => {
                 if (!hasStarted) {
@@ -431,7 +515,7 @@ export class ChatPanel {
             });
 
             this._panel.webview.postMessage({ command: 'setLoading', loading: false });
-            
+
             const activeFramingId = this._chat.activeFramingId;
             const activeFraming = activeFramingId ? this._framingService.getFraming(activeFramingId) : undefined;
             const instance = this._modelSettingsService.getSettings(this._chat.modelName);
@@ -441,42 +525,42 @@ export class ChatPanel {
                 instanceName: instance.name,
                 instanceId: instance.id,
                 framingId: activeFraming?.id,
-                framingName: activeFraming?.name
+                framingName: activeFraming?.name,
             });
             this._chat = this._chatService.getChat(this._chat.id) || this._chat;
 
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
-
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             this._panel.webview.postMessage({ command: 'setLoading', loading: false });
             this._panel.webview.postMessage({ command: 'endAssistantMessage' });
-            Logger.error('Chat generation error', err);
-            
-            let errorMessage = err.message;
+            Logger.error('Chat generation error', error);
+
+            let errorMessage = error.message;
             const options = ['Retry'];
             const instance = this._modelSettingsService.getSettings(this._chat.modelName);
-            
-            if (err.message.includes('ECONNREFUSED')) {
+
+            if (errorMessage.includes('ECONNREFUSED')) {
                 errorMessage = 'Could not connect to Ollama. Is it running?';
-            } else if (err.message.toLowerCase().includes('not found')) {
+            } else if (errorMessage.toLowerCase().includes('not found')) {
                 errorMessage = `Model '${instance.modelName}' not found.`;
                 options.push('Pull Model');
             }
 
             const errorText = `Error: ${errorMessage}`;
             this._panel.webview.postMessage({ command: 'addErrorMessage', content: errorMessage });
-            
+
             // Persist the error message so it survives restart
             await this._chatService.addMessage(this._chat.id, 'assistant', errorText, {
                 modelName: instance.modelName,
                 instanceName: instance.name,
                 instanceId: instance.id,
-                isError: true
+                isError: true,
             });
             this._chat = this._chatService.getChat(this._chat.id) || this._chat;
 
             const selection = await vscode.window.showErrorMessage(`Chat Error: ${errorMessage}`, ...options);
-            
+
             if (selection === 'Retry') {
                 await this._generateResponse();
             } else if (selection === 'Pull Model') {
@@ -490,7 +574,7 @@ export class ChatPanel {
             const answer = await vscode.window.showWarningMessage(
                 'Regenerating this message will remove all subsequent messages in this chat. Are you sure?',
                 { modal: true },
-                'Regenerate'
+                'Regenerate',
             );
             if (answer !== 'Regenerate') {
                 return;
@@ -509,7 +593,15 @@ export class ChatPanel {
     private async _handleRequestForkAssistant(index: number) {
         const newChat = await this._chatService.forkChatFrom(this._chat.id, index);
         if (newChat) {
-            const newPanel = ChatPanel.createOrShow(this._extensionUri, newChat, this._chatService, this._provider, this._modelSettingsService, this._framingService, this._onStateChange);
+            const newPanel = ChatPanel.createOrShow(
+                this._extensionUri,
+                newChat,
+                this._chatService,
+                this._provider,
+                this._modelSettingsService,
+                this._framingService,
+                this._onStateChange,
+            );
 
             if (this._onStateChange) {
                 this._onStateChange();
@@ -528,11 +620,11 @@ export class ChatPanel {
 
     private _update() {
         this._panel.webview.html = this._getHtmlForWebview();
-        
+
         setTimeout(() => {
             const PAGE_SIZE = 50;
             const paginated = this._chatService.getPaginatedMessages(this._chat.id, PAGE_SIZE, 0);
-            
+
             let activeFramingName = undefined;
             if (this._chat.activeFramingId) {
                 activeFramingName = this._framingService.getFraming(this._chat.activeFramingId)?.name;
@@ -544,7 +636,7 @@ export class ChatPanel {
                 messages: paginated.messages,
                 total: paginated.total,
                 activeFramingId: this._chat.activeFramingId,
-                activeFramingName
+                activeFramingName,
             });
         }, 100);
     }
@@ -554,10 +646,10 @@ export class ChatPanel {
         let html = fs.readFileSync(htmlPath, 'utf8');
 
         const scriptUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'chat.js'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'chat.js')),
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'chat.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'chat.css')),
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());

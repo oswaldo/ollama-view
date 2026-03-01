@@ -1,10 +1,28 @@
+interface WebviewMessage {
+    command: string;
+    [key: string]: unknown;
+}
+
 declare function acquireVsCodeApi(): {
-    postMessage(message: any): void;
-    getState(): any;
-    setState(state: any): void;
+    postMessage(message: WebviewMessage): void;
+    getState(): unknown;
+    setState(state: unknown): void;
 };
 
 const vscode = acquireVsCodeApi();
+
+interface FramingData {
+    id: string;
+    name: string;
+    description: string;
+    systemMessage: string;
+    userMessagePrefix: string;
+    userMessageSuffix: string;
+    systemTurnPrefix: string;
+    systemTurnSuffix: string;
+    tags: string[];
+    source: string;
+}
 
 const headerTitle = document.getElementById('header-title') as HTMLHeadingElement;
 const templateSourceBadge = document.getElementById('template-source') as HTMLDivElement;
@@ -28,36 +46,47 @@ const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
 
 let isBuiltIn = false;
 
-window.addEventListener('message', event => {
+window.addEventListener('message', (event) => {
     const message = event.data;
     switch (message.command) {
         case 'init': {
-            const framing = message.framing;
+            const framing = message.framing as FramingData;
             isBuiltIn = framing.source === 'builtin';
 
             headerTitle.textContent = isBuiltIn ? `View: ${framing.name}` : `Edit: ${framing.name}`;
             templateSourceBadge.textContent = framing.source === 'builtin' ? 'Built-in' : 'User';
-            templateSourceBadge.style.backgroundColor = isBuiltIn ? 'var(--vscode-badge-background)' : 'var(--vscode-charts-green)';
-            
+            templateSourceBadge.style.backgroundColor = isBuiltIn
+                ? 'var(--vscode-badge-background)'
+                : 'var(--vscode-charts-green)';
+
             nameInput.value = framing.name;
             descriptionTextarea.value = framing.description || '';
             tagsInput.value = (framing.tags || []).join(', ');
-            
+
             systemMessageTextarea.value = framing.systemMessage || '';
             userPrefixTextarea.value = framing.userMessagePrefix || '';
             userSuffixTextarea.value = framing.userMessageSuffix || '';
             systemTurnPrefixTextarea.value = framing.systemTurnPrefix || '';
             systemTurnSuffixTextarea.value = framing.systemTurnSuffix || '';
 
-            const inputs = [nameInput, descriptionTextarea, tagsInput, systemMessageTextarea, userPrefixTextarea, userSuffixTextarea, systemTurnPrefixTextarea, systemTurnSuffixTextarea];
-            
+            const inputs = [
+                nameInput,
+                descriptionTextarea,
+                tagsInput,
+                systemMessageTextarea,
+                userPrefixTextarea,
+                userSuffixTextarea,
+                systemTurnPrefixTextarea,
+                systemTurnSuffixTextarea,
+            ];
+
             if (isBuiltIn) {
-                inputs.forEach(i => (i as any).disabled = true);
+                inputs.forEach((i) => (i.disabled = true));
                 saveBtn.disabled = true;
                 deleteBtn.classList.add('hidden');
                 readonlyWarning.classList.remove('hidden');
             } else {
-                inputs.forEach(i => (i as any).disabled = false);
+                inputs.forEach((i) => (i.disabled = false));
                 saveBtn.disabled = false;
                 deleteBtn.classList.remove('hidden');
                 readonlyWarning.classList.add('hidden');
@@ -80,11 +109,14 @@ cancelBtn.onclick = () => {
 };
 
 saveBtn.onclick = () => {
-    if (isBuiltIn) return;
+    if (isBuiltIn) {
+        return;
+    }
 
-    const tags = tagsInput.value.split(',')
-        .map(t => t.trim())
-        .filter(t => t.length > 0);
+    const tags = tagsInput.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
 
     vscode.postMessage({
         command: 'save',
@@ -96,7 +128,7 @@ saveBtn.onclick = () => {
             userMessagePrefix: userPrefixTextarea.value,
             userMessageSuffix: userSuffixTextarea.value,
             systemTurnPrefix: systemTurnPrefixTextarea.value,
-            systemTurnSuffix: systemTurnSuffixTextarea.value
-        }
+            systemTurnSuffix: systemTurnSuffixTextarea.value,
+        },
     });
 };

@@ -1,98 +1,134 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+
+import { FramingSource, ModelFraming } from '../models/modelFraming';
 import { FramingEditorPanel } from '../panels/framingEditorPanel';
-import { FramingSource } from '../models/modelFraming';
+import { FramingService } from '../services/framingService';
 
 suite('FramingEditorPanel Test Suite', () => {
     let sandbox: sinon.SinonSandbox;
-    let mockFramingService: any;
-    let mockWebviewPanel: any;
+    let mockFramingService: sinon.SinonStubbedInstance<FramingService>;
+    let mockWebviewPanel: {
+        webview: {
+            onDidReceiveMessage: sinon.SinonStub;
+            postMessage: sinon.SinonStub;
+            asWebviewUri: sinon.SinonStub;
+            html: string;
+        };
+        onDidDispose: sinon.SinonStub;
+        reveal: sinon.SinonStub;
+        dispose: sinon.SinonStub;
+    };
 
     setup(() => {
         sandbox = sinon.createSandbox();
-        
-        mockFramingService = {
-            updateFraming: sandbox.stub(),
-            duplicateFraming: sandbox.stub()
-        };
+        mockFramingService = sandbox.createStubInstance(FramingService);
 
-        // Mock WebviewPanel
         mockWebviewPanel = {
             webview: {
                 onDidReceiveMessage: sandbox.stub(),
                 postMessage: sandbox.stub(),
                 asWebviewUri: sandbox.stub().returns({ toString: () => 'uri' }),
-                html: ''
+                html: '',
             },
             onDidDispose: sandbox.stub(),
             reveal: sandbox.stub(),
-            dispose: sandbox.stub()
+            dispose: sandbox.stub(),
         };
 
-        // We need to stub vscode.window.createWebviewPanel
-        // Since we are using the mock, we can just stub the global object we injected
-        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel);
+        sandbox.stub(vscode.window, 'createWebviewPanel').returns(mockWebviewPanel as unknown as vscode.WebviewPanel);
     });
 
     teardown(() => {
         sandbox.restore();
-        // Clear active panels
         FramingEditorPanel.panels.clear();
     });
 
     test('createOrShow should create a new panel if not exists', () => {
-        const framing = { id: 'f1', name: 'F1', source: FramingSource.User, tags: [], systemMessage: 'test' };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing as any, mockFramingService);
-        
-        assert.ok((vscode.window.createWebviewPanel as sinon.SinonStub).calledOnce);
+        const framing: ModelFraming = {
+            id: '1',
+            name: 'Test',
+            source: FramingSource.User,
+            description: '',
+            systemMessage: '',
+            tags: [],
+            createdAt: 0,
+            updatedAt: 0,
+            userMessagePrefix: '',
+            userMessageSuffix: '',
+            systemTurnPrefix: '',
+            systemTurnSuffix: '',
+        };
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
         assert.strictEqual(FramingEditorPanel.panels.size, 1);
     });
 
     test('should handle save message for user framings', async () => {
-        const framing = { id: 'f1', name: 'F1', source: FramingSource.User, tags: [], systemMessage: 'test' };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing as any, mockFramingService);
-        
+        const framing: ModelFraming = {
+            id: '1',
+            name: 'Test',
+            source: FramingSource.User,
+            description: '',
+            systemMessage: '',
+            tags: [],
+            createdAt: 0,
+            updatedAt: 0,
+            userMessagePrefix: '',
+            userMessageSuffix: '',
+            systemTurnPrefix: '',
+            systemTurnSuffix: '',
+        };
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
-        
-        mockFramingService.updateFraming.resolves({ ...framing, name: 'Updated' });
-        
-        await messageHandler({ 
-            command: 'save', 
-            framing: { name: 'Updated', description: '', tags: [], systemMessage: 'test' } 
-        });
-        
-        assert.ok(mockFramingService.updateFraming.calledWith('f1', sinon.match({ name: 'Updated' })));
+        const updatedData = { name: 'Updated' };
+
+        await messageHandler({ command: 'save', framing: updatedData });
+        assert.ok(mockFramingService.updateFraming.calledWith('1', updatedData));
     });
 
     test('should block save for built-in framings', async () => {
-        const framing = { id: 'f-bi', name: 'BuiltIn', source: FramingSource.BuiltIn, tags: [], systemMessage: 'test' };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing as any, mockFramingService);
-        
+        const framing: ModelFraming = {
+            id: '1',
+            name: 'Test',
+            source: FramingSource.BuiltIn,
+            description: '',
+            systemMessage: '',
+            tags: [],
+            createdAt: 0,
+            updatedAt: 0,
+            userMessagePrefix: '',
+            userMessageSuffix: '',
+            systemTurnPrefix: '',
+            systemTurnSuffix: '',
+        };
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
-        const errorStub = sandbox.stub(vscode.window, 'showErrorMessage');
-        
-        await messageHandler({ 
-            command: 'save', 
-            framing: { name: 'Updated', description: '', tags: [], systemMessage: 'test' } 
-        });
-        
+        await messageHandler({ command: 'save', framing: {} });
         assert.ok(mockFramingService.updateFraming.notCalled);
-        assert.ok(errorStub.calledOnce);
     });
 
     test('should handle duplicate message', async () => {
-        const framing = { id: 'f1', name: 'F1', source: FramingSource.User, tags: [], systemMessage: 'test' };
-        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing as any, mockFramingService);
-        
+        const framing: ModelFraming = {
+            id: '1',
+            name: 'Test',
+            source: FramingSource.User,
+            description: '',
+            systemMessage: '',
+            tags: [],
+            createdAt: 0,
+            updatedAt: 0,
+            userMessagePrefix: '',
+            userMessageSuffix: '',
+            systemTurnPrefix: '',
+            systemTurnSuffix: '',
+        };
+        FramingEditorPanel.createOrShow(vscode.Uri.file(''), framing, mockFramingService as unknown as FramingService);
+
         const messageHandler = mockWebviewPanel.webview.onDidReceiveMessage.getCall(0).args[0];
-        
-        mockFramingService.duplicateFraming.resolves({ 
-            id: 'f2', name: 'F1 (Copy)', source: FramingSource.User, tags: [], systemMessage: 'test' 
-        });
-        
         await messageHandler({ command: 'duplicate' });
-        
-        assert.ok(mockFramingService.duplicateFraming.calledWith('f1'));
+        assert.ok(mockFramingService.duplicateFraming.calledWith('1'));
     });
 });

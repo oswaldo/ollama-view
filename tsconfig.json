@@ -6,7 +6,11 @@
         "lib": ["es2020"],
         "sourceMap": true,
         "rootDir": "src",
-        "strict": true
+        "strict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
     },
-    "exclude": ["node_modules", ".vscode-test", "src/webview"]
+    "exclude": ["node_modules", ".vscode-test", "src/webview", "scripts"]
 }

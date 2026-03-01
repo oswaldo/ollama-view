@@ -1,9 +1,10 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
 import * as fs from 'fs';
-import { FramingService } from '../services/framingService';
-import { ModelFraming, FramingSource } from '../models/modelFraming';
+import * as path from 'path';
+import * as vscode from 'vscode';
+
+import { FramingSource, ModelFraming } from '../models/modelFraming';
 import { FramingItem } from '../providers/framingProvider';
+import { FramingService } from '../services/framingService';
 
 /**
  * Manages the Model Framing Editor webview panel.
@@ -40,16 +41,21 @@ export class FramingEditorPanel {
                 retainContextWhenHidden: true,
                 localResourceRoots: [
                     vscode.Uri.file(path.join(extensionUri.fsPath, 'media')),
-                    vscode.Uri.file(path.join(extensionUri.fsPath, 'dist'))
-                ]
-            }
+                    vscode.Uri.file(path.join(extensionUri.fsPath, 'dist')),
+                ],
+            },
         );
 
         const framingPanel = new FramingEditorPanel(panel, extensionUri, framing, framingService);
         FramingEditorPanel.panels.set(framing.id, framingPanel);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, framing: ModelFraming, framingService: FramingService) {
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        framing: ModelFraming,
+        framingService: FramingService,
+    ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._framing = framing;
@@ -60,11 +66,13 @@ export class FramingEditorPanel {
 
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
-            async message => {
+            async (message) => {
                 switch (message.command) {
                     case 'save': {
                         if (this._framing.source === FramingSource.BuiltIn) {
-                            vscode.window.showErrorMessage('Built-in framings cannot be saved. Please duplicate it first.');
+                            vscode.window.showErrorMessage(
+                                'Built-in framings cannot be saved. Please duplicate it first.',
+                            );
                             return;
                         }
                         const updated = await this._framingService.updateFraming(this._framing.id, message.framing);
@@ -100,7 +108,7 @@ export class FramingEditorPanel {
                 }
             },
             null,
-            this._disposables
+            this._disposables,
         );
 
         // Listen for when the panel is disposed
@@ -120,12 +128,12 @@ export class FramingEditorPanel {
 
     private _update() {
         this._panel.webview.html = this._getHtmlForWebview();
-        
+
         // Initial state sync
         setTimeout(() => {
             this._panel.webview.postMessage({
                 command: 'init',
-                framing: this._framing
+                framing: this._framing,
             });
         }, 100);
     }
@@ -135,10 +143,10 @@ export class FramingEditorPanel {
         let html = fs.readFileSync(htmlPath, 'utf8');
 
         const scriptUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'framing.js'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'dist', 'webview', 'framing.js')),
         );
         const styleUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css'))
+            vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'common-webview.css')),
         );
 
         html = html.replace('{{scriptUri}}', scriptUri.toString());

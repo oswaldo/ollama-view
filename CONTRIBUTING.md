@@ -11,12 +11,14 @@ Thank you for your interest in contributing to Ollama View! We welcome contribut
 ## Development Setup
 
 1.  **Clone the repository**:
+
     ```bash
     git clone https://github.com/oswaldo/ollama-view.git
     cd ollama-view
     ```
 
 2.  **Install dependencies**:
+
     ```bash
     npm install
     ```
@@ -30,9 +32,13 @@ Thank you for your interest in contributing to Ollama View! We welcome contribut
 
 We use `mocha` for testing.
 
-- **Run all tests**:
+- **Run unit tests**:
     ```bash
     npm test
+    ```
+- **Run integration tests** (requires local Ollama running):
+    ```bash
+    npm run test:integration
     ```
 - **Linting**:
     ```bash

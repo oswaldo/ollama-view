@@ -4,74 +4,65 @@
  * @see https://github.com/ollama/ollama/blob/main/docs/api.md#parameters
  */
 export interface AdvancedModelConfig {
-    // Hardware & Performance
-    /** The number of layers to send to the GPU(s) */
     num_gpu?: number;
-    /** Sets the number of threads to use during generation */
     num_thread?: number;
-    /** Use memory-mapped files (mmap) */
     use_mmap?: boolean;
-    /** Lock the model into memory (mlock) */
     use_mlock?: boolean;
-
-    // Inference & Generation Limits
-    /** Sets the size of the context window used to generate the next token */
     num_ctx?: number;
-    /** Maximum number of tokens to predict when generating text */
     num_predict?: number;
-    /** The temperature of the model */
     temperature?: number;
-    /** Sets the probability threshold for Nucleus sampling */
     top_p?: number;
-    /** Reduces the probability of generating nonsense */
     top_k?: number;
-    /** Sets how far back for the model to look to prevent repetition */
     repeat_penalty?: number;
-    /** Sets the random number seed to use for generation */
     seed?: number;
-    /** Sets the stop sequences to use */
     stop?: string[];
+    [key: string]: string | number | boolean | string[] | undefined;
 }
 
 /**
- * Represents a specific instance of an Ollama model with its own name and configuration.
+ * Represents a logical instance of an Ollama model with its specific configuration.
+ * A single Ollama base model (e.g. 'llama3') can have multiple named instances
+ * with different system prompts or hardware configurations.
  */
 export interface ModelInstance {
-    /** Unique identifier for the instance (UUID or name-slug) */
+    /** Unique identifier for this instance (UUID) */
     id: string;
 
-    /** Display name of the instance (set by the user) */
+    /** User-visible name for this configuration (e.g. 'Creative Writing', 'Fast Code') */
     name: string;
 
-    /** The base Ollama model name (e.g., 'tinyllama:latest') */
+    /** The base Ollama model name (e.g. 'llama3', 'mistral') */
     modelName: string;
 
-    /** Optional notes or description provided by the user */
-    description?: string;
+    /**
+     * The actual model name used in Ollama.
+     * For primary instances, this matches modelName.
+     * For custom instances, this is a slug generated from the instance name.
+     */
+    ollamaModelName?: string;
 
-    /** Advanced configuration parameters */
+    /** The configuration options applied to this instance */
     config: AdvancedModelConfig;
 
-    // Framing / Setup Settings
+    /** Default system message for this instance */
     systemMessage?: string;
-    userMessagePrefix?: string;
-    userMessageSuffix?: string;
-    systemTurnPrefix?: string;
-    systemTurnSuffix?: string;
 
-    /** Timestamp of creation */
+    /** Optional framing override ID */
+    activeFramingId?: string;
+
+    /** Timestamp when the instance was created */
     createdAt: number;
 
-    /** Timestamp of last update */
+    /** Timestamp of the last configuration update */
     updatedAt: number;
 
-    /** 
-     * Version of the data structure for migration and compatibility.
+    /**
+     * Version of the datastructure for migration and compatibility.
      * 1: Initial (implicit if missing)
      * 2: Advanced configuration added
      */
     dataVersion?: number;
 
     /** Allow for unknown fields to be preserved */
-    [key: string]: any;
+    [key: string]: unknown;
 }

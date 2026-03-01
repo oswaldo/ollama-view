@@ -15,7 +15,6 @@ moduleAlias.prototype.require = function (this: unknown, name: string, ...args: 
 };
 
 export function run(): Promise<void> {
-    // Create the mocha test
     const mocha = new Mocha({
         ui: 'tdd',
         color: true,
@@ -24,17 +23,14 @@ export function run(): Promise<void> {
     const testsRoot = path.resolve(__dirname, '..');
 
     return new Promise((resolve, reject) => {
-        // glob patterns are relative to cwd usually, fast-glob supports absolute too but let's be careful
-        // pattern: **/*.test.js inside testsRoot
-        const pattern = '**/*.test.js';
+        // pattern: **/*.integration.js inside testsRoot
+        const pattern = '**/*.integration.js';
 
         fg(pattern, { cwd: testsRoot, absolute: false })
             .then((files) => {
-                // Add files to the test suite
                 files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
 
                 try {
-                    // Run the mocha test
                     mocha.run((failures) => {
                         if (failures > 0) {
                             reject(new Error(`${failures} tests failed.`));
@@ -53,10 +49,10 @@ export function run(): Promise<void> {
 
 run()
     .then(() => {
-        console.log('Tests completed successfully.');
+        console.log('Integration tests completed successfully.');
         process.exit(0);
     })
     .catch((err) => {
-        console.error('Failed to run tests', err);
+        console.error('Failed to run integration tests', err);
         process.exit(1);
     });

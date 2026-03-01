@@ -1,17 +1,16 @@
 import * as assert from 'assert';
 import * as sinon from 'sinon';
-import * as http from 'http';
-import { OllamaApi } from '../ollamaApi';
-import { EventEmitter } from 'events';
-import { PassThrough } from 'stream';
 
-suite('OllamaApi', () => {
+import { OllamaApi } from '../ollamaApi';
+
+suite('OllamaApi Unit Tests', () => {
     let api: OllamaApi;
-    let httpRequestStub: sinon.SinonStub;
+    let fetchStub: sinon.SinonStub;
 
     setup(() => {
         api = new OllamaApi();
-        httpRequestStub = sinon.stub(http, 'request');
+        // Mock global fetch
+        fetchStub = sinon.stub(global, 'fetch');
     });
 
     teardown(() => {
@@ -19,166 +18,109 @@ suite('OllamaApi', () => {
     });
 
     test('listModels should return models on success', async () => {
-        const mockResponse = new PassThrough();
-        mockResponse.push(JSON.stringify({ models: [{ name: 'test-model', size: 100 }] }));
-        mockResponse.end();
-
-        const mockReq = new EventEmitter();
-        const httpGetStub = sinon.stub(http, 'get').callsFake((url, options, callback) => {
-            // Handle overload where options is optional
-            const cb = typeof options === 'function' ? options : callback;
-            if (cb) {
-                cb(mockResponse as any);
-            }
-            return mockReq as any;
+        const mockModels = { models: [{ name: 'test-model', size: 100 }] };
+        fetchStub.resolves({
+            ok: true,
+            status: 200,
+            json: async () => mockModels,
         });
 
         const models = await api.listModels();
         assert.strictEqual(models.length, 1);
         assert.strictEqual(models[0].name, 'test-model');
+        assert.ok(fetchStub.calledWith(sinon.match('/api/tags')));
     });
 
     test('deleteModel should resolve on 200', async () => {
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub(); // Cast to any to mock write
-        (mockReq as any).end = sinon.stub();
-
-        httpRequestStub.returns(mockReq as any);
-
-        const mockRes = new EventEmitter();
-        (mockRes as any).statusCode = 200;
-
-        setTimeout(() => {
-            httpRequestStub.callArgWith(2, mockRes);
-            mockRes.emit('end');
-        }, 10);
+        fetchStub.resolves({
+            ok: true,
+            status: 200,
+            json: async () => ({}),
+        });
 
         await api.deleteModel('test-model');
-        assert.ok(true, 'Delete resolved');
+        assert.ok(fetchStub.calledWith(sinon.match('/api/delete'), sinon.match({ method: 'DELETE' })));
     });
 
     test('deleteModel should reject on 400', async () => {
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub();
-        (mockReq as any).end = sinon.stub();
-
-        httpRequestStub.returns(mockReq as any);
-
-        const mockRes = new EventEmitter();
-        (mockRes as any).statusCode = 400;
-
-        setTimeout(() => {
-            httpRequestStub.callArgWith(2, mockRes);
-            mockRes.emit('data', 'Bad Request');
-            mockRes.emit('end');
-        }, 10);
+        fetchStub.resolves({
+            ok: false,
+            status: 400,
+            statusText: 'Bad Request',
+            json: async () => ({ error: 'invalid name' }),
+        });
 
         try {
             await api.deleteModel('test-model');
             assert.fail('Should have rejected');
-        } catch (err: any) {
-            assert.ok(err.message.includes('Status: 400'));
+        } catch (err: unknown) {
+            const error = err as Error;
+            assert.strictEqual(error.message, 'invalid name');
         }
     });
 
-    test('chat should reject on connection error', async () => {
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub();
-        (mockReq as any).end = sinon.stub();
+    test('chat should handle streaming tokens', async () => {
+        const mockChunks = [
+            JSON.stringify({ message: { content: 'Hello' }, done: false }) + '\n',
+            JSON.stringify({ message: { content: ' world' }, done: true }) + '\n',
+        ];
 
-        httpRequestStub.returns(mockReq as any);
+        const readableStream = {
+            getReader: () => {
+                let chunkIndex = 0;
+                return {
+                    read: async () => {
+                        if (chunkIndex < mockChunks.length) {
+                            return { value: Buffer.from(mockChunks[chunkIndex++]), done: false };
+                        }
+                        return { done: true };
+                    },
+                    releaseLock: () => {},
+                };
+            },
+        };
 
-        const apiError = new Error('ECONNREFUSED');
-        setTimeout(() => {
-            mockReq.emit('error', apiError);
-        }, 10);
+        fetchStub.resolves({
+            ok: true,
+            status: 200,
+            body: readableStream,
+        });
+
+        let fullText = '';
+        await api.chat('model', [], (token) => {
+            fullText += token;
+        });
+
+        assert.strictEqual(fullText, 'Hello world');
+    });
+
+    test('chat should reject on API error', async () => {
+        fetchStub.resolves({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+            json: async () => ({ error: 'server crash' }),
+        });
 
         try {
             await api.chat('model', [], () => {});
             assert.fail('Should have rejected');
-        } catch (err: any) {
-            assert.strictEqual(err.message, 'ECONNREFUSED');
-        }
-    });
-
-    test('chat should reject on 404', async () => {
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub();
-        (mockReq as any).end = sinon.stub();
-
-        httpRequestStub.returns(mockReq as any);
-
-        const mockRes = new EventEmitter();
-        (mockRes as any).statusCode = 404;
-        (mockRes as any).setEncoding = sinon.stub();
-
-        setTimeout(() => {
-            httpRequestStub.callArgWith(2, mockRes);
-            mockRes.emit('data', JSON.stringify({ error: 'model not found' }));
-            mockRes.emit('end');
-        }, 10);
-
-        try {
-            await api.chat('invalid-model', [], () => {});
-            assert.fail('Should have rejected');
-        } catch (err: any) {
-            assert.ok(err.message.includes('model not found'));
-        }
-    });
-
-    test('chat should reject on non-JSON error response', async () => {
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub();
-        (mockReq as any).end = sinon.stub();
-
-        httpRequestStub.returns(mockReq as any);
-
-        const mockRes = new EventEmitter();
-        (mockRes as any).statusCode = 500;
-        (mockRes as any).setEncoding = sinon.stub();
-
-        setTimeout(() => {
-            httpRequestStub.callArgWith(2, mockRes);
-            mockRes.emit('data', 'Internal Server Error');
-            mockRes.emit('end');
-        }, 10);
-
-        try {
-            await api.chat('model', [], () => {});
-            assert.fail('Should have rejected');
-        } catch (err: any) {
-            assert.ok(err.message.includes('Status: 500'));
+        } catch (err: unknown) {
+            const error = err as Error;
+            assert.strictEqual(error.message, 'server crash');
         }
     });
 
     test('showModel should return model details', async () => {
-        const mockResponse = new PassThrough();
-        (mockResponse as any).statusCode = 200;
         const mockDetails = {
             modelfile: '# Modelfile',
-            parameters: 'stop "</s>"',
-            template: '{{ .Prompt }}',
-            details: {
-                parent_model: '',
-                format: 'gguf',
-                family: 'llama',
-                families: ['llama'],
-                parameter_size: '3B',
-                quantization_level: 'Q4_0'
-            }
+            details: { parameter_size: '3B' },
         };
-        mockResponse.push(JSON.stringify(mockDetails));
-        mockResponse.end();
-
-        const mockReq = new EventEmitter();
-        (mockReq as any).write = sinon.stub();
-        (mockReq as any).end = sinon.stub();
-
-        httpRequestStub.returns(mockReq as any);
-
-        setTimeout(() => {
-            httpRequestStub.callArgWith(2, mockResponse);
-        }, 10);
+        fetchStub.resolves({
+            ok: true,
+            status: 200,
+            json: async () => mockDetails,
+        });
 
         const details = await api.showModel('test-model');
         assert.strictEqual(details.modelfile, '# Modelfile');

@@ -18,7 +18,6 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 
 ### 2. Interactions
 
-
 - **Context Menu**:
     - **Start/Stop/Delete Model**.
     - **Delete Chat**.

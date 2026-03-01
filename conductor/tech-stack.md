@@ -19,6 +19,7 @@ This project, "Ollama View for VS Code," utilizes a modern web technology stack 
     - `src/models`: Shared interfaces and data structures (e.g., ModelFraming).
 *   **Webview Subsystem**: Highly decoupled webviews for Chat, Model Setup, and Framing Editor, sharing a unified `common-webview.css`.
 *   **Ollama API Communication**: A client for HTTP communication with the local Ollama instance (default: `http://127.0.0.1:11434`).
+    *   **Guideline**: Always verify API endpoints and JSON structures against the [latest Ollama API documentation](https://raw.githubusercontent.com/ollama/ollama/refs/heads/main/docs/api.md) before implementation. Prefer structured `parameters` objects over raw `Modelfile` strings when possible.
 *   **State Management**: Persists chat history and other extension state using the VS Code `globalState` API.
 
 ## Development Tools
