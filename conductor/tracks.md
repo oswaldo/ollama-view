@@ -20,5 +20,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 - [x] **Track: End-to-End Testing Infrastructure. Established robust UI testing with a mock Ollama server.**
-*Link: [./tracks/e2e_testing_20260303/](./tracks/e2e_testing_20260303/)*
+*Link: [./archive/e2e_testing_20260303/](./archive/e2e_testing_20260303/)*
 
