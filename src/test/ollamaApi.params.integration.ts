@@ -1,4 +1,3 @@
- 
 import * as assert from 'assert';
 
 import { OllamaApi } from '../ollamaApi';
@@ -13,7 +12,7 @@ suite('OllamaApi Parameter Change Integration', function () {
         api = new OllamaApi();
         try {
             await api.listModels();
-        } catch (e) {
+        } catch {
             this.skip();
         }
     });

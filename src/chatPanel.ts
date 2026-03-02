@@ -41,12 +41,14 @@ export class ChatPanel {
         const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         if (ChatPanel.panels.has(chat.id)) {
-            const existing = ChatPanel.panels.get(chat.id)!;
-            existing._chat = chat;
-            const instance = modelService.getSettings(chat.modelName);
-            existing._panel.title = `${chat.name} - ${instance.name}`;
-            existing._panel.reveal(column);
-            return existing;
+            const existing = ChatPanel.panels.get(chat.id);
+            if (existing) {
+                existing._chat = chat;
+                const instance = modelService.getSettings(chat.modelName);
+                existing._panel.title = `${chat.name} - ${instance.name}`;
+                existing._panel.reveal(column);
+                return existing;
+            }
         }
 
         const instance = modelService.getSettings(chat.modelName);
@@ -106,11 +108,7 @@ export class ChatPanel {
             async (message: ChatWebviewToExtensionCommand) => {
                 switch (message.command) {
                     case 'sendMessage':
-                        await this.handleUserMessage(
-                            message.text,
-                            message.editOptions,
-                            message.framingId,
-                        );
+                        await this.handleUserMessage(message.text, message.editOptions, message.framingId);
                         return;
                     case 'requestTruncate':
                         await this._handleHistoryAction(

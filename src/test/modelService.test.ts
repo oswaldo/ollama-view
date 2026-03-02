@@ -64,7 +64,7 @@ suite('ModelService Test Suite', () => {
         const existing = createMockInstance({
             id: '1',
             ollamaModelName: 'llama3-instance',
-            isManaged: true
+            isManaged: true,
         });
         mockRepo.getAll.returns({ '1': existing });
 
@@ -92,7 +92,7 @@ suite('ModelService Test Suite', () => {
         const managed = createMockInstance({
             id: '1',
             ollamaModelName: 'llama3-managed',
-            isManaged: true
+            isManaged: true,
         });
         mockRepo.getAll.returns({ '1': managed });
 
@@ -106,7 +106,7 @@ suite('ModelService Test Suite', () => {
     test('cleanupOrphanedSettings should cascade delete chats', async () => {
         const orphaned = createMockInstance({
             id: 'orphaned-1',
-            modelName: 'missing-model'
+            modelName: 'missing-model',
         });
         mockRepo.getAll.returns({ 'orphaned-1': orphaned });
 
@@ -119,10 +119,10 @@ suite('ModelService Test Suite', () => {
     test('getInstanceByOllamaName should find instance by name or tag', () => {
         const primary = createMockInstance({ id: 'llama3', modelName: 'llama3', isManaged: false });
         const custom = createMockInstance({ id: 'custom-id', ollamaModelName: 'llama3-custom', isManaged: true });
-        
-        mockRepo.getAll.returns({ 
-            'llama3': primary,
-            'custom-id': custom 
+
+        mockRepo.getAll.returns({
+            llama3: primary,
+            'custom-id': custom,
         });
 
         // Match primary

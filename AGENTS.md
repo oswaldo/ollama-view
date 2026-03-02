@@ -63,6 +63,7 @@
 - **Context Awareness & Scope**: Always read `scope.md` to understand the current feature set and roadmap.
     - **Feature Implementation**: Verify if new features are planned in `scope.md`. If not, add them to `scope.md` for consistency.
     - **Releases**: Review and update `scope.md` during releases to ensure it reflects the current state of the project.
+- **Corner Cases & Regressions**: When discovering corner cases outside the original track prediction, always reason if a test case should be created to prevent silent regressions.
 - **Safety**: Do not commit secrets. This is a local-first extension, so avoid external API calls unless the user explicitly configures them.
 - **User Feedback**: Creating new files or significant refactors requires user approval via `implementation_plan.md`.
 - **Documentation & Release**:

@@ -6,7 +6,7 @@ import { IOllamaClient } from '../contracts/IOllamaClient';
 import { OllamaInstanceItem, OllamaModelItem, OllamaProvider } from '../ollamaProvider';
 import { ChatService } from '../services/chatService';
 import { ModelService } from '../services/modelService';
-import { createMockChat, createMockInstance } from './testUtils';
+import { createMockChat, createMockInstance, createMockProviderDeps } from './testUtils';
 
 suite('OllamaProvider Tree Structure', () => {
     let sandbox: sinon.SinonSandbox;
@@ -17,19 +17,11 @@ suite('OllamaProvider Tree Structure', () => {
 
     setup(() => {
         sandbox = sinon.createSandbox();
-        mockChatService = {
-            getChatsForModel: sandbox.stub(),
-        } as any;
-        mockModelService = {
-            getInstancesForModel: sandbox.stub(),
-            getSettings: sandbox.stub(),
-            getInstanceByOllamaName: sandbox.stub(),
-            cleanupOrphanedSettings: sandbox.stub(),
-        } as any;
-        mockApi = {
-            listModels: sandbox.stub(),
-            listRunning: sandbox.stub(),
-        } as any;
+        const deps = createMockProviderDeps(sandbox);
+        mockChatService = deps.mockChatService;
+        mockModelService = deps.mockModelService;
+        mockApi = deps.mockApi;
+
         provider = new OllamaProvider(mockChatService as any, mockModelService as any, mockApi as any);
     });
 
@@ -38,11 +30,24 @@ suite('OllamaProvider Tree Structure', () => {
     });
 
     test('getChildren should return model items at root', async () => {
-        const models = [{ name: 'llama3', size: 1000 }, { name: 'mistral', size: 2000 }];
+        const models = [
+            { name: 'llama3', size: 1000 },
+            { name: 'mistral', size: 2000 },
+        ];
         mockApi.listModels.resolves(models as any);
         mockApi.listRunning.resolves([]);
-        mockModelService.getSettings.callsFake((name) => createMockInstance({ id: name, modelName: name, isManaged: false }));
-        mockModelService.getInstanceByOllamaName.callsFake((name) => createMockInstance({ id: name, modelName: name, isManaged: false }));
+        mockModelService.getSettings.callsFake((name) =>
+            createMockInstance({ id: name, modelName: name, isManaged: false }),
+        );
+        mockModelService.getInstanceByOllamaName.callsFake((name) =>
+            createMockInstance({ id: name, modelName: name, isManaged: false }),
+        );
+
+        // Mock 2 instances per model to ensure OllamaModelItem is returned (grouped view)
+        mockModelService.getInstancesForModel.callsFake((name) => [
+            createMockInstance({ id: name, modelName: name, isManaged: false }),
+            createMockInstance({ id: `${name}-custom`, modelName: name, isManaged: true }),
+        ]);
 
         const children = await provider.getChildren();
 
@@ -80,12 +85,12 @@ suite('OllamaProvider Tree Structure', () => {
 
     test('getChildren at root should filter out managed instances', async () => {
         const models = [
-            { name: 'llama3', size: 1000 }, 
-            { name: 'llama3-custom', size: 1000 }
+            { name: 'llama3', size: 1000 },
+            { name: 'llama3-custom', size: 1000 },
         ];
         mockApi.listModels.resolves(models as any);
         mockApi.listRunning.resolves([]);
-        
+
         mockModelService.getInstanceByOllamaName.callsFake((name) => {
             if (name === 'llama3-custom') {
                 return createMockInstance({ id: 'uuid1', ollamaModelName: 'llama3-custom', isManaged: true });
@@ -101,10 +106,7 @@ suite('OllamaProvider Tree Structure', () => {
 
     test('isModelRunning should handle :latest normalization', async () => {
         mockApi.listModels.resolves([]);
-        mockApi.listRunning.resolves([
-            { model: 'llama3:latest' } as any,
-            { model: 'mistral' } as any
-        ]);
+        mockApi.listRunning.resolves([{ model: 'llama3:latest' } as any, { model: 'mistral' } as any]);
 
         await provider.getChildren(); // Triggers runningModels update
 
@@ -117,7 +119,7 @@ suite('OllamaProvider Tree Structure', () => {
     test('setStarting should handle normalization', () => {
         provider.setStarting('llama3:latest', true);
         // We can't directly check private state, but we can check if it affects getChildren result
-        // or just trust the logic if it passes lint/compile. 
+        // or just trust the logic if it passes lint/compile.
         // Actually, let's verify it via getChildren.
     });
 });

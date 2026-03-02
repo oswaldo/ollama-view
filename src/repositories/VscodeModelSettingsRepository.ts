@@ -9,7 +9,10 @@ export class VscodeModelSettingsRepository implements IModelSettingsRepository {
     constructor(private context: vscode.ExtensionContext) {}
 
     getAll(): Record<string, ModelInstance> {
-        return this.context.globalState.get<Record<string, ModelInstance>>(VscodeModelSettingsRepository.STORAGE_KEY, {});
+        return this.context.globalState.get<Record<string, ModelInstance>>(
+            VscodeModelSettingsRepository.STORAGE_KEY,
+            {},
+        );
     }
 
     async save(settings: Record<string, ModelInstance>): Promise<void> {

@@ -30,6 +30,7 @@ export class OllamaInstanceItem extends vscode.TreeItem {
         public readonly isRunning: boolean,
         public readonly isStarting: boolean = false,
         public readonly isStopping: boolean = false,
+        public readonly isRoot: boolean = false,
     ) {
         super(instance.name, vscode.TreeItemCollapsibleState.Collapsed);
 
@@ -38,13 +39,15 @@ export class OllamaInstanceItem extends vscode.TreeItem {
         this.description = isRunning ? 'Running' : isStarting ? 'Starting...' : isStopping ? 'Stopping...' : 'Stopped';
 
         // Context value for menus
-        this.contextValue = isRunning
+        const baseContext = isRunning
             ? 'variable-running'
             : isStarting
               ? 'variable-starting'
               : isStopping
                 ? 'variable-stopping'
                 : 'variable-stopped';
+
+        this.contextValue = isRoot ? `${baseContext}-root` : baseContext;
 
         if (isRunning) {
             this.iconPath = vscode.Uri.file(path.join(__dirname, '..', 'media', 'model-icon-running.svg'));
@@ -76,8 +79,9 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
     private _onDidChangeTreeData: vscode.EventEmitter<
         OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void
     > = new vscode.EventEmitter<OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void> =
-        this._onDidChangeTreeData.event;
+    readonly onDidChangeTreeData: vscode.Event<
+        OllamaModelItem | OllamaInstanceItem | OllamaChatItem | undefined | null | void
+    > = this._onDidChangeTreeData.event;
 
     private runningModels: Set<string> = new Set();
     private startingModels: Set<string> = new Set();
@@ -160,12 +164,7 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
             // Return instances for this model
             const instances = this.modelService.getInstancesForModel(element.model.name);
             return instances.map((inst) => {
-                const actualName = inst.ollamaModelName || inst.modelName;
-                const normName = this.normalizeName(actualName);
-                const isStart = this.startingModels.has(normName);
-                const isStop = this.stoppingModels.has(normName);
-                const isRun = this.runningModels.has(normName) && !isStart && !isStop;
-                return new OllamaInstanceItem(inst, isRun, isStart, isStop);
+                return this.createInstanceItem(inst);
             });
         }
 
@@ -178,14 +177,38 @@ export class OllamaProvider implements vscode.TreeDataProvider<OllamaModelItem |
         this.modelService.cleanupOrphanedSettings(models.map((m) => m.name));
 
         // Filter out models that are actually managed instances of other models
-        return models.filter(m => {
+        const rootModels = models.filter((m) => {
             const instance = this.modelService.getInstanceByOllamaName(m.name);
             if (!instance) {
                 return true; // External model, show at root
             }
             // If it's ours, only show at root if it's NOT a managed custom instance
             return !instance.isManaged;
-        }).map((m) => new OllamaModelItem(m));
+        });
+
+        const rootItems: (OllamaModelItem | OllamaInstanceItem)[] = [];
+
+        for (const model of rootModels) {
+            const instances = this.modelService.getInstancesForModel(model.name);
+            if (instances.length === 1) {
+                // Flatten: Show the single instance directly at root
+                rootItems.push(this.createInstanceItem(instances[0], true));
+            } else {
+                // Grouped: Show the model group
+                rootItems.push(new OllamaModelItem(model));
+            }
+        }
+
+        return rootItems;
+    }
+
+    private createInstanceItem(inst: ModelInstance, isRoot: boolean = false): OllamaInstanceItem {
+        const actualName = inst.ollamaModelName || inst.modelName;
+        const normName = this.normalizeName(actualName);
+        const isStart = this.startingModels.has(normName);
+        const isStop = this.stoppingModels.has(normName);
+        const isRun = this.runningModels.has(normName) && !isStart && !isStop;
+        return new OllamaInstanceItem(inst, isRun, isStart, isStop, isRoot);
     }
 
     getApi(): IOllamaClient {

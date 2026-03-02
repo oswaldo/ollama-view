@@ -36,8 +36,9 @@ export class SetupPanel {
         onStateChange?: () => void,
     ) {
         const id = instanceId || model.name;
-        if (SetupPanel.panels.has(id)) {
-            SetupPanel.panels.get(id)!._panel.reveal();
+        const existingPanel = SetupPanel.panels.get(id);
+        if (existingPanel) {
+            existingPanel._panel.reveal();
             return;
         }
 

@@ -1,4 +1,3 @@
- 
 import * as assert from 'assert';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,7 +16,7 @@ suite('OllamaApi Integration', function () {
         // Check if ollama is running
         try {
             await api.listModels();
-        } catch (e) {
+        } catch {
             console.error('Ollama not running. Skipping integration tests.');
             this.skip(); // Skip if Ollama is not available
         }

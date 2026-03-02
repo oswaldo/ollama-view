@@ -78,7 +78,10 @@ suite('ChatOrchestrator Test Suite', () => {
         assert.ok(mockOllamaClient.chat.calledOnce);
         const [, , , options] = mockOllamaClient.chat.getCall(0).args;
 
-        assert.strictEqual(options!.seed, 123);
+        if (!options) {
+            assert.fail('Options should be defined');
+        }
+        assert.strictEqual(options.seed, 123);
         const messages = mockOllamaClient.chat.getCall(0).args[1];
         assert.strictEqual(messages.length, 3);
         assert.strictEqual(messages[0].content, 'SYS_PRE');

@@ -14,6 +14,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Dynamic model tree hierarchy. Flatten the hierarchy when only a single instance exists for a model.**
+- [~] **Track: Dynamic model tree hierarchy. Flatten the hierarchy when only a single instance exists for a model.**
 *Link: [./tracks/dynamic_model_tree_20260302/](./tracks/dynamic_model_tree_20260302/)*
 

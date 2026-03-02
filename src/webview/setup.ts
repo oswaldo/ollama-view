@@ -106,7 +106,11 @@ window.addEventListener('message', (event) => {
 
             // Hardware Config
             const c = settings.config || {};
-            const setVal = (input: HTMLInputElement, slider: HTMLInputElement, val: string | number | boolean | string[] | undefined) => {
+            const setVal = (
+                input: HTMLInputElement,
+                slider: HTMLInputElement,
+                val: string | number | boolean | string[] | undefined,
+            ) => {
                 const v = val !== undefined && val !== null ? val.toString() : '';
                 input.value = v;
                 if (slider) {
@@ -123,7 +127,7 @@ window.addEventListener('message', (event) => {
             setVal(numCtxInput, numCtxSlider, c.num_ctx);
             setVal(numPredictInput, numPredictSlider, c.num_predict);
             setVal(temperatureInput, temperatureSlider, c.temperature);
-            
+
             topPInput.value = (c.top_p ?? '').toString();
             topKInput.value = (c.top_k ?? '').toString();
             repeatPenaltyInput.value = (c.repeat_penalty ?? '').toString();
@@ -131,15 +135,18 @@ window.addEventListener('message', (event) => {
             stopInput.value = (c.stop || []).join(', ');
 
             // Setup Individual Reset Icons
-            document.querySelectorAll('.reset-icon').forEach(icon => {
+            document.querySelectorAll('.reset-icon').forEach((icon) => {
                 (icon as HTMLElement).onclick = () => {
                     const field = (icon as HTMLElement).dataset.field;
+                    if (!field) {
+                        return;
+                    }
                     const originalParams = message.originalParams || {};
-                    const originalVal = originalParams[field!];
-                    
-                    const input = document.getElementById(field!) as HTMLInputElement;
+                    const originalVal = originalParams[field];
+
+                    const input = document.getElementById(field) as HTMLInputElement;
                     const slider = document.getElementById(`${field}-slider`) as HTMLInputElement;
-                    
+
                     if (input) {
                         if (input.type === 'checkbox') {
                             input.checked = !!originalVal;
@@ -239,7 +246,13 @@ saveBtn.onclick = () => {
     config.seed = getNum(seedInput);
 
     const stopStr = stopInput.value.trim();
-    config.stop = stopStr === '' ? undefined : stopStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    config.stop =
+        stopStr === ''
+            ? undefined
+            : stopStr
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0);
 
     vscode.postMessage({
         command: 'save',

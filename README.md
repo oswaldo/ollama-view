@@ -72,11 +72,11 @@ graph TD
     Repo --> VSCode[VS Code Persistence API]
 ```
 
--   **Contract Layer**: Defines stable interfaces for infrastructure (API, Storage).
--   **Data Access Layer**: Handles persistence using VS Code's `globalState`.
--   **Service Layer**: Encapsulates pure domain logic and business rules.
--   **Orchestration Layer**: Coordinates complex flows (e.g., chat generation) across services.
--   **UI Layer**: Managed via VS Code Webviews and Tree Data Providers.
+- **Contract Layer**: Defines stable interfaces for infrastructure (API, Storage).
+- **Data Access Layer**: Handles persistence using VS Code's `globalState`.
+- **Service Layer**: Encapsulates pure domain logic and business rules.
+- **Orchestration Layer**: Coordinates complex flows (e.g., chat generation) across services.
+- **UI Layer**: Managed via VS Code Webviews and Tree Data Providers.
 
 ## Requirements
 

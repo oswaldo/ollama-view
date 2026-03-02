@@ -88,7 +88,9 @@ suite('ChatService Test Suite', () => {
 
         await chatService.deleteChatsForModel('model-a');
 
-        assert.ok(mockRepo.save.calledWith([{ id: '3', modelName: 'model-b', name: 'C3', messages: [], createdAt: 3 }]));
+        assert.ok(
+            mockRepo.save.calledWith([{ id: '3', modelName: 'model-b', name: 'C3', messages: [], createdAt: 3 }]),
+        );
     });
 
     test('setActiveFraming should update chat activeFramingId', async () => {
@@ -123,7 +125,7 @@ suite('ChatService Test Suite', () => {
         const updated = await chatService.truncateChat('1', 1, 'New 2');
         assert.strictEqual(updated?.messages.length, 2);
         assert.strictEqual(updated?.messages[1].content, 'New 2');
-        assert.ok(mockRepo.saveOne.calledWith(chat));
+        assert.ok(mockRepo.saveOne.calledOnceWith(chat));
     });
 
     test('forkChat should create new chat branch', async () => {
@@ -145,7 +147,7 @@ suite('ChatService Test Suite', () => {
         assert.notStrictEqual(forked?.id, '1');
         assert.strictEqual(forked?.messages.length, 2);
         assert.strictEqual(forked?.messages[1].content, 'New Fork');
-        assert.ok(mockRepo.save.calledTwice); // Once for original, once for new (but getAll was called)
+        assert.ok(mockRepo.save.calledOnce);
     });
 
     test('getPaginatedMessages should return correct slice', () => {

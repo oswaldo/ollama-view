@@ -618,12 +618,12 @@ window.addEventListener('message', (event) => {
         case 'endAssistantMessage': {
             const done = document.getElementById('current-streaming-response');
             if (done) {
-                const wrapper = done.parentElement!.parentElement!;
+                const wrapper = done.closest('.message-wrapper');
                 const fullContent = done.textContent || '';
                 const timestamp = Date.now();
 
                 if (!fullContent) {
-                    wrapper.remove();
+                    wrapper?.remove();
                 } else {
                     const assistantMsg: ChatMessage = {
                         role: 'assistant',

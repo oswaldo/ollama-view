@@ -26,8 +26,9 @@ export class FramingEditorPanel {
         const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         // If we already have a panel for this framing, show it.
-        if (FramingEditorPanel.panels.has(framing.id)) {
-            FramingEditorPanel.panels.get(framing.id)!._panel.reveal(column);
+        const existingPanel = FramingEditorPanel.panels.get(framing.id);
+        if (existingPanel) {
+            existingPanel._panel.reveal(column);
             return;
         }
 

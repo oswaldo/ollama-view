@@ -248,7 +248,7 @@ export class ModelService {
                     try {
                         await this.api.deleteModel(entry.ollamaModelName);
                     } catch (e: unknown) {
-                        // Ignore deletion errors for orphaned managed models
+                        Logger.error(`Failed to cleanup orphaned managed model ${entry.ollamaModelName}`, e);
                     }
                 }
 

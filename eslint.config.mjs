@@ -12,6 +12,12 @@ export default tseslint.config(
         ignores: ['out/', 'dist/', '**/*.d.ts'],
     },
     {
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
         plugins: {
             'unused-imports': unusedImports,
             'simple-import-sort': simpleImportSort,
@@ -22,14 +28,15 @@ export default tseslint.config(
             curly: 'warn',
             '@typescript-eslint/no-unused-vars': 'off', // Handled by unused-imports
             '@typescript-eslint/no-explicit-any': 'error',
-            '@typescript-eslint/no-non-null-assertion': 'warn',
+            '@typescript-eslint/no-non-null-assertion': 'error',
+            '@typescript-eslint/switch-exhaustiveness-check': 'error',
 
             // Automated fixes
             'simple-import-sort/imports': 'error',
             'simple-import-sort/exports': 'error',
             'unused-imports/no-unused-imports': 'error',
             'unused-imports/no-unused-vars': [
-                'warn',
+                'error',
                 {
                     vars: 'all',
                     varsIgnorePattern: '^_',

@@ -171,37 +171,37 @@
             "view/item/context": [
                 {
                     "command": "ollamaView.start",
-                    "when": "viewItem == variable-stopped",
+                    "when": "viewItem == variable-stopped || viewItem == variable-stopped-root",
                     "group": "inline@1"
                 },
                 {
                     "command": "ollamaView.stop",
-                    "when": "viewItem == variable-running",
+                    "when": "viewItem == variable-running || viewItem == variable-running-root",
                     "group": "inline@1"
                 },
                 {
                     "command": "ollamaView.createChat",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root",
                     "group": "inline@2"
                 },
                 {
                     "command": "ollamaView.createInstance",
-                    "when": "viewItem == ollama-model",
+                    "when": "viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root",
                     "group": "ollama@0"
                 },
                 {
                     "command": "ollamaView.showMoreActions",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root",
                     "group": "inline@3"
                 },
                 {
                     "command": "ollamaView.setup",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root",
                     "group": "ollama@1"
                 },
                 {
                     "command": "ollamaView.delete",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root",
                     "group": "ollama@2"
                 },
                 {

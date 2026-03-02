@@ -3,7 +3,6 @@ import { ChatService, MessageMetadata } from './chatService';
 import { FramingService } from './framingService';
 import { ModelService } from './modelService';
 
-
 export interface ChatOrchestrationResult {
     fullResponse: string;
 }

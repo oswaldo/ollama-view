@@ -1,4 +1,3 @@
- 
 import * as fg from 'fast-glob';
 import * as Mocha from 'mocha';
 import * as path from 'path';
