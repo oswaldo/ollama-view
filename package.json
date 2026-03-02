@@ -38,6 +38,16 @@
     "activationEvents": [],
     "main": "./dist/extension.js",
     "contributes": {
+        "configuration": {
+            "title": "Ollama View",
+            "properties": {
+                "ollama-view.apiUrl": {
+                    "type": "string",
+                    "default": "http://127.0.0.1:11434",
+                    "description": "URL for the Ollama API"
+                }
+            }
+        },
         "viewsContainers": {
             "activitybar": [
                 {
@@ -247,20 +257,26 @@
         "format": "prettier --write \"src/**/*.{ts,js,json,css,html}\" \"*.{json,js,mjs,md}\"",
         "build:tests": "tsc -p .",
         "test": "node ./dist/test/runTest.js",
-        "test:integration": "npm run build:tests && node ./dist/test/runIntegrationTest.js"
+        "test:integration": "npm run build:tests && node ./dist/test/runIntegrationTest.js",
+        "test:e2e": "npm run build:tests && npm run compile && extest get-vscode && extest get-chromedriver && extest run-tests -C dist/test/e2e/ui.test.js"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.2",
+        "@types/chai": "^5.2.3",
+        "@types/express": "^5.0.6",
         "@types/mocha": "^10.0.10",
         "@types/node": "18.x",
         "@types/sinon": "^21.0.0",
         "@types/vscode": "^1.85.0",
         "@typescript-eslint/eslint-plugin": "^8.54.0",
         "@typescript-eslint/parser": "^8.54.0",
+        "chai": "^6.2.2",
+        "cross-env": "^10.1.0",
         "esbuild": "^0.27.3",
         "eslint": "^9.39.2",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "eslint-plugin-unused-imports": "^4.4.1",
+        "express": "^5.2.1",
         "fast-glob": "^3.3.3",
         "mocha": "^11.3.0",
         "prettier": "^3.8.1",
@@ -268,6 +284,7 @@
         "ts-loader": "^9.5.1",
         "typescript": "^5.3.3",
         "typescript-eslint": "^8.54.0",
+        "vscode-extension-tester": "^8.22.1",
         "webpack": "^5.89.0",
         "webpack-cli": "^5.1.4"
     },

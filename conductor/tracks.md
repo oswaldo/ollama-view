@@ -17,3 +17,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Dynamic model tree hierarchy. Flatten the hierarchy when only a single instance exists for a model.**
 *Link: [./tracks/dynamic_model_tree_20260302/](./tracks/dynamic_model_tree_20260302/)*
 
+---
+
+- [x] **Track: End-to-End Testing Infrastructure. Established robust UI testing with a mock Ollama server.**
+*Link: [./tracks/e2e_testing_20260303/](./tracks/e2e_testing_20260303/)*
+

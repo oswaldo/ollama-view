@@ -20,13 +20,13 @@ export function run(): Promise<void> {
         color: true,
     });
 
-    const testsRoot = path.resolve(__dirname, '..');
+    const testsRoot = __dirname;
 
     return new Promise((resolve, reject) => {
         // pattern: **/*.integration.js inside testsRoot
         const pattern = '**/*.integration.js';
 
-        fg(pattern, { cwd: testsRoot, absolute: false })
+        fg(pattern, { cwd: testsRoot, absolute: false, ignore: ['e2e/**'] })
             .then((files) => {
                 files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
 

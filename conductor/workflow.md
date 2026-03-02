@@ -170,6 +170,9 @@ npm run compile
 # Run the automated test suite
 npm run test
 
+# Run the end-to-end UI test suite
+npm run test:e2e
+
 # Lint the codebase for errors
 npm run lint
 

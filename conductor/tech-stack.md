@@ -50,6 +50,8 @@ A client for HTTP communication with the local Ollama instance (default: `http:/
     *   **Webpack**: Primary bundler for the extension host code, providing minification and tree-shaking for production builds.
     *   **esbuild**: High-performance bundler used for Webview JavaScript assets.
     *   **Mocha**: A feature-rich JavaScript test framework running on Node.js and in the browser, making asynchronous testing simple and fun.
+    *   **vscode-extension-tester**: Automated UI testing framework for VS Code extensions.
+    *   **Express**: Lightweight web framework used for mocking the Ollama API during E2E tests.
     *   **Sinon**: Standalone test spies, stubs and mocks for JavaScript.
 *   **Linting**:
     *   **ESLint**: A pluggable linting utility for JavaScript and TypeScript, ensuring code quality and adherence to defined coding standards.

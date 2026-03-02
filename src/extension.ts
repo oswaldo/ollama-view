@@ -4,6 +4,7 @@ import { ChatCommands } from './commands/chatCommands';
 import { registerFramingCommands } from './commands/framingCommands';
 import { ModelCommands } from './commands/modelCommands';
 import { ProviderCommands } from './commands/providerCommands';
+import { IOllamaClient } from './contracts/IOllamaClient';
 import { Logger } from './logger';
 import { OllamaApi } from './ollamaApi';
 import { OllamaChatItem, OllamaInstanceItem, OllamaModelItem, OllamaProvider } from './ollamaProvider';
@@ -43,16 +44,49 @@ export function activate(context: vscode.ExtensionContext) {
     // Infrastructure
     const chatRepository = new VscodeChatRepository(context);
     const modelSettingsRepository = new VscodeModelSettingsRepository(context);
-    const ollamaApi = new OllamaApi();
+
+    // Dynamic Ollama Client to support immutable implementations on config changes
+    class DynamicOllamaClient implements IOllamaClient {
+        private currentClient: OllamaApi;
+
+        constructor() {
+            const config = vscode.workspace.getConfiguration('ollama-view');
+            const apiUrl = config.get<string>('apiUrl') || 'http://127.0.0.1:11434';
+            this.currentClient = new OllamaApi(apiUrl);
+
+            context.subscriptions.push(
+                vscode.workspace.onDidChangeConfiguration((e) => {
+                    if (e.affectsConfiguration('ollama-view.apiUrl')) {
+                        const newApiUrl = vscode.workspace.getConfiguration('ollama-view').get<string>('apiUrl') || 'http://127.0.0.1:11434';
+                        this.currentClient = new OllamaApi(newApiUrl);
+                    }
+                })
+            );
+        }
+
+        listModels() { return this.currentClient.listModels(); }
+        listRunning() { return this.currentClient.listRunning(); }
+        showModel(model: string) { return this.currentClient.showModel(model); }
+        startModel(model: string) { return this.currentClient.startModel(model); }
+        stopModel(model: string) { return this.currentClient.stopModel(model); }
+        deleteModel(model: string) { return this.currentClient.deleteModel(model); }
+        pullModel(model: string, onProgress: Parameters<IOllamaClient['pullModel']>[1]) { return this.currentClient.pullModel(model, onProgress); }
+        createModel(options: Parameters<IOllamaClient['createModel']>[0]) { return this.currentClient.createModel(options); }
+        chat(model: string, messages: Parameters<IOllamaClient['chat']>[1], onToken: Parameters<IOllamaClient['chat']>[2], options?: Parameters<IOllamaClient['chat']>[3]) {
+            return this.currentClient.chat(model, messages, onToken, options);
+        }
+    }
+
+    const dynamicOllamaApi = new DynamicOllamaClient();
 
     // Services
     const chatService = new ChatService(chatRepository);
-    const modelService = new ModelService(modelSettingsRepository, ollamaApi, chatService);
+    const modelService = new ModelService(modelSettingsRepository, dynamicOllamaApi as unknown as OllamaApi, chatService);
     const framingService = new FramingService(context);
-    const chatOrchestrator = new ChatOrchestrator(chatService, modelService, framingService, ollamaApi);
+    const chatOrchestrator = new ChatOrchestrator(chatService, modelService, framingService, dynamicOllamaApi as unknown as OllamaApi);
 
     // Providers
-    const ollamaProvider = new OllamaProvider(chatService, modelService, ollamaApi);
+    const ollamaProvider = new OllamaProvider(chatService, modelService, dynamicOllamaApi);
     const framingProvider = new FramingProvider(framingService);
 
     // Command Handlers
@@ -152,4 +186,4 @@ export function activate(context: vscode.ExtensionContext) {
     );
 }
 
-export function deactivate() {}
+export function deactivate() { }

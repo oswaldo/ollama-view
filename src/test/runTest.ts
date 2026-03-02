@@ -21,14 +21,14 @@ export function run(): Promise<void> {
         color: true,
     });
 
-    const testsRoot = path.resolve(__dirname, '..');
+    const testsRoot = __dirname;
 
     return new Promise((resolve, reject) => {
         // glob patterns are relative to cwd usually, fast-glob supports absolute too but let's be careful
         // pattern: **/*.test.js inside testsRoot
         const pattern = '**/*.test.js';
 
-        fg(pattern, { cwd: testsRoot, absolute: false })
+        fg(pattern, { cwd: testsRoot, absolute: false, ignore: ['e2e/**'] })
             .then((files) => {
                 // Add files to the test suite
                 files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
