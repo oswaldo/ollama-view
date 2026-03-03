@@ -9,8 +9,27 @@ export class MockOllamaServer {
     // In-memory state of mock models
     private models = new Set<string>();
 
+    // Mock running models
+    private runningModels = new Set<string>();
+
+    // Error simulation state
+    private errors = new Map<string, { status: number, message: string }>();
+
+    // Mock responses for chat/generate
+    private chatResponse: string = "This is a mock response from Ollama.";
+
     constructor() {
         this.app.use(express.json());
+
+        // Error simulation middleware
+        this.app.use((req, res, next) => {
+            const error = this.errors.get(req.path);
+            if (error) {
+                res.status(error.status).json({ error: error.message });
+                return;
+            }
+            next();
+        });
 
         // /api/tags - Lists all models
         this.app.get('/api/tags', (_req: express.Request, res: express.Response) => {
@@ -76,6 +95,7 @@ export class MockOllamaServer {
             }
             if (this.models.has(name)) {
                 this.models.delete(name);
+                this.runningModels.delete(name);
                 res.status(200).send();
             } else {
                 res.status(404).json({ error: 'model not found' });
@@ -84,7 +104,22 @@ export class MockOllamaServer {
 
         // /api/ps - Lists running processes
         this.app.get('/api/ps', (_req: express.Request, res: express.Response) => {
-            res.json({ models: [] });
+            const runningList = Array.from(this.runningModels).map((name) => ({
+                name,
+                model: name,
+                size: 1000000,
+                digest: 'mockdigest',
+                details: {
+                    format: 'gguf',
+                    family: 'llama',
+                    families: ['llama'],
+                    parameter_size: '135m',
+                    quantization_level: 'Q4_0'
+                },
+                expires_at: new Date(Date.now() + 1000000).toISOString(),
+                size_vram: 1000000
+            }));
+            res.json({ models: runningList });
         });
 
         // /api/show - Mocks showing model details
@@ -101,6 +136,113 @@ export class MockOllamaServer {
             } else {
                 res.status(404).json({ error: 'model not found' });
             }
+        });
+
+        // /api/chat - Mocks chat completions (streaming)
+        this.app.post('/api/chat', (req: express.Request, res: express.Response) => {
+            const { model, stream } = req.body;
+            if (!this.models.has(model)) {
+                res.status(404).json({ error: 'model not found' });
+                return;
+            }
+
+            this.runningModels.add(model);
+
+            if (stream === false) {
+                res.json({
+                    model,
+                    created_at: new Date().toISOString(),
+                    message: {
+                        role: 'assistant',
+                        content: this.chatResponse
+                    },
+                    done: true
+                });
+                return;
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+            const words = this.chatResponse.split(' ');
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < words.length) {
+                    const chunk = words[i] + (i === words.length - 1 ? '' : ' ');
+                    res.write(JSON.stringify({
+                        model,
+                        created_at: new Date().toISOString(),
+                        message: {
+                            role: 'assistant',
+                            content: chunk
+                        },
+                        done: false
+                    }) + '\n');
+                    i++;
+                } else {
+                    res.write(JSON.stringify({
+                        model,
+                        created_at: new Date().toISOString(),
+                        done: true
+                    }) + '\n');
+                    clearInterval(interval);
+                    res.end();
+                }
+            }, 50);
+        });
+
+        // /api/generate - Mocks generation (streaming)
+        this.app.post('/api/generate', (req: express.Request, res: express.Response) => {
+            const { model, stream } = req.body;
+            if (!this.models.has(model)) {
+                res.status(404).json({ error: 'model not found' });
+                return;
+            }
+
+            this.runningModels.add(model);
+
+            if (stream === false) {
+                res.json({
+                    model,
+                    created_at: new Date().toISOString(),
+                    response: this.chatResponse,
+                    done: true
+                });
+                return;
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+            const words = this.chatResponse.split(' ');
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < words.length) {
+                    const chunk = words[i] + (i === words.length - 1 ? '' : ' ');
+                    res.write(JSON.stringify({
+                        model,
+                        created_at: new Date().toISOString(),
+                        response: chunk,
+                        done: false
+                    }) + '\n');
+                    i++;
+                } else {
+                    res.write(JSON.stringify({
+                        model,
+                        created_at: new Date().toISOString(),
+                        done: true
+                    }) + '\n');
+                    clearInterval(interval);
+                    res.end();
+                }
+            }, 50);
+        });
+
+        // /api/create - Mocks creating a model
+        this.app.post('/api/create', (req: express.Request, res: express.Response) => {
+            const { name } = req.body;
+            if (!name) {
+                res.status(400).json({ error: 'name is required' });
+                return;
+            }
+            this.models.add(name);
+            res.json({ status: 'success' });
         });
     }
 
@@ -140,5 +282,25 @@ export class MockOllamaServer {
 
     public getPort(): number {
         return this.port;
+    }
+
+    public addModel(name: string): void {
+        this.models.add(name);
+    }
+
+    public clearModels(): void {
+        this.models.clear();
+    }
+
+    public setError(path: string, status: number, message: string): void {
+        this.errors.set(path, { status, message });
+    }
+
+    public clearError(path: string): void {
+        this.errors.delete(path);
+    }
+
+    public setChatResponse(response: string): void {
+        this.chatResponse = response;
     }
 }
