@@ -4,7 +4,7 @@
 This phase focuses on setting up the structural foundation for the new E2E suite, refactoring the existing mock server, and establishing global setup/teardown hooks.
 
 - [x] Task: Create directory structure for E2E helpers and fixtures (`src/test/e2e/helpers`, `src/test/e2e/fixtures`). [242a14a]
-- [ ] Task: Refactor `MockOllamaServer` to support dynamic state and per-test configuration (e.g., error simulation).
+- [x] Task: Refactor `MockOllamaServer` to support dynamic state and per-test configuration (e.g., error simulation). [8b5e27c]
 - [ ] Task: Implement `FixtureFactory` for generating dynamic model and chat response data.
 - [ ] Task: Create a base `e2eTestSetup` utility to handle VS Code settings (API URL) and view initialization.
 - [ ] Task: Conductor - User Manual Verification 'Foundation & Infrastructure Refactoring' (Protocol in workflow.md)
