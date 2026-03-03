@@ -12,7 +12,7 @@ This phase focuses on setting up the structural foundation for the new E2E suite
 ## Phase 2: Action-Based Helpers
 Implementing the core UI interaction helpers to decouple test scripts from `vscode-extension-tester` primitives.
 
-- [ ] Task: Implement `SidebarHelpers` (listing, context menus, tree interactions).
+- [x] Task: Implement `SidebarHelpers` (listing, context menus, tree interactions). [000b5c0]
 - [ ] Task: Implement `ChatHelpers` (opening panel, sending messages, editing, branching).
 - [ ] Task: Implement `SetupHelpers` (parameter modification, system prompt editing).
 - [ ] Task: Implement `FramingHelpers` (navigating framing library, CRUD operations).
