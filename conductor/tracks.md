@@ -24,6 +24,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Comprehensive E2E Test Suite Expansion**
+- [~] **Track: Comprehensive E2E Test Suite Expansion**
 *Link: [./tracks/e2e_expansion_20260303/](./tracks/e2e_expansion_20260303/)*
 
