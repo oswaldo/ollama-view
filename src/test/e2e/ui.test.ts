@@ -1,68 +1,25 @@
 import { expect } from 'chai';
 import { 
-    ActivityBar,
     DefaultTreeSection,
     InputBox, 
     NotificationType,
     TreeItem,
-    VSBrowser,
     Workbench} from 'vscode-extension-tester';
 
 import { MockOllamaServer } from './mockOllamaServer';
+import { setupE2E, cleanupE2E } from './helpers/e2eTestSetup';
 
 describe('Ollama View UI Tests', function () {
     this.timeout(60000);
     let mockServer: MockOllamaServer;
-    let port: number;
 
     before(async () => {
-        await VSBrowser.instance.waitForWorkbench();
-        
-        mockServer = new MockOllamaServer();
-        port = await mockServer.start();
-        console.log(`Mock Ollama server started on port ${port}`);
-
-        // Set the API URL in settings
-        const workbench = new Workbench();
-        const settings = await workbench.openSettings();
-        
-        // Wait for settings to load
-        await new Promise(res => setTimeout(res, 3000));
-        
-        // Wait for the setting to be available
-        let setting;
-        for (let i = 0; i < 10; i++) {
-            try {
-                setting = await settings.findSetting('apiUrl');
-                if (setting) {break;}
-            } catch {
-                // Ignore and retry
-            }
-            await new Promise(res => setTimeout(res, 1000));
-        }
-
-        if (!setting) {
-            throw new Error('Could not find apiUrl setting');
-        }
-
-        await setting.setValue(`http://127.0.0.1:${port}`);
-        
-        // Close settings editor
-        await workbench.getEditorView().closeAllEditors();
-        
-        // Open the Ollama View container
-        const activityBar = new ActivityBar();
-        // The title in package.json is 'ollama-view'
-        const control = await activityBar.getViewControl('ollama-view');
-        if (control) {
-            await control.click();
-        }
+        const setup = await setupE2E();
+        mockServer = setup.mockServer;
     });
 
     after(async () => {
-        if (mockServer) {
-            await mockServer.stop();
-        }
+        await cleanupE2E(mockServer);
     });
 
     it('should pull a model successfully', async () => {
