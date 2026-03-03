@@ -15,7 +15,7 @@ Implementing the core UI interaction helpers to decouple test scripts from `vsco
 - [x] Task: Implement `SidebarHelpers` (listing, context menus, tree interactions). [000b5c0]
 - [x] Task: Implement `ChatHelpers` (opening panel, sending messages, editing, branching). [5cfd193]
 - [x] Task: Implement `SetupHelpers` (parameter modification, system prompt editing). [a62711a]
-- [ ] Task: Implement `FramingHelpers` (navigating framing library, CRUD operations).
+- [x] Task: Implement `FramingHelpers` (navigating framing library, CRUD operations). [6a9d15e]
 - [ ] Task: Conductor - User Manual Verification 'Action-Based Helpers' (Protocol in workflow.md)
 
 ## Phase 3: Sidebar & Model Management Tests
