@@ -136,6 +136,63 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('ollamaView.setup', async (node?: OllamaInstanceItem | OllamaModelItem) => {
             if (!node) {
+                const api = ollamaProvider.getApi();
+                let allModels: any[] = [];
+                try {
+                    allModels = await api.listModels();
+                } catch (e) {
+                    Logger.error('Failed to list models during setup command', e);
+                }
+
+                if (allModels.length === 0) {
+                    const setupChoice = await vscode.window.showInformationMessage(
+                        'No models found to configure. Would you like to check your connection or pull a model?',
+                        'Configure Connection',
+                        'Pull Model'
+                    );
+                    if (setupChoice === 'Configure Connection') {
+                        vscode.commands.executeCommand('workbench.action.openSettings', 'ollama-view.apiUrl');
+                    } else if (setupChoice === 'Pull Model') {
+                        vscode.commands.executeCommand('ollamaView.pull');
+                    }
+                    return;
+                }
+
+                const selectedModelName = await vscode.window.showQuickPick(
+                    allModels.map((m) => m.name),
+                    { placeHolder: 'Select a model to configure' },
+                );
+
+                if (!selectedModelName) {
+                    return;
+                }
+
+                const model = allModels.find(m => m.name === selectedModelName);
+                if (!model) { return; }
+
+                const instances = modelService.getInstancesForModel(selectedModelName);
+                let instanceId = instances[0]?.id;
+
+                if (instances.length > 1) {
+                    const selectedInst = await vscode.window.showQuickPick(
+                        instances.map((i: any) => ({ label: i.name, id: i.id })),
+                        { placeHolder: `Select an instance of ${selectedModelName}` },
+                    );
+                    if (!selectedInst) {
+                        return;
+                    }
+                    instanceId = selectedInst.id;
+                }
+
+                SetupPanel.createOrShow(
+                    context.extensionUri,
+                    model,
+                    modelService,
+                    framingService,
+                    ollamaProvider,
+                    instanceId,
+                    () => ollamaProvider.refresh(),
+                );
                 return;
             }
             if (node instanceof OllamaInstanceItem) {

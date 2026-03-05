@@ -71,18 +71,62 @@ export class ChatCommands {
         }
     }
 
+    private static readonly POPULAR_MODELS = [
+        'llama3.2',
+        'mistral',
+        'deepseek-r1',
+        'qwen2.5',
+        'gemma2',
+        'phi3.5',
+    ];
+
     async startChat() {
         const api = this.ollamaProvider.getApi();
-        const allModels = await api.listModels();
-        if (allModels.length === 0) {
-            vscode.window.showInformationMessage('No models found. Please pull a model first.');
-            return;
+        let allModels: any[] = [];
+        try {
+            allModels = await api.listModels();
+        } catch (e) {
+            Logger.error('Failed to list models during startChat', e);
         }
 
-        const modelName = await vscode.window.showQuickPick(
-            allModels.map((m) => m.name),
-            { placeHolder: 'Select a model to chat with' },
-        );
+        let modelName: string | undefined;
+
+        if (allModels.length === 0) {
+            const choice = await vscode.window.showInformationMessage(
+                'No models found. Would you like to download one now?',
+                'Yes, pick a model',
+                'Configure Connection'
+            );
+
+            if (choice === 'Configure Connection') {
+                vscode.commands.executeCommand('workbench.action.openSettings', 'ollama-view.apiUrl');
+                return;
+            }
+
+            if (choice !== 'Yes, pick a model') {
+                return;
+            }
+
+            modelName = await vscode.window.showQuickPick(
+                ChatCommands.POPULAR_MODELS,
+                { placeHolder: 'Select a model to download and chat with' }
+            );
+
+            if (!modelName) {
+                return;
+            }
+
+            // Pull the model first
+            await this.pullModelInternal(modelName);
+            // After pull, we need to refresh models
+            allModels = await api.listModels();
+        } else {
+            modelName = await vscode.window.showQuickPick(
+                allModels.map((m) => m.name),
+                { placeHolder: 'Select a model to chat with' },
+            );
+        }
+
         if (!modelName) {
             return;
         }
@@ -137,9 +181,9 @@ export class ChatCommands {
                 },
                 async () => {
                     try {
-                        await this.ollamaProvider.startModel(modelName);
+                        await this.ollamaProvider.startModel(modelName!);
                         this.ollamaProvider.refresh();
-                        await panel.handleUserMessage(prompt);
+                        await panel.handleUserMessage(prompt!);
                     } catch (err: unknown) {
                         const error = err as Error;
                         Logger.error(`Failed to start model ${modelName}`, error);
@@ -155,6 +199,30 @@ export class ChatCommands {
         } else {
             await panel.handleUserMessage(prompt);
         }
+    }
+
+    private async pullModelInternal(name: string) {
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `Downloading ${name}...`,
+                cancellable: true,
+            },
+            async (progress) => {
+                try {
+                    await this.ollamaProvider.getApi().pullModel(name, (status, completed, total) => {
+                        const msg = total ? `${status} (${Math.round(((completed || 0) / total) * 100)}%)` : status;
+                        progress.report({ message: msg });
+                    });
+                    this.ollamaProvider.refresh();
+                } catch (err: unknown) {
+                    const error = err as Error;
+                    Logger.error(`Failed to pull ${name}`, error);
+                    vscode.window.showErrorMessage(`Failed to pull ${name}: ${error.message}`);
+                    throw error;
+                }
+            },
+        );
     }
 
     async deleteChat(node: OllamaChatItem) {
