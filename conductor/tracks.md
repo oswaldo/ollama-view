@@ -27,3 +27,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [~] **Track: Comprehensive E2E Test Suite Expansion**
 *Link: [./tracks/e2e_expansion_20260303/](./tracks/e2e_expansion_20260303/)*
 
+---
+
+- [ ] **Track: Welcome / What's New Tab**
+*Link: [./tracks/welcome_tab_20260306/](./tracks/welcome_tab_20260306/)*
+

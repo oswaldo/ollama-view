@@ -1,0 +1,8 @@
+{
+  "track_id": "welcome_tab_20260306",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-06T15:00:00Z",
+  "updated_at": "2026-03-06T15:00:00Z",
+  "description": "I want to display a welcome/what's new tab when the user installs the plugin or when receives an upgrade. I see some plugins do that and I wonder if there is some standard way to do it with the vscode api, guaranteed to work in every vscode variant, like cursor, windsurf or google antigravity"
+}
