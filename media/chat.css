@@ -254,8 +254,11 @@ input:checked + .slider:before {
 .more-actions-icon {
     mask-image: url('./more-actions-icon.svg');
     -webkit-mask-image: url('./more-actions-icon.svg');
-    width: 16px;
-    height: 16px;
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-position: center;
+    width: 28px;
 }
 
 /* Dropdown Menu */

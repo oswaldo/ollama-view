@@ -29,6 +29,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Welcome / What's New Tab**
+- [~] **Track: Welcome / What's New Tab**
 *Link: [./tracks/welcome_tab_20260306/](./tracks/welcome_tab_20260306/)*
 

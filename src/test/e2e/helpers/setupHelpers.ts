@@ -1,8 +1,8 @@
 import { 
-    Workbench,
+    By,
     WebView,
-    By
-} from 'vscode-extension-tester';
+    Workbench} from 'vscode-extension-tester';
+
 import { SidebarHelpers } from './sidebarHelpers';
 
 export class SetupHelpers {

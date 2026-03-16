@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { ChatPanel } from '../chatPanel';
 import { Logger } from '../logger';
+import { OllamaModel } from '../ollamaApi';
 import { OllamaChatItem, OllamaInstanceItem, OllamaProvider } from '../ollamaProvider';
 import { ChatOrchestrator } from '../services/chatOrchestrator';
 import { ChatService } from '../services/chatService';
@@ -82,7 +83,7 @@ export class ChatCommands {
 
     async startChat() {
         const api = this.ollamaProvider.getApi();
-        let allModels: any[] = [];
+        let allModels: OllamaModel[] = [];
         try {
             allModels = await api.listModels();
         } catch (e) {
@@ -181,9 +182,9 @@ export class ChatCommands {
                 },
                 async () => {
                     try {
-                        await this.ollamaProvider.startModel(modelName!);
+                        await this.ollamaProvider.startModel(modelName as string);
                         this.ollamaProvider.refresh();
-                        await panel.handleUserMessage(prompt!);
+                        await panel.handleUserMessage(prompt as string);
                     } catch (err: unknown) {
                         const error = err as Error;
                         Logger.error(`Failed to start model ${modelName}`, error);

@@ -11,6 +11,8 @@ Manage your locally installed [Ollama](https://ollama.ai) models directly from V
 
 (Experimental) Start quick experiments by chatting directly with your models.
 
+> **Note**: This is an experimental project developed in my free time. While you might encounter some dragons along the way, you are highly encouraged to open issue tickets on GitHub if you find bugs or have feature requests. I'll do my best to take a look when I can!
+
 <table align="center">
   <tr>
     <td align="center" width="50%">
@@ -36,11 +38,12 @@ You can install this extension from the following sources:
 
 ### Sidepanel View
 
-- **Model List**: View all your local Ollama models in a tree view.
+- **Dynamic Model List**: View all your local Ollama models in a hierarchical tree view, grouping instances and chats.
+- **Model Instances**: Create multiple named instances of the same model with distinct configurations.
 - **Pull Models**: Easily download new models (e.g., `llama3`, `mistral`) via command.
 - **Status Indication**: Visual indicators for Running (Green) and Stopped (Grey) models.
 - **Persistent Chats**: Create and manage multiple persistent chats for each model.
-- **Advanced Setup**: Configure model-specific system messages and prompt injection templates (prefix/suffix framing).
+- **Advanced Setup**: Configure model-specific system messages, prompt injection templates (prefix/suffix framing), and performance controls (temperature, seed, top-p, etc.).
 - **Context Menu**: Safe model deletion and configuration access via the "More Actions" menu.
 
 ### Chat Interface
@@ -83,7 +86,7 @@ graph TD
 - [Ollama](https://ollama.ai) must be installed and running locally.
 - By default, it connects to `http://127.0.0.1:11434`.
 
-> **Note**: This version (v0.0.1) has been tested primarily on **Linux**. It assumes [Ollama](https://ollama.ai) is already installed and running correctly on your system. Compatibility with other OSs is expected but not yet verified.
+> **Note**: This project has been tested primarily on **Linux**. It assumes [Ollama](https://ollama.ai) is already installed and running correctly on your system. Compatibility with other OSs is expected but not yet verified.
 
 ## Commands
 
@@ -98,6 +101,15 @@ graph TD
 - Autocomplete for model names during "Pull" is limited to a popular subset. You can still type any model name manually.
 
 ## Release Notes
+
+### 0.1.0 - Architecture Refactor, Advanced Config & Model Instances
+
+- **Advanced Model Configuration**: Create and manage multiple named instances of the same model.
+- **Performance Controls**: Adjust temperature, top-k, top-p, and random seed parameters per instance.
+- **Dynamic Tree Hierarchy**: The sidebar now visually groups chats and instances under their parent models.
+- **Welcome Screen**: Added an onboarding and "What's New" tab for a smoother user installation experience.
+- **E2E Testing & Refactor**: Complete architectural overhaul with robust type-safety and comprehensive UI/E2E test suite coverage.
+- **UI Polish**: Dozens of quality-of-life improvements including raw message inspection, better spacing, and individual chat resets.
 
 ### 0.0.6 - Model Framing & Chat Overrides
 

@@ -21,7 +21,7 @@ Implementing the core UI interaction helpers to decouple test scripts from `vsco
 ## Phase 3: Sidebar & Model Management Tests
 Complete coverage for all sidebar-related features.
 
-- [ ] Task: Test model pulling, starting, stopping, and deleting flows.
+- [~] Task: Test model pulling, starting, stopping, and deleting flows.
 - [ ] Task: Test tree view refresh and status indicator updates.
 - [ ] Task: Test model-specific context menu actions.
 - [ ] Task: Conductor - User Manual Verification 'Sidebar & Model Management Tests' (Protocol in workflow.md)

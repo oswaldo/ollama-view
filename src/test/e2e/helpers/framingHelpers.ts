@@ -1,9 +1,9 @@
 import { 
-    Workbench,
-    WebView,
     By,
-    TreeItem
-} from 'vscode-extension-tester';
+    TreeItem,
+    WebView,
+    Workbench} from 'vscode-extension-tester';
+
 import { SidebarHelpers } from './sidebarHelpers';
 
 export class FramingHelpers {

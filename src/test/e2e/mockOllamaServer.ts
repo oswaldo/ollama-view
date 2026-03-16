@@ -1,10 +1,12 @@
 import * as express from 'express';
 import { Server } from 'http';
+import { Socket } from 'net';
 
 export class MockOllamaServer {
     private app = express();
     private server: Server | null = null;
     private port: number = 0;
+    private sockets = new Set<Socket>();
 
     // In-memory state of mock models
     private models = new Set<string>();
@@ -84,6 +86,10 @@ export class MockOllamaServer {
                     res.end();
                 }
             }, 100);
+
+            res.on('close', () => {
+                clearInterval(interval);
+            });
         });
 
         // /api/delete - Mocks deleting a model
@@ -140,13 +146,17 @@ export class MockOllamaServer {
 
         // /api/chat - Mocks chat completions (streaming)
         this.app.post('/api/chat', (req: express.Request, res: express.Response) => {
-            const { model, stream } = req.body;
+            const { model, stream, keep_alive } = req.body;
             if (!this.models.has(model)) {
                 res.status(404).json({ error: 'model not found' });
                 return;
             }
 
-            this.runningModels.add(model);
+            if (keep_alive === 0 || keep_alive === '0') {
+                this.runningModels.delete(model);
+            } else {
+                this.runningModels.add(model);
+            }
 
             if (stream === false) {
                 res.json({
@@ -187,17 +197,25 @@ export class MockOllamaServer {
                     res.end();
                 }
             }, 50);
+
+            res.on('close', () => {
+                clearInterval(interval);
+            });
         });
 
         // /api/generate - Mocks generation (streaming)
         this.app.post('/api/generate', (req: express.Request, res: express.Response) => {
-            const { model, stream } = req.body;
+            const { model, stream, keep_alive } = req.body;
             if (!this.models.has(model)) {
                 res.status(404).json({ error: 'model not found' });
                 return;
             }
 
-            this.runningModels.add(model);
+            if (keep_alive === 0 || keep_alive === '0') {
+                this.runningModels.delete(model);
+            } else {
+                this.runningModels.add(model);
+            }
 
             if (stream === false) {
                 res.json({
@@ -232,16 +250,21 @@ export class MockOllamaServer {
                     res.end();
                 }
             }, 50);
+
+            res.on('close', () => {
+                clearInterval(interval);
+            });
         });
 
         // /api/create - Mocks creating a model
         this.app.post('/api/create', (req: express.Request, res: express.Response) => {
-            const { name } = req.body;
-            if (!name) {
-                res.status(400).json({ error: 'name is required' });
+            const { name, model } = req.body;
+            const modelName = name || model;
+            if (!modelName) {
+                res.status(400).json({ error: 'model name is required' });
                 return;
             }
-            this.models.add(name);
+            this.models.add(modelName);
             res.json({ status: 'success' });
         });
     }
@@ -260,17 +283,33 @@ export class MockOllamaServer {
             });
             if (this.server) {
                 this.server.on('error', reject);
+                this.server.on('connection', (socket) => {
+                    this.sockets.add(socket);
+                    socket.on('close', () => {
+                        this.sockets.delete(socket);
+                    });
+                });
             }
         });
     }
 
     public stop(): Promise<void> {
+        console.log('Stopping MockOllamaServer...');
         return new Promise((resolve, reject) => {
             if (this.server) {
+                console.log(`Closing ${this.sockets.size} active sockets...`);
+                for (const socket of this.sockets) {
+                    socket.destroy();
+                }
+                this.sockets.clear();
+
                 this.server.close((err) => {
                     if (err) {
+                        console.error('Error closing mock server:', err);
                         reject(err);
                     } else {
+                        console.log('MockOllamaServer stopped successfully.');
+                        this.server = null;
                         resolve();
                     }
                 });

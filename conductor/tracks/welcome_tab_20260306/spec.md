@@ -14,7 +14,10 @@ This feature introduces a "Welcome / What's New" Webview tab that automatically 
   - On **Upgrade**, the "Getting Started" section MUST be collapsed by default.
 - **Interactive Elements:**
   - Support for **Media (GIF/Video)** to showcase features.
-  - **Action Buttons:** "Configure Ollama" (links to Setup Panel), "Start Chat" (links to Chat Panel).
+  - **Action Buttons:**
+    - **"Start Chat"**: Triggers a unified flow (select/pull model if none exist, then open chat).
+    - **"Add a Model"**: Directly opens the pull/download prompt.
+    - **"Configure Connection"**: Shortcut to extension settings (API URL) or model-specific setup.
   - **External Links:** Links to GitHub repository and documentation.
 - **Persistence:** The last seen version MUST be stored in VS Code's `globalState` to prevent redundant displays on every startup.
 

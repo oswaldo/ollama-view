@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Ollama View</title>
+    <link rel="stylesheet" href="{{styleUri}}">
+    <link rel="stylesheet" href="{{welcomeStyleUri}}">
+</head>
+<body>
+    <div class="container welcome-container">
+        <header>
+            <div class="welcome-header">
+                <img src="{{logoUri}}" alt="Ollama View Logo" class="welcome-logo">
+                <h1 id="welcome-title">Welcome to Ollama View</h1>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero-actions">
+                <button id="start-chat-btn" class="primary big-btn">
+                    <span class="icon icon-chat"></span>
+                    <div class="btn-text">
+                        <span class="btn-title">Start Your First Chat</span>
+                        <span class="btn-subtitle">Pick a model and start talking</span>
+                    </div>
+                </button>
+                <div class="secondary-actions">
+                    <button id="add-model-btn" class="secondary">
+                        <span class="icon icon-add"></span> Add a Model
+                    </button>
+                    <button id="configure-btn" class="secondary">
+                        <span class="icon icon-configure"></span> Configure Connection
+                    </button>
+                </div>
+            </section>
+
+            <section class="whats-new">
+                <h2>What's New in v0.1.0</h2>
+                <ul class="feature-list">
+                    <li>
+                        <strong>Dynamic Model Tree:</strong> A cleaner sidebar that adapts to your models and instances.
+                    </li>
+                    <li>
+                        <strong>Model Framing:</strong> Create specialized AI personas with custom system prompts and message templates.
+                    </li>
+                    <li>
+                        <strong>Advanced Configuration:</strong> Deep control over GPU layers, threads, and inference parameters.
+                    </li>
+                    <li>
+                        <strong>Unified Onboarding:</strong> Seamlessly download and start chatting with popular models in one click.
+                    </li>
+                </ul>
+            </section>
+
+            <details id="getting-started-details">
+                <summary>Getting Started Guide</summary>
+                <div class="section-content">
+                    <ol class="steps-list">
+                        <li>
+                            <strong>Ensure Ollama is running:</strong> Make sure you have <a href="https://ollama.com" id="ollama-link">Ollama</a> installed and running on your machine.
+                        </li>
+                        <li>
+                            <strong>Check Connection:</strong> By default, we connect to <code>http://127.0.0.1:11434</code>. You can change this in settings.
+                        </li>
+                        <li>
+                            <strong>Download a Model:</strong> Click "Add a Model" or use the cloud icon in the sidebar to download models like Llama3 or Mistral.
+                        </li>
+                        <li>
+                            <strong>Start Chatting:</strong> Click "Start Chat" on any downloaded model to open a persistent conversation.
+                        </li>
+                    </ol>
+                </div>
+            </details>
+        </main>
+
+        <footer>
+            <div class="footer-links">
+                <a href="https://github.com/oswaldo/ollama-view" id="github-link">GitHub Repository</a>
+            </div>
+            <div class="link-item">
+                <span class="icon">🐞</span>
+                <a href="https://github.com/oswaldo/ollama-view/issues" id="issues-link">Report a Bug</a>
+            </div>
+        </footer>
+    </div>
+    <script src="{{scriptUri}}"></script>
+</body>
+</html>

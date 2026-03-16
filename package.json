@@ -2,7 +2,7 @@
     "name": "ollama-view",
     "displayName": "Ollama View",
     "description": "Manage local Ollama models",
-    "version": "0.0.6",
+    "version": "0.1.0",
     "publisher": "OswaldoDantas",
     "license": "MIT",
     "icon": "media/logo.png",
@@ -160,6 +160,11 @@
                 "title": "More Actions...",
                 "category": "ollama-view",
                 "icon": "$(more)"
+            },
+            {
+                "command": "ollamaView.showWelcome",
+                "title": "Show Welcome/What's New",
+                "category": "ollama-view"
             }
         ],
         "menus": {
@@ -181,22 +186,32 @@
             "view/item/context": [
                 {
                     "command": "ollamaView.start",
-                    "when": "viewItem == variable-stopped || viewItem == variable-stopped-root",
+                    "when": "viewItem == variable-stopped || viewItem == variable-stopped-root || viewItem == ollama-model",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "ollamaView.start",
+                    "when": "viewItem == variable-stopped || viewItem == variable-stopped-root || viewItem == ollama-model",
+                    "group": "ollama@1"
+                },
+                {
+                    "command": "ollamaView.stop",
+                    "when": "viewItem == variable-running || viewItem == variable-running-root || viewItem == ollama-model",
                     "group": "inline@1"
                 },
                 {
                     "command": "ollamaView.stop",
-                    "when": "viewItem == variable-running || viewItem == variable-running-root",
-                    "group": "inline@1"
+                    "when": "viewItem == variable-running || viewItem == variable-running-root || viewItem == ollama-model",
+                    "group": "ollama@1"
                 },
                 {
                     "command": "ollamaView.createChat",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root || viewItem == ollama-model",
                     "group": "inline@2"
                 },
                 {
                     "command": "ollamaView.createInstance",
-                    "when": "viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root",
+                    "when": "viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root || viewItem == variable-running || viewItem == variable-stopped",
                     "group": "ollama@0"
                 },
                 {
@@ -206,7 +221,7 @@
                 },
                 {
                     "command": "ollamaView.setup",
-                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root || viewItem == ollama-model",
                     "group": "ollama@1"
                 },
                 {
@@ -245,10 +260,11 @@
         "webpack-base": "webpack --config webpack.config.js",
         "webpack-dev": "npm run webpack-base -- --mode development",
         "webpack-prod": "npm run webpack-base -- --mode production",
-        "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:framing",
+        "build:webview": "npm run build:webview:chat && npm run build:webview:setup && npm run build:webview:framing && npm run build:webview:welcome",
         "build:webview:chat": "esbuild src/webview/chat.ts --bundle --outfile=dist/webview/chat.js --platform=browser --target=es2020 --format=iife",
         "build:webview:setup": "esbuild src/webview/setup.ts --bundle --outfile=dist/webview/setup.js --platform=browser --target=es2020 --format=iife",
         "build:webview:framing": "esbuild src/webview/framing.ts --bundle --outfile=dist/webview/framing.js --platform=browser --target=es2020 --format=iife",
+        "build:webview:welcome": "esbuild src/webview/welcome.ts --bundle --outfile=dist/webview/welcome.js --platform=browser --target=es2020 --format=iife",
         "pretest": "npm run compile && npm run lint",
         "check-types": "tsc --noEmit",
         "lint": "eslint src",
@@ -258,7 +274,7 @@
         "build:tests": "tsc -p .",
         "test": "node ./dist/test/runTest.js",
         "test:integration": "npm run build:tests && node ./dist/test/runIntegrationTest.js",
-        "test:e2e": "npm run build:tests && npm run compile && extest get-vscode && extest get-chromedriver && extest run-tests -C dist/test/e2e/ui.test.js"
+        "test:e2e": "npm run build:tests && npm run compile && extest get-vscode && extest get-chromedriver && extest run-tests -C dist/test/e2e/*.test.js"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.2",

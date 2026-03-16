@@ -6,7 +6,7 @@ import { ModelCommands } from './commands/modelCommands';
 import { ProviderCommands } from './commands/providerCommands';
 import { IOllamaClient } from './contracts/IOllamaClient';
 import { Logger } from './logger';
-import { OllamaApi } from './ollamaApi';
+import { OllamaApi, OllamaModel } from './ollamaApi';
 import { OllamaChatItem, OllamaInstanceItem, OllamaModelItem, OllamaProvider } from './ollamaProvider';
 import { SetupPanel } from './panels/setupPanel';
 import { FramingProvider } from './providers/framingProvider';
@@ -38,8 +38,26 @@ const getModelActions = (): ModelAction[] => [
     { label: '$(trash) Delete', id: 'delete', command: 'ollamaView.delete', description: 'Permanently remove model' },
 ];
 
+import { WelcomePanel } from './panels/welcomePanel';
+import { getVersionChangeType, VersionChangeType } from './services/welcomeService';
+
 export function activate(context: vscode.ExtensionContext) {
     Logger.init();
+
+    const VERSION_KEY = 'lastSeenVersion';
+    const currentVersion = context.extension.packageJSON.version;
+    const lastSeenVersion = context.globalState.get<string>(VERSION_KEY);
+
+    const versionChange = getVersionChangeType(currentVersion, lastSeenVersion);
+
+    if (versionChange !== VersionChangeType.None) {
+        WelcomePanel.createOrShow(
+            context.extensionUri,
+            currentVersion,
+            versionChange === VersionChangeType.FirstInstall
+        );
+        context.globalState.update(VERSION_KEY, currentVersion);
+    }
 
     // Infrastructure
     const chatRepository = new VscodeChatRepository(context);
@@ -137,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ollamaView.setup', async (node?: OllamaInstanceItem | OllamaModelItem) => {
             if (!node) {
                 const api = ollamaProvider.getApi();
-                let allModels: any[] = [];
+                let allModels: OllamaModel[] = [];
                 try {
                     allModels = await api.listModels();
                 } catch (e) {
@@ -175,7 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                 if (instances.length > 1) {
                     const selectedInst = await vscode.window.showQuickPick(
-                        instances.map((i: any) => ({ label: i.name, id: i.id })),
+                        instances.map((i) => ({ label: i.name, id: i.id })),
                         { placeHolder: `Select an instance of ${selectedModelName}` },
                     );
                     if (!selectedInst) {
@@ -223,8 +241,11 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
 
-        vscode.commands.registerCommand(
-            'ollamaView.showMoreActions',
+        vscode.commands.registerCommand('ollamaView.showWelcome', () => {
+            WelcomePanel.createOrShow(context.extensionUri, currentVersion, false);
+        }),
+
+        vscode.commands.registerCommand('ollamaView.showMoreActions',
             async (node?: OllamaInstanceItem | OllamaModelItem) => {
                 if (!node) {
                     return;
