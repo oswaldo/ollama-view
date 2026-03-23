@@ -3,10 +3,10 @@
     <h1>Ollama View for VS Code</h1>
 
 [![VS Code Marketplace](https://badgen.net/vs-marketplace/v/OswaldoDantas.ollama-view?icon=visualstudiocode&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)
-[![Open VSX Registry](https://img.shields.io/open-vsx/v/OswaldoDantas/ollama-view?style=flat&label=Open%20VSX&logo=eclipse-ide)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
+[![Open VSX Registry](https://badgen.net/open-vsx/v/OswaldoDantas/ollama-view?icon=eclipseide&label=Open%20VSX)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
 
 [![VS Code Marketplace Downloads](https://badgen.net/vs-marketplace/d/OswaldoDantas.ollama-view?color=blue&label=VS%20Code%20Marketplace%20Downloads)](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)
-[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/OswaldoDantas/ollama-view?style=flat&color=blue&label=Open%20VSX%20Downloads)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
+[![Open VSX Downloads](https://badgen.net/open-vsx/d/OswaldoDantas/ollama-view?color=blue&label=Open%20VSX%20Downloads)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
 
 </div>
 
