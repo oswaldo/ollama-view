@@ -100,7 +100,7 @@ If you encounter a bug, have a feature request, or just want to discuss an idea,
 
 ## Support the Project
 
-If you find `ollama-view` useful in your daily workflow, please consider [starring the repository on GitHub](https://github.com/oswaldo/ollama-view) ⭐️. Your support means a lot and helps other users find the project!
+If you find `ollama-view` useful in your daily workflow, please consider [starring the repository on GitHub](https://github.com/oswaldo/ollama-view) ⭐️ and reviewing it in the marketplace you downloaded it from. Your support means a lot and helps other users find the project!
 
 <br />
 
