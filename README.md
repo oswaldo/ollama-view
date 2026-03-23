@@ -5,11 +5,14 @@
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/OswaldoDantas.ollama-view?style=flat&label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)
 [![Open VSX Registry](https://img.shields.io/open-vsx/v/OswaldoDantas/ollama-view?style=flat&label=Open%20VSX&logo=eclipse-ide)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
 
+[![VS Code Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/OswaldoDantas.ollama-view?style=flat&color=blue&label=VS%20Code%20Marketplace%20Downloads)](https://marketplace.visualstudio.com/items?itemName=OswaldoDantas.ollama-view)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/OswaldoDantas/ollama-view?style=flat&color=blue&label=Open%20VSX%20Downloads)](https://open-vsx.org/extension/OswaldoDantas/ollama-view)
+
 </div>
 
-Manage your locally installed [Ollama](https://ollama.ai) models directly from Visual Studio Code.
+Execute your local LLMs directly inside the IDE with **zero context switching**. Manage, configure, and chat with your [Ollama](https://ollama.ai) models while maintaining absolute **data privacy and sovereignty**—no proprietary code ever leaves your machine.
 
-(Experimental) Start quick experiments by chatting directly with your models.
+🎉 **Thank you to our community!** *Ollama View* has recently crossed **10,000 organic downloads** across marketplaces! 🎉
 
 > **Note**: This is an experimental project developed in my free time. While you might encounter some dragons along the way, you are highly encouraged to open issue tickets on GitHub if you find bugs or have feature requests. I'll do my best to take a look when I can!
 
@@ -100,48 +103,17 @@ graph TD
 
 - Autocomplete for model names during "Pull" is limited to a popular subset. You can still type any model name manually.
 
-## Release Notes
+## Roadmap & Community Input
 
-### 0.1.0 - Architecture Refactor, Advanced Config & Model Instances
+We are constantly looking to improve the extension. Our current focus areas for upcoming releases include:
 
-- **Advanced Model Configuration**: Create and manage multiple named instances of the same model.
-- **Performance Controls**: Adjust temperature, top-k, top-p, and random seed parameters per instance.
-- **Dynamic Tree Hierarchy**: The sidebar now visually groups chats and instances under their parent models.
-- **Welcome Screen**: Added an onboarding and "What's New" tab for a smoother user installation experience.
-- **E2E Testing & Refactor**: Complete architectural overhaul with robust type-safety and comprehensive UI/E2E test suite coverage.
-- **UI Polish**: Dozens of quality-of-life improvements including raw message inspection, better spacing, and individual chat resets.
+- **Chat Export/Import**: Capabilities to easily export and import existing chat histories.
+- **Context Manipulation**: Experimenting with ways to allow users to manually override past messages, exploring how altering the historical context shifts the model's follow-up responses.
 
-### 0.0.6 - Model Framing & Chat Overrides
+## Support & Feedback
 
-- **Model Framing View**: A new dedicated sidebar view to create, edit, duplicate, and manage reusable model framings (prefixes, suffixes, and system prompts).
-- **Chat-Level Overrides**: Customize and override model framing on a per-chat or per-message basis for tailored interactions.
-- **Message Info Modal**: Inspect turn-specific metadata and framing context for any message.
-- **Robust History Manipulation**: Enhanced state preservation during chat branching (forking/truncating) with atomic metadata management.
+If you encounter a bug, have a feature request, or just want to discuss an idea, please open a [GitHub Issue](https://github.com/oswaldo/ollama-view/issues). Community feedback is essential in driving the direction of this project!
 
-### 0.0.5 - Marketplace Compatibility
+## Support the Project
 
-- **Publishing Fix**: Corrected extension categories to comply with VS Code Marketplace requirements.
-
-### 0.0.4 - Model Setup & Advanced Prompting
-
-- **Model Setup**: New configuration screen to define system messages and message framing (prefixes/suffixes).
-- **Prompt Injections**: Support for per-message system turns and user message wrapping.
-- **Visibility Toggle**: View hidden system instructions directly in the chat panel.
-- **UI Safety**: Moved destructive "Delete" action to a context menu.
-
-### 0.0.3 - Unique Chat Naming
-
-- **Unique Chat Names**: New chats now have unique names (e.g. "New Chat (2)") to prevent confusion.
-- **Improved Naming Logic**: Renaming and forking chats also ensures unique names.
-- **Tests**: Added tests for chat naming logic.
-
-### 0.0.2 - Initial Chat Functionality
-
-- **Persistent Chats**: Conversations are now possible and persistent across sessions.
-- **Message Editing**: Edit user messages to branch conversation paths (Truncate or Fork).
-- **Model Actions**: Copy, regenerate, and fork directly from model responses.
-- **Enhanced UI**: Improved tree view, chat deletion flow, and timestamp formatting.
-
-### 0.0.1 - Foundations
-
-- Initial release with View, Start, Stop, Delete, and Pull functionalities.
+If you find `ollama-view` useful in your daily workflow, please consider [starring the repository on GitHub](https://github.com/oswaldo/ollama-view) ⭐️. Your support means a lot and helps other users find the project!
