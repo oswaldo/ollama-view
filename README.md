@@ -10,9 +10,9 @@
 
 </div>
 
-Execute your local LLMs directly inside the IDE with **zero context switching**. Manage, configure, and chat with your [Ollama](https://ollama.ai) models while maintaining absolute **data privacy and sovereignty**—no proprietary code ever leaves your machine.
+Execute your local LLMs directly inside the IDE with **zero context switching**. Manage, configure, and chat with your [Ollama](https://ollama.ai) models while maintaining absolute **data privacy and sovereignty** (your content never leaves your machine).
 
-🎉 **Thank you to our community!** *Ollama View* has recently crossed **10,000 organic downloads** across marketplaces! 🎉
+🎉 **Thank you for checking it out!** I feel honored that *Ollama View* has more than **9,000 downloads** across marketplaces, before I even had a chance to properly announce it! 🎉
 
 > **Note**: This is an experimental project developed in my free time. While you might encounter some dragons along the way, you are highly encouraged to open issue tickets on GitHub if you find bugs or have feature requests. I'll do my best to take a look when I can!
 
@@ -105,7 +105,7 @@ graph TD
 
 ## Roadmap & Community Input
 
-We are constantly looking to improve the extension. Our current focus areas for upcoming releases include:
+I'm constantly improving the extension mostly based on my experiments and needs, but feel free to suggest new features or report issues on the [GitHub Issues](https://github.com/oswaldo/ollama-view/issues) page. My current focus areas for upcoming releases include:
 
 - **Chat Export/Import**: Capabilities to easily export and import existing chat histories.
 - **Context Manipulation**: Experimenting with ways to allow users to manually override past messages, exploring how altering the historical context shifts the model's follow-up responses.
