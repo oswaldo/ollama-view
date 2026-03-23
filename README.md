@@ -66,23 +66,7 @@ You can install this extension from the following sources:
 
 ## Architecture
 
-The extension follows a clean, layered architecture to ensure maintainability and testability.
-
-```mermaid
-graph TD
-    UI[UI Layer: Panels & Providers] --> Orch[Orchestration: ChatOrchestrator]
-    UI --> Srv[Service Layer: Domain Logic]
-    Orch --> Srv
-    Orch --> Client[Infrastructure: Ollama API Client]
-    Srv --> Repo[Data Access: Repositories]
-    Repo --> VSCode[VS Code Persistence API]
-```
-
-- **Contract Layer**: Defines stable interfaces for infrastructure (API, Storage).
-- **Data Access Layer**: Handles persistence using VS Code's `globalState`.
-- **Service Layer**: Encapsulates pure domain logic and business rules.
-- **Orchestration Layer**: Coordinates complex flows (e.g., chat generation) across services.
-- **UI Layer**: Managed via VS Code Webviews and Tree Data Providers.
+If you are interested in how the extension is built or want to contribute, please check out our [Contributing Guidelines and Architecture overview](https://github.com/oswaldo/ollama-view/blob/main/CONTRIBUTING.md#architecture).
 
 ## Requirements
 
