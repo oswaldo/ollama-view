@@ -1,6 +1,6 @@
 # Implementation Plan: Export Chat Action
 
-## Phase 1: Export Service (Backend)
+## Phase 1: Export Service (Backend) [checkpoint: f0ab6f2]
 
 - [x] Task: Create `ExportService` to handle formatting chat history. [5b1459a]
     - [ ] Define `IExportService` in `src/contracts/IExportService.ts`.
@@ -8,7 +8,7 @@
         - [ ] `toMarkdown(chat: Chat): string`: Formats chat with metadata and messages.
         - [ ] `toJSON(chat: Chat): string`: Returns `JSON.stringify(chat, null, 2)`. **(MUST match internal storage format for future import compatibility)**.
     - [ ] Add unit tests for `ExportService` in `src/test/exportService.test.ts`.
-- [ ] Task: Conductor - User Manual Verification 'Export Service (Backend)' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Export Service (Backend)' (Protocol in workflow.md) [f0ab6f2]
 
 ## Phase 2: Commands & UI Integration
 
