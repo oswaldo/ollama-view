@@ -2,7 +2,7 @@
 
 ## Phase 1: Export Service (Backend)
 
-- [ ] Task: Create `ExportService` to handle formatting chat history.
+- [x] Task: Create `ExportService` to handle formatting chat history. [5b1459a]
     - [ ] Define `IExportService` in `src/contracts/IExportService.ts`.
     - [ ] Implement `ExportService` in `src/services/exportService.ts`.
         - [ ] `toMarkdown(chat: Chat): string`: Formats chat with metadata and messages.
