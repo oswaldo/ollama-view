@@ -18,11 +18,11 @@
     - [ ] Use `ExportService` to format the data based on the selected file extension.
     - [ ] Use `vscode.workspace.fs.writeFile` to save the file.
     - [ ] Show success notification with "Open File" action.
-- [~] Task: Register the command and contribute to the context menu in `package.json`.
+- [x] Task: Register the command and contribute to the context menu in `package.json`.
     - [ ] Add `ollamaView.exportChat` to `commands`.
     - [ ] Add to `menus/view/item/context` for `ollama-chat` context.
-- [ ] Task: Update `src/extension.ts` to instantiate and register the new command.
-- [ ] Task: Conductor - User Manual Verification 'Commands & UI Integration' (Protocol in workflow.md)
+- [x] Task: Update `src/extension.ts` to instantiate and register the new command.
+- [x] Task: Conductor - User Manual Verification 'Commands & UI Integration' (Protocol in workflow.md) [checkpoint: Phase 2]
 
 ## Phase 3: Verification & E2E Testing
 
