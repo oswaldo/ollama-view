@@ -6,6 +6,7 @@ import { OllamaModel } from '../ollamaApi';
 import { OllamaChatItem, OllamaInstanceItem, OllamaProvider } from '../ollamaProvider';
 import { ChatOrchestrator } from '../services/chatOrchestrator';
 import { ChatService } from '../services/chatService';
+import { ExportService } from '../services/exportService';
 import { FramingService } from '../services/framingService';
 import { ModelService } from '../services/modelService';
 
@@ -16,8 +17,53 @@ export class ChatCommands {
         private framingService: FramingService,
         private chatOrchestrator: ChatOrchestrator,
         private ollamaProvider: OllamaProvider,
+        private exportService: ExportService,
         private extensionUri: vscode.Uri,
     ) {}
+
+    async exportChat(node: OllamaChatItem) {
+        if (!node) {
+            return;
+        }
+
+        const dateStr = new Date(node.chat.createdAt).toISOString().replace(/[:.]/g, '-');
+        const defaultFileName = `${node.chat.modelName}-${dateStr}-chat.md`;
+
+        const uri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(defaultFileName),
+            filters: {
+                'Markdown': ['md'],
+                'JSON': ['json'],
+                'All Files': ['*']
+            }
+        });
+
+        if (!uri) {
+            return; // User cancelled
+        }
+
+        let content = '';
+        if (uri.fsPath.endsWith('.json')) {
+            content = this.exportService.toJSON(node.chat);
+        } else {
+            content = this.exportService.toMarkdown(node.chat);
+        }
+
+        try {
+            await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
+            const openAction = 'Open File';
+            const message = `Chat exported successfully to ${uri.fsPath}`;
+            vscode.window.showInformationMessage(message, openAction).then(selection => {
+                if (selection === openAction) {
+                    vscode.commands.executeCommand('vscode.open', uri);
+                }
+            });
+        } catch (err: unknown) {
+            const error = err as Error;
+            Logger.error(`Failed to export chat: ${error.message}`, error);
+            vscode.window.showErrorMessage(`Failed to export chat: ${error.message}`);
+        }
+    }
 
     async createChat(node?: OllamaInstanceItem) {
         if (!node) {

@@ -14,6 +14,7 @@ import { VscodeChatRepository } from './repositories/VscodeChatRepository';
 import { VscodeModelSettingsRepository } from './repositories/VscodeModelSettingsRepository';
 import { ChatOrchestrator } from './services/chatOrchestrator';
 import { ChatService } from './services/chatService';
+import { ExportService } from './services/exportService';
 import { FramingService } from './services/framingService';
 import { ModelService } from './services/modelService';
 
@@ -101,6 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
     const chatService = new ChatService(chatRepository);
     const modelService = new ModelService(modelSettingsRepository, dynamicOllamaApi as unknown as OllamaApi, chatService);
     const framingService = new FramingService(context);
+    const exportService = new ExportService();
     const chatOrchestrator = new ChatOrchestrator(chatService, modelService, framingService, dynamicOllamaApi as unknown as OllamaApi);
 
     // Providers
@@ -115,6 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
         framingService,
         chatOrchestrator,
         ollamaProvider,
+        exportService,
         context.extensionUri,
     );
     const providerCommands = new ProviderCommands(ollamaProvider, framingProvider);

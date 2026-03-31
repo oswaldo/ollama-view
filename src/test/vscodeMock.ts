@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export enum TreeItemCollapsibleState {
     None = 0,
     Collapsed = 1,
@@ -31,12 +32,27 @@ export const window = {
     showWarningMessage: async () => {},
     showErrorMessage: async () => {},
     showQuickPick: async () => {},
+    showSaveDialog: async () => {},
     createWebviewPanel: () => ({}),
     createOutputChannel: () => ({
         appendLine: () => {},
         show: () => {},
         dispose: () => {},
     }),
+    withProgress: async (_options: any, task: (progress: any) => Promise<any>) => {
+        return await task({ report: () => {} });
+    },
+};
+
+export const workspace = {
+    getConfiguration: () => ({
+        get: () => {},
+        update: async () => {},
+    }),
+    fs: {
+        writeFile: async () => {},
+    },
+    onDidChangeConfiguration: new EventEmitter<any>().event,
 };
 
 export const commands = {
