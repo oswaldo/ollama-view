@@ -138,6 +138,12 @@
                 "icon": "$(trash)"
             },
             {
+                "command": "ollamaView.exportChat",
+                "title": "Export Chat...",
+                "category": "ollama-view",
+                "icon": "$(export)"
+            },
+            {
                 "command": "ollamaView.createFraming",
                 "title": "New Model Framing",
                 "category": "ollama-view",
@@ -220,6 +226,11 @@
                     "group": "inline@3"
                 },
                 {
+                    "command": "ollamaView.showMoreActions",
+                    "when": "viewItem == ollama-chat",
+                    "group": "inline@3"
+                },
+                {
                     "command": "ollamaView.setup",
                     "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == variable-running-root || viewItem == variable-stopped-root || viewItem == ollama-model",
                     "group": "ollama@1"
@@ -232,10 +243,15 @@
                 {
                     "command": "ollamaView.deleteChat",
                     "when": "viewItem == ollama-chat",
-                    "group": "inline"
+                    "group": "ollama@3"
                 },
                 {
-                    "command": "ollamaView.showMoreFramingActions",
+                    "command": "ollamaView.exportChat",
+                    "when": "viewItem == ollama-chat",
+                    "group": "ollama@4"
+                },
+                {
+                    "command": "ollamaView.createFraming",
                     "when": "view == ollama-framing-view && viewItem =~ /framing-/",
                     "group": "inline"
                 },

@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { ChatPanel } from '../chatPanel';
@@ -18,6 +19,7 @@ export class ChatCommands {
         private chatOrchestrator: ChatOrchestrator,
         private ollamaProvider: OllamaProvider,
         private exportService: ExportService,
+        private globalState: vscode.Memento,
         private extensionUri: vscode.Uri,
     ) {}
 
@@ -27,35 +29,60 @@ export class ChatCommands {
         }
 
         const dateStr = new Date(node.chat.createdAt).toISOString().replace(/[:.]/g, '-');
-        const defaultFileName = `${node.chat.modelName}-${dateStr}-chat.md`;
+        const lastExportExt = this.globalState.get<string>('lastExportExt') || '.md';
+        const lastExportPath = this.globalState.get<string>('lastExportPath');
+        
+        const defaultFileName = `${node.chat.modelName}-${dateStr}-chat${lastExportExt}`;
+        let defaultUri = vscode.Uri.file(defaultFileName);
+        
+        if (lastExportPath) {
+            defaultUri = vscode.Uri.file(path.join(lastExportPath, defaultFileName));
+        }
+
+        const filters: { [name: string]: string[] } = {};
+        if (lastExportExt === '.json') {
+            filters['JSON'] = ['json'];
+            filters['Markdown'] = ['md'];
+        } else {
+            filters['Markdown'] = ['md'];
+            filters['JSON'] = ['json'];
+        }
 
         const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(defaultFileName),
-            filters: {
-                'Markdown': ['md'],
-                'JSON': ['json'],
-                'All Files': ['*']
-            }
+            defaultUri: defaultUri,
+            filters: filters
         });
 
         if (!uri) {
             return; // User cancelled
         }
 
+        // If the user didn't type an extension and VS Code didn't append one, add the default
+        let finalUri = uri;
+        const ext = path.extname(uri.fsPath);
+        if (!ext) {
+            finalUri = vscode.Uri.file(uri.fsPath + lastExportExt);
+        }
+
         let content = '';
-        if (uri.fsPath.endsWith('.json')) {
+        if (finalUri.fsPath.endsWith('.json')) {
             content = this.exportService.toJSON(node.chat);
         } else {
             content = this.exportService.toMarkdown(node.chat);
         }
 
         try {
-            await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'));
+            await vscode.workspace.fs.writeFile(finalUri, Buffer.from(content, 'utf8'));
+            
+            // Save state for next time
+            await this.globalState.update('lastExportExt', path.extname(finalUri.fsPath));
+            await this.globalState.update('lastExportPath', path.dirname(finalUri.fsPath));
+
             const openAction = 'Open File';
-            const message = `Chat exported successfully to ${uri.fsPath}`;
+            const message = `Chat exported successfully to ${finalUri.fsPath}`;
             vscode.window.showInformationMessage(message, openAction).then(selection => {
                 if (selection === openAction) {
-                    vscode.commands.executeCommand('vscode.open', uri);
+                    vscode.commands.executeCommand('vscode.open', finalUri);
                 }
             });
         } catch (err: unknown) {

@@ -39,6 +39,21 @@ const getModelActions = (): ModelAction[] => [
     { label: '$(trash) Delete', id: 'delete', command: 'ollamaView.delete', description: 'Permanently remove model' },
 ];
 
+const getChatActions = (): ModelAction[] => [
+    {
+        label: '$(export) Export Chat...',
+        id: 'exportChat',
+        command: 'ollamaView.exportChat',
+        description: 'Export chat history to Markdown or JSON',
+    },
+    {
+        label: '$(trash) Delete Chat',
+        id: 'deleteChat',
+        command: 'ollamaView.deleteChat',
+        description: 'Permanently delete this chat',
+    },
+];
+
 import { WelcomePanel } from './panels/welcomePanel';
 import { getVersionChangeType, VersionChangeType } from './services/welcomeService';
 
@@ -118,6 +133,7 @@ export function activate(context: vscode.ExtensionContext) {
         chatOrchestrator,
         ollamaProvider,
         exportService,
+        context.globalState,
         context.extensionUri,
     );
     const providerCommands = new ProviderCommands(ollamaProvider, framingProvider);
@@ -139,6 +155,9 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ollamaView.startChat', () => chatCommands.startChat()),
         vscode.commands.registerCommand('ollamaView.deleteChat', (node: OllamaChatItem) =>
             chatCommands.deleteChat(node),
+        ),
+        vscode.commands.registerCommand('ollamaView.exportChat', (node: OllamaChatItem) =>
+            chatCommands.exportChat(node),
         ),
         vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => chatCommands.openChat(node)),
 
@@ -249,12 +268,13 @@ export function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand('ollamaView.showMoreActions',
-            async (node?: OllamaInstanceItem | OllamaModelItem) => {
+            async (node?: OllamaInstanceItem | OllamaModelItem | OllamaChatItem) => {
                 if (!node) {
                     return;
                 }
-                const name = node instanceof OllamaInstanceItem ? node.instance.name : node.model.name;
-                const actions = getModelActions();
+                const isChat = node instanceof OllamaChatItem;
+                const name = isChat ? node.chat.name : (node instanceof OllamaInstanceItem ? node.instance.name : node.model.name);
+                const actions = isChat ? getChatActions() : getModelActions();
                 const result = await vscode.window.showQuickPick(actions, {
                     placeHolder: `Actions for ${name}`,
                 });
