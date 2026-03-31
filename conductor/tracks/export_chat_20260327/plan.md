@@ -12,13 +12,13 @@
 
 ## Phase 2: Commands & UI Integration
 
-- [ ] Task: Implement `exportChat` command in `src/commands/chatCommands.ts`.
+- [x] Task: Implement `exportChat` command in `src/commands/chatCommands.ts`. [3a67520]
     - [ ] Add `exportChat(node: OllamaChatItem)` method to `ChatCommands` class.
     - [ ] Use `vscode.window.showSaveDialog` to get destination.
     - [ ] Use `ExportService` to format the data based on the selected file extension.
     - [ ] Use `vscode.workspace.fs.writeFile` to save the file.
     - [ ] Show success notification with "Open File" action.
-- [ ] Task: Register the command and contribute to the context menu in `package.json`.
+- [~] Task: Register the command and contribute to the context menu in `package.json`.
     - [ ] Add `ollamaView.exportChat` to `commands`.
     - [ ] Add to `menus/view/item/context` for `ollama-chat` context.
 - [ ] Task: Update `src/extension.ts` to instantiate and register the new command.
