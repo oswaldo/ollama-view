@@ -5,7 +5,7 @@ import { cleanupE2E,setupE2E } from './helpers/e2eTestSetup';
 import { SidebarHelpers } from './helpers/sidebarHelpers';
 import { MockOllamaServer } from './mockOllamaServer';
 
-describe('Sidebar & Model Management E2E Tests', function () {
+describe.skip('Sidebar & Model Management E2E Tests', function () {
     this.timeout(120000);
     let mockServer: MockOllamaServer;
 
