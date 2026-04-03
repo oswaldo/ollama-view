@@ -24,9 +24,9 @@
 - [x] Task: Update `src/extension.ts` to instantiate and register the new command.
 - [x] Task: Conductor - User Manual Verification 'Commands & UI Integration' (Protocol in workflow.md) [checkpoint: Phase 2]
 
-## Phase 3: Verification & E2E Testing
+## Phase 3: Verification & E2E Testing [checkpoint: final]
 
-- [ ] Task: Add E2E tests for the export flow in `src/test/e2e/export.test.ts`.
-    - [ ] Verify "Export Chat..." appears in the menu.
-    - [ ] Verify file creation and content (mocking the save dialog).
-- [ ] Task: Conductor - User Manual Verification 'Final Polishing & E2E Testing' (Protocol in workflow.md)
+- [x] Task: Add E2E tests for the export flow in `src/test/e2e/export.test.ts`.
+    - [x] Verify "Export Chat..." appears in the menu.
+    - [x] Verify file creation and content (mocking the save dialog).
+- [x] Task: Conductor - User Manual Verification 'Final Polishing & E2E Testing' (Protocol in workflow.md)
