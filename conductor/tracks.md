@@ -34,6 +34,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Export Chat action in triple dot menu in the chat node in the model tree**
+- [x] **Track: Export Chat action in triple dot menu in the chat node in the model tree**
 *Link: [./tracks/export_chat_20260327/](./tracks/export_chat_20260327/)*
 
