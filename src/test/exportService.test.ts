@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 
-import { Chat } from '../../src/services/chatService';
-import { ExportService } from '../../src/services/exportService';
+import { Chat } from '../services/chatService';
+import { ExportService } from '../services/exportService';
 
 suite('ExportService', () => {
     let exportService: ExportService;

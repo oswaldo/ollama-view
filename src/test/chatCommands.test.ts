@@ -17,6 +17,8 @@ suite('ChatCommands Test Suite', () => {
     let framingService: any;
     let chatOrchestrator: any;
     let ollamaProvider: any;
+    let mockGlobalState: any;
+    let stateMap: Map<string, any>;
 
     setup(() => {
         sandbox = sinon.createSandbox();
@@ -26,6 +28,13 @@ suite('ChatCommands Test Suite', () => {
         chatOrchestrator = {};
         ollamaProvider = {};
         exportService = new ExportService();
+
+        stateMap = new Map<string, any>();
+        mockGlobalState = {
+            get: (key: string, defaultValue?: any) => stateMap.has(key) ? stateMap.get(key) : defaultValue,
+            update: (key: string, value: any) => { stateMap.set(key, value); return Promise.resolve(); }
+        };
+
         chatCommands = new ChatCommands(
             chatService,
             modelService,
@@ -33,6 +42,7 @@ suite('ChatCommands Test Suite', () => {
             chatOrchestrator,
             ollamaProvider,
             exportService,
+            mockGlobalState,
             vscode.Uri.file('/')
         );
     });
@@ -41,7 +51,7 @@ suite('ChatCommands Test Suite', () => {
         sandbox.restore();
     });
 
-    test('exportChat should call showSaveDialog and writeFile', async () => {
+    test('exportChat saves as Markdown when URI ends with .md and updates state', async () => {
         const chat: Chat = {
             id: '1',
             modelName: 'llama3',
@@ -52,14 +62,71 @@ suite('ChatCommands Test Suite', () => {
         const node = new OllamaChatItem(chat);
 
         const saveUri = vscode.Uri.file('/tmp/test-chat.md');
-        const showSaveDialogStub = sandbox.stub(vscode.window, 'showSaveDialog').resolves(saveUri);
+        sandbox.stub(vscode.window, 'showSaveDialog').resolves(saveUri);
         const writeFileStub = sandbox.stub(vscode.workspace.fs, 'writeFile').resolves();
-        const showInformationMessageStub = sandbox.stub(vscode.window, 'showInformationMessage').resolves();
+        sandbox.stub(vscode.window, 'showInformationMessage').resolves();
+
+        const toMarkdownSpy = sandbox.spy(exportService, 'toMarkdown');
 
         await chatCommands.exportChat(node);
 
-        assert.ok(showSaveDialogStub.calledOnce);
+        assert.ok(toMarkdownSpy.calledOnce);
         assert.ok(writeFileStub.calledOnce);
-        assert.ok(showInformationMessageStub.calledOnce);
+        assert.strictEqual(stateMap.get('lastExportExt'), '.md');
+        assert.strictEqual(stateMap.get('lastExportPath'), vscode.Uri.file('/tmp').fsPath);
+    });
+
+    test('exportChat saves as JSON when URI ends with .json and updates state', async () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Test Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        const node = new OllamaChatItem(chat);
+
+        const saveUri = vscode.Uri.file('/tmp/data/test-chat.json');
+        sandbox.stub(vscode.window, 'showSaveDialog').resolves(saveUri);
+        const writeFileStub = sandbox.stub(vscode.workspace.fs, 'writeFile').resolves();
+        sandbox.stub(vscode.window, 'showInformationMessage').resolves();
+
+        const toJSONSpy = sandbox.spy(exportService, 'toJSON');
+
+        await chatCommands.exportChat(node);
+
+        assert.ok(toJSONSpy.calledOnce);
+        assert.ok(writeFileStub.calledOnce);
+        assert.strictEqual(stateMap.get('lastExportExt'), '.json');
+        assert.strictEqual(stateMap.get('lastExportPath'), vscode.Uri.file('/tmp/data').fsPath);
+    });
+
+    test('exportChat appends default extension if missing from URI', async () => {
+        const chat: Chat = {
+            id: '1',
+            modelName: 'llama3',
+            name: 'Test Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        const node = new OllamaChatItem(chat);
+
+        stateMap.set('lastExportExt', '.json'); // Set default to json
+
+        // User typed just "test-chat" with no extension
+        const saveUri = vscode.Uri.file('/tmp/test-chat');
+        sandbox.stub(vscode.window, 'showSaveDialog').resolves(saveUri);
+        const writeFileStub = sandbox.stub(vscode.workspace.fs, 'writeFile').resolves();
+        sandbox.stub(vscode.window, 'showInformationMessage').resolves();
+
+        const toJSONSpy = sandbox.spy(exportService, 'toJSON');
+
+        await chatCommands.exportChat(node);
+
+        assert.ok(toJSONSpy.calledOnce);
+
+        // Should have appended .json to the write URI
+        const writtenUri = writeFileStub.firstCall.args[0] as vscode.Uri;
+        assert.strictEqual(writtenUri.fsPath, vscode.Uri.file('/tmp/test-chat.json').fsPath);
     });
 });
