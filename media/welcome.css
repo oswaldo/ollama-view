@@ -96,6 +96,11 @@
     -webkit-mask-image: url('./model-icon.svg');
 }
 
+.icon-configure {
+    mask-image: url('./configure-icon.svg');
+    -webkit-mask-image: url('./configure-icon.svg');
+}
+
 .more-actions-icon {
     mask-image: url('./more-actions-icon.svg');
     -webkit-mask-image: url('./more-actions-icon.svg');

@@ -1,11 +1,11 @@
 import { expect } from 'chai';
-import { TreeItem, Workbench } from 'vscode-extension-tester';
+import { TreeItem } from 'vscode-extension-tester';
 
 import { cleanupE2E, setupE2E } from './helpers/e2eTestSetup';
 import { SidebarHelpers } from './helpers/sidebarHelpers';
 import { MockOllamaServer } from './mockOllamaServer';
 
-describe.skip('Export Chat E2E Tests', function () {
+describe('Export Chat E2E Tests', function () {
     this.timeout(120000);
     let mockServer: MockOllamaServer;
 
@@ -33,15 +33,13 @@ describe.skip('Export Chat E2E Tests', function () {
             await new Promise(res => setTimeout(res, 500));
         }
         expect(instItem, 'Instance should exist').to.not.equal(undefined);
-        if (!instItem) return;
+        if (!instItem) {return;}
 
         // Create a chat by executing "Start Chat" via command palette or "Create Chat" context menu
         await SidebarHelpers.executeAction(instItem as TreeItem, 'Start');
         
-        // Let's create a chat by finding it in the UI and right clicking. Wait, to create a chat we need to send a message or run createChat.
-        // I will use executeCommand
-        const workbench = new Workbench();
-        await workbench.executeCommand('ollamaView.createChat');
+        // I will use the actual context menu UI action 'New Chat' to prevent executeCommand errors
+        await SidebarHelpers.executeAction(instItem as TreeItem, 'New Chat');
         
         // Wait for chat to appear in the tree
         await SidebarHelpers.refresh();
@@ -64,7 +62,7 @@ describe.skip('Export Chat E2E Tests', function () {
         }
         
         expect(chatItem, 'Chat item should be visible in the tree').to.not.equal(undefined);
-        if (!chatItem) return;
+        if (!chatItem) {return;}
 
         // Open context menu and look for Export Chat
         const menu = await chatItem.openContextMenu();

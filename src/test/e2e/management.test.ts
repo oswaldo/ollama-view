@@ -20,7 +20,6 @@ describe.skip('Sidebar & Model Management E2E Tests', function () {
 
     after(() => {
         console.log('Final cleanup...');
-        setTimeout(() => process.exit(0), 1000);
     });
 
     it('should pull a new model and show it in the list', async () => {

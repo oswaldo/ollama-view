@@ -1,23 +1,46 @@
 import { expect } from 'chai';
-import { 
-    By,    DefaultTreeSection,
+import {
+    By, DefaultTreeSection,
     InputBox,
-    ModalDialog,
     NotificationType,
     TreeItem,
-    Workbench} from 'vscode-extension-tester';
+    Workbench,
+    VSBrowser,
+    Key
+} from 'vscode-extension-tester';
 
 export class SidebarHelpers {
     private static readonly SECTION_MODELS = 'Models';
+
+    public static async safeExecuteCommand(commandTitle: string): Promise<void> {
+        const workbench = new Workbench();
+        await workbench.openCommandPrompt();
+        await new Promise(r => setTimeout(r, 1000));
+
+        const driver = VSBrowser.instance.driver;
+        await driver.actions().sendKeys(commandTitle).perform();
+        await new Promise(r => setTimeout(r, 1000)); // Wait for QuickPick dropdown to filter the command
+        await driver.actions().sendKeys(Key.ENTER).perform();
+        await new Promise(r => setTimeout(r, 1000)); // Wait for command execution block
+    }
 
     /**
      * Gets a specific section from the Ollama View sidebar.
      */
     public static async getSection(name: string): Promise<DefaultTreeSection> {
         const workbench = new Workbench();
-        const sidebar = await workbench.getSideBar();
-        const content = sidebar.getContent();
-        return await content.getSection(name) as DefaultTreeSection;
+        for (let i = 0; i < 10; i++) {
+            try {
+                const sidebar = await workbench.getSideBar();
+                const content = sidebar.getContent();
+                const section = await content.getSection(name);
+                if (section) return section as DefaultTreeSection;
+            } catch {
+                // Ignore and retry
+            }
+            await new Promise(res => setTimeout(res, 500));
+        }
+        throw new Error(`Failed to find section: ${name} after 5 seconds`);
     }
 
     /**
@@ -25,7 +48,7 @@ export class SidebarHelpers {
      */
     public static async findModelItem(label: string, timeout: number = 10000): Promise<TreeItem | undefined> {
         const section = await this.getSection(this.SECTION_MODELS);
-        
+
         const startTime = Date.now();
         while (Date.now() - startTime < timeout) {
             const items = await section.getVisibleItems() as TreeItem[];
@@ -44,17 +67,18 @@ export class SidebarHelpers {
      * Pulls a model by name using the Command Palette/UI button.
      */
     public static async pullModel(name: string): Promise<void> {
-        const workbench = new Workbench();
-        await workbench.executeCommand('ollamaView.pull');
-        
+        await this.safeExecuteCommand('Ollama View: Pull Model');
+
+        await new Promise(res => setTimeout(res, 500));
         const input = await InputBox.create();
         await input.setText(name);
         await input.confirm();
-        
+
         // Wait for success notification
+        const workbench = new Workbench();
         const center = await workbench.openNotificationsCenter();
         let successFound = false;
-        
+
         for (let i = 0; i < 20; i++) {
             const notifications = await center.getNotifications(NotificationType.Any);
             for (const notification of notifications) {
@@ -65,10 +89,10 @@ export class SidebarHelpers {
                     break;
                 }
             }
-            if (successFound) {break;}
+            if (successFound) { break; }
             await new Promise(res => setTimeout(res, 1000));
         }
-        
+
         await center.close();
         expect(successFound, `Model ${name} should be pulled successfully`).to.equal(true);
     }
@@ -77,8 +101,7 @@ export class SidebarHelpers {
      * Refreshes the model tree view.
      */
     public static async refresh(): Promise<void> {
-        const workbench = new Workbench();
-        await workbench.executeCommand('ollamaView.refresh');
+        await this.safeExecuteCommand('Ollama View: Refresh');
         await new Promise(res => setTimeout(res, 1000));
     }
 
@@ -137,17 +160,17 @@ export class SidebarHelpers {
             item = labelOrItem;
             labelStr = await item.getLabel();
         }
-        
+
         console.log(`Executing action '${actionName}' on item '${labelStr}'`);
-        
+
         try {
             // Scroll into view first
-            await item.select(); 
+            await item.select();
             const menu = await item.openContextMenu();
-            
+
             // Wait a bit for menu to be ready
             await new Promise(res => setTimeout(res, 500));
-            
+
             const action = await menu.getItem(actionName);
             if (!action) {
                 const items = await menu.getItems();
@@ -168,13 +191,13 @@ export class SidebarHelpers {
      */
     public static async createInstance(modelLabel: string): Promise<string> {
         await this.executeAction(modelLabel, 'Create New Instance');
-        
+
         // Handle input box for instance name
         const input = await InputBox.create();
         const instanceName = `${modelLabel}-inst`;
         await input.setText(instanceName);
-        await input.confirm(); 
-        
+        await input.confirm();
+
         await new Promise(res => setTimeout(res, 2000));
         return instanceName;
     }
@@ -212,7 +235,7 @@ export class SidebarHelpers {
      */
     public static async deleteModel(labelOrItem: string | TreeItem): Promise<void> {
         const labelStr = typeof labelOrItem === 'string' ? labelOrItem : await labelOrItem.getLabel();
-        
+
         try {
             await this.executeAction(labelOrItem, 'Delete');
         } catch {
@@ -221,10 +244,10 @@ export class SidebarHelpers {
             const workbench = new Workbench();
             await workbench.executeCommand('ollamaView.delete');
         }
-        
+
         console.log(`Waiting for deletion confirmation for '${labelStr}'...`);
         let confirmed = false;
-        
+
         // Short loop for confirmation - everything should be fast.
         for (let i = 0; i < 5; i++) {
             // Check for Modal Dialog
@@ -245,18 +268,18 @@ export class SidebarHelpers {
                         break;
                     }
                 }
-                
+
                 if (!confirmed) {
-                     console.log(`Attempting pushButton('Delete') as fallback...`);
-                     await dialog.pushButton('Delete');
-                     confirmed = true;
+                    console.log(`Attempting pushButton('Delete') as fallback...`);
+                    await dialog.pushButton('Delete');
+                    confirmed = true;
                 }
             } catch {
                 // Not found via ModalDialog, try raw driver
                 try {
                     const workbench = new Workbench();
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const driver = (workbench as any).driver; 
+                    const driver = (workbench as any).driver;
                     if (driver) {
                         const deleteButtons = await driver.findElements(By.xpath("//*[text()='Delete']"));
                         for (const btn of deleteButtons) {
@@ -273,7 +296,7 @@ export class SidebarHelpers {
                 }
             }
 
-            if (confirmed) {break;}
+            if (confirmed) { break; }
 
             // Check for Notifications
             try {
@@ -291,14 +314,14 @@ export class SidebarHelpers {
                             }
                         }
                     }
-                    if (confirmed) {break;}
+                    if (confirmed) { break; }
                 }
                 await center.close();
             } catch {
                 // Ignore
             }
 
-            if (confirmed) {break;}
+            if (confirmed) { break; }
             await new Promise(res => setTimeout(res, 1000));
         }
 

@@ -188,6 +188,9 @@ npm run lint
 
 # Format the entire codebase
 npx prettier --write .
+
+# Optional: Check for known security vulnerabilities
+npm run security-check
 ```
 
 ## Testing Requirements
@@ -321,6 +324,8 @@ A task is complete when:
 - [ ] All tests passing
 - [ ] Coverage >80%
 - [ ] No linting errors
+- [ ] Security audit passes (`npm run security-check`)
+- [ ] Dependencies reviewed (`npm run check-updates`)
 - [ ] Mobile testing complete
 - [ ] Environment variables configured
 - [ ] Database migrations ready
@@ -356,6 +361,8 @@ A task is complete when:
 ## Publishing and Versioning
 
 ### 1. Release Preparation
+- **Security Audit**: Run `npm run security-check` to ensure there are no active vulnerabilities (`audit-level=high`).
+- **Dependencies**: Run `npm run check-updates` to review outdated packages and plan upgrades.
 - **Version Bump**: Update `"version"` in `package.json`.
 - **Release Notes**: Add a section in `README.md` under "Release Notes".
 - **Categories**: Ensure categories in `package.json` are limited to VS Code supported ones: `Machine Learning`, `Programming Languages`, or `Other`.
