@@ -145,8 +145,9 @@ export class MockOllamaServer {
         });
 
         // /api/chat - Mocks chat completions (streaming)
+        // Echoes back the last user message prefixed with "Echo: "
         this.app.post('/api/chat', (req: express.Request, res: express.Response) => {
-            const { model, stream, keep_alive } = req.body;
+            const { model, messages, stream, keep_alive } = req.body;
             if (!this.models.has(model)) {
                 res.status(404).json({ error: 'model not found' });
                 return;
@@ -158,13 +159,24 @@ export class MockOllamaServer {
                 this.runningModels.add(model);
             }
 
+            // Echo the last user message, or fall back to the static response
+            const userMessages = (messages || []).filter(
+                (m: { role: string }) => m.role === 'user'
+            );
+            const lastUserMsg = userMessages.length > 0
+                ? userMessages[userMessages.length - 1].content
+                : null;
+            const responseText = lastUserMsg
+                ? `Echo: ${lastUserMsg}`
+                : this.chatResponse;
+
             if (stream === false) {
                 res.json({
                     model,
                     created_at: new Date().toISOString(),
                     message: {
                         role: 'assistant',
-                        content: this.chatResponse
+                        content: responseText
                     },
                     done: true
                 });
@@ -172,7 +184,7 @@ export class MockOllamaServer {
             }
 
             res.setHeader('Content-Type', 'application/json');
-            const words = this.chatResponse.split(' ');
+            const words = responseText.split(' ');
             let i = 0;
             const interval = setInterval(() => {
                 if (i < words.length) {
@@ -204,8 +216,9 @@ export class MockOllamaServer {
         });
 
         // /api/generate - Mocks generation (streaming)
+        // Echoes back the prompt prefixed with "Echo: "
         this.app.post('/api/generate', (req: express.Request, res: express.Response) => {
-            const { model, stream, keep_alive } = req.body;
+            const { model, prompt, stream, keep_alive } = req.body;
             if (!this.models.has(model)) {
                 res.status(404).json({ error: 'model not found' });
                 return;
@@ -217,18 +230,22 @@ export class MockOllamaServer {
                 this.runningModels.add(model);
             }
 
+            const responseText = prompt
+                ? `Echo: ${prompt}`
+                : this.chatResponse;
+
             if (stream === false) {
                 res.json({
                     model,
                     created_at: new Date().toISOString(),
-                    response: this.chatResponse,
+                    response: responseText,
                     done: true
                 });
                 return;
             }
 
             res.setHeader('Content-Type', 'application/json');
-            const words = this.chatResponse.split(' ');
+            const words = responseText.split(' ');
             let i = 0;
             const interval = setInterval(() => {
                 if (i < words.length) {
@@ -269,10 +286,10 @@ export class MockOllamaServer {
         });
     }
 
-    public start(): Promise<number> {
+    public start(port: number = 0): Promise<number> {
         return new Promise((resolve, reject) => {
             // port 0 means the OS assigns a random available port
-            this.server = this.app.listen(0, '127.0.0.1', () => {
+            this.server = this.app.listen(port, '127.0.0.1', () => {
                 const address = this.server?.address();
                 if (address && typeof address !== 'string') {
                     this.port = address.port;

@@ -1,0 +1,6 @@
+{
+    "ollama-view.apiUrl": "http://127.0.0.1:18398",
+    "workbench.editor.enablePreview": false,
+    "workbench.startupEditor": "none",
+    "security.workspace.trust.enabled": false
+}

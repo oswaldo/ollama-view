@@ -1,28 +1,119 @@
 import { expect } from 'chai';
 import {
-    By, DefaultTreeSection,
+    By,
+    DefaultTreeSection,
     InputBox,
+    Key,
+    ModalDialog,
     NotificationType,
     TreeItem,
-    Workbench,
     VSBrowser,
-    Key
+    Workbench,
 } from 'vscode-extension-tester';
 
 export class SidebarHelpers {
     private static readonly SECTION_MODELS = 'Models';
 
+    // ─────────────────────────────────────────────────────────────────
+    //  Low-level input helpers
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Executes a VS Code command via the Command Palette using raw keyboard actions.
+     * This avoids issues with Workbench.executeCommand() that can occur in CI.
+     */
     public static async safeExecuteCommand(commandTitle: string): Promise<void> {
         const workbench = new Workbench();
         await workbench.openCommandPrompt();
         await new Promise(r => setTimeout(r, 1000));
-
+        
         const driver = VSBrowser.instance.driver;
         await driver.actions().sendKeys(commandTitle).perform();
-        await new Promise(r => setTimeout(r, 1000)); // Wait for QuickPick dropdown to filter the command
+        await new Promise(r => setTimeout(r, 1000));
         await driver.actions().sendKeys(Key.ENTER).perform();
-        await new Promise(r => setTimeout(r, 1000)); // Wait for command execution block
+        await new Promise(r => setTimeout(r, 1000));
     }
+
+    /**
+     * Safely type text into the currently-focused InputBox via raw WebDriver key actions.
+     * This bypasses InputBox.setText() which internally calls clear() — and that triggers
+     * ElementNotInteractableError on newer VS Code / ChromeDriver combinations.
+     */
+    public static async safeSetInputText(text: string): Promise<void> {
+        const driver = VSBrowser.instance.driver;
+        await driver.actions().keyDown(Key.CONTROL).sendKeys('a').keyUp(Key.CONTROL).perform();
+        await new Promise(r => setTimeout(r, 200));
+        await driver.actions().sendKeys(text).perform();
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    /**
+     * Click an inline action button on a tree item.
+     * Uses the built-in getActionButton() API which handles hover automatically.
+     */
+    public static async clickInlineAction(item: TreeItem, actionTitle: string): Promise<void> {
+        const button = await item.getActionButton(actionTitle);
+        if (!button) {
+            const buttons = await item.getActionButtons();
+            const labels = await Promise.all(buttons.map(async b => await b.getLabel()));
+            throw new Error(`Inline action '${actionTitle}' not found. Available: ${labels.join(', ')}`);
+        }
+        await button.click();
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    /**
+     * Confirms a VS Code modal dialog by clicking a button with the given title.
+     * Tries ModalDialog API first, then falls back to raw WebDriver element search.
+     */
+    public static async confirmDialog(buttonTitle: string, timeoutMs: number = 10000): Promise<void> {
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < timeoutMs) {
+            // Attempt 1: ModalDialog page object
+            try {
+                const dialog = new ModalDialog();
+                await dialog.pushButton(buttonTitle);
+                return;
+            } catch {
+                // Dialog might not be ready yet
+            }
+
+            // Attempt 2: Raw WebDriver — find visible button matching the title
+            try {
+                const driver = VSBrowser.instance.driver;
+                const buttons = await driver.findElements(
+                    By.xpath(`//a[@role='button' and contains(@class,'dialog-button') and text()='${buttonTitle}']`)
+                );
+                for (const btn of buttons) {
+                    if (await btn.isDisplayed()) {
+                        await btn.click();
+                        return;
+                    }
+                }
+                // Also try generic buttons
+                const genericButtons = await driver.findElements(
+                    By.xpath(`//*[@role='button' and normalize-space(text())='${buttonTitle}']`)
+                );
+                for (const btn of genericButtons) {
+                    if (await btn.isDisplayed()) {
+                        await btn.click();
+                        return;
+                    }
+                }
+            } catch {
+                // Ignore and retry
+            }
+
+            await new Promise(res => setTimeout(res, 500));
+        }
+
+        throw new Error(`Could not find and click '${buttonTitle}' dialog button within ${timeoutMs}ms`);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  Tree navigation
+    // ─────────────────────────────────────────────────────────────────
 
     /**
      * Gets a specific section from the Ollama View sidebar.
@@ -34,7 +125,7 @@ export class SidebarHelpers {
                 const sidebar = await workbench.getSideBar();
                 const content = sidebar.getContent();
                 const section = await content.getSection(name);
-                if (section) return section as DefaultTreeSection;
+                if (section) { return section as DefaultTreeSection; }
             } catch {
                 // Ignore and retry
             }
@@ -45,10 +136,11 @@ export class SidebarHelpers {
 
     /**
      * Finds a model item in the 'Models' section by its label.
+     * Polls until found or timeout.
      */
     public static async findModelItem(label: string, timeout: number = 10000): Promise<TreeItem | undefined> {
         const section = await this.getSection(this.SECTION_MODELS);
-
+        
         const startTime = Date.now();
         while (Date.now() - startTime < timeout) {
             const items = await section.getVisibleItems() as TreeItem[];
@@ -64,49 +156,8 @@ export class SidebarHelpers {
     }
 
     /**
-     * Pulls a model by name using the Command Palette/UI button.
-     */
-    public static async pullModel(name: string): Promise<void> {
-        await this.safeExecuteCommand('Ollama View: Pull Model');
-
-        await new Promise(res => setTimeout(res, 500));
-        const input = await InputBox.create();
-        await input.setText(name);
-        await input.confirm();
-
-        // Wait for success notification
-        const workbench = new Workbench();
-        const center = await workbench.openNotificationsCenter();
-        let successFound = false;
-
-        for (let i = 0; i < 20; i++) {
-            const notifications = await center.getNotifications(NotificationType.Any);
-            for (const notification of notifications) {
-                const text = await notification.getMessage();
-                if (text.includes(`Successfully pulled ${name}`)) {
-                    successFound = true;
-                    await notification.dismiss();
-                    break;
-                }
-            }
-            if (successFound) { break; }
-            await new Promise(res => setTimeout(res, 1000));
-        }
-
-        await center.close();
-        expect(successFound, `Model ${name} should be pulled successfully`).to.equal(true);
-    }
-
-    /**
-     * Refreshes the model tree view.
-     */
-    public static async refresh(): Promise<void> {
-        await this.safeExecuteCommand('Ollama View: Refresh');
-        await new Promise(res => setTimeout(res, 1000));
-    }
-
-    /**
      * Finds a specific instance item under a root model.
+     * Automatically expands the parent if needed.
      */
     public static async findInstanceItem(modelName: string, instanceName: string, timeout: number = 10000): Promise<TreeItem | undefined> {
         const rootItem = await this.findModelItem(modelName, timeout);
@@ -132,7 +183,48 @@ export class SidebarHelpers {
     }
 
     /**
-     * Executes a context menu action on a model item.
+     * Generic wait-until-item-appears helper. Useful after operations that
+     * trigger the extension's own refresh (start, stop, create, delete).
+     * The extension auto-refreshes the tree after commands, so explicit
+     * refresh() calls are not needed — just wait for the DOM to update.
+     */
+    public static async waitForItem(
+        finder: () => Promise<TreeItem | undefined>,
+        description: string,
+        timeoutMs: number = 15000,
+    ): Promise<TreeItem> {
+        const startTime = Date.now();
+        while (Date.now() - startTime < timeoutMs) {
+            const item = await finder();
+            if (item) { return item; }
+            await new Promise(res => setTimeout(res, 1000));
+        }
+        throw new Error(`Timed out waiting for: ${description}`);
+    }
+
+    /**
+     * Waits for an item to disappear from the tree.
+     */
+    public static async waitForItemGone(
+        finder: () => Promise<TreeItem | undefined>,
+        description: string,
+        timeoutMs: number = 15000,
+    ): Promise<void> {
+        const startTime = Date.now();
+        while (Date.now() - startTime < timeoutMs) {
+            const item = await finder();
+            if (!item) { return; }
+            await new Promise(res => setTimeout(res, 1000));
+        }
+        throw new Error(`Timed out waiting for item to disappear: ${description}`);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  Context menu actions
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Executes a context menu action on a model/instance item.
      */
     public static async executeAction(labelOrItem: string | TreeItem, actionName: string): Promise<void> {
         let item: TreeItem;
@@ -140,7 +232,6 @@ export class SidebarHelpers {
         if (typeof labelOrItem === 'string') {
             let foundItem = await this.findModelItem(labelOrItem);
             if (!foundItem) {
-                // Try finding it as an instance if not found as a root model
                 const section = await this.getSection(this.SECTION_MODELS);
                 const items = await section.getVisibleItems() as TreeItem[];
                 for (const i of items) {
@@ -160,50 +251,99 @@ export class SidebarHelpers {
             item = labelOrItem;
             labelStr = await item.getLabel();
         }
-
+        
         console.log(`Executing action '${actionName}' on item '${labelStr}'`);
-
-        try {
-            // Scroll into view first
-            await item.select();
-            const menu = await item.openContextMenu();
-
-            // Wait a bit for menu to be ready
-            await new Promise(res => setTimeout(res, 500));
-
-            const action = await menu.getItem(actionName);
-            if (!action) {
-                const items = await menu.getItems();
-                const available = await Promise.all(items.map(i => i.getLabel()));
-                console.log(`Available actions: ${available.join(', ')}`);
-                await menu.close();
-                throw new Error(`Could not find action '${actionName}' for item '${labelStr}'. Available: ${available.join(', ')}`);
-            }
-            await action.click();
-        } catch (error) {
-            console.error(`Failed to execute action via context menu: ${error}`);
-            throw error;
+        
+        await item.select(); 
+        const menu = await item.openContextMenu();
+        await new Promise(res => setTimeout(res, 500));
+        
+        const action = await menu.getItem(actionName);
+        if (!action) {
+            const items = await menu.getItems();
+            const available = await Promise.all(items.map(i => i.getLabel()));
+            console.log(`Available actions: ${available.join(', ')}`);
+            await menu.close();
+            throw new Error(`Could not find action '${actionName}' for item '${labelStr}'. Available: ${available.join(', ')}`);
         }
+        await action.click();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  High-level model operations
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Refreshes the model tree view via the command palette.
+     * NOTE: Prefer relying on the extension's auto-refresh after operations.
+     * Use this only for initial setup (e.g. after adding models to the mock).
+     */
+    public static async refresh(): Promise<void> {
+        await this.safeExecuteCommand('Ollama View: Refresh');
+        await new Promise(res => setTimeout(res, 1000));
     }
 
     /**
-     * Creates a new instance for a model.
+     * Pulls a model by name using the Command Palette.
+     */
+    public static async pullModel(name: string): Promise<void> {
+        const section = await this.getSection(this.SECTION_MODELS);
+        const action = await section.getAction('Pull Model');
+        if (!action) {
+            throw new Error('Pull Model action not found on Models section title');
+        }
+        await action.click();
+        
+        await new Promise(res => setTimeout(res, 500));
+        await InputBox.create();
+        await this.safeSetInputText(name);
+        const driver = VSBrowser.instance.driver;
+        await driver.actions().sendKeys(Key.ENTER).perform();
+        await new Promise(res => setTimeout(res, 500));
+        
+        // Wait for success notification
+        const workbench = new Workbench();
+        const center = await workbench.openNotificationsCenter();
+        let successFound = false;
+        
+        for (let i = 0; i < 20; i++) {
+            const notifications = await center.getNotifications(NotificationType.Any);
+            for (const notification of notifications) {
+                const text = await notification.getMessage();
+                if (text.includes(`Successfully pulled ${name}`)) {
+                    successFound = true;
+                    await notification.dismiss();
+                    break;
+                }
+            }
+            if (successFound) {break;}
+            await new Promise(res => setTimeout(res, 1000));
+        }
+        
+        await center.close();
+        expect(successFound, `Model ${name} should be pulled successfully`).to.equal(true);
+    }
+
+    /**
+     * Creates a new instance for a model via context menu.
+     * Returns the instance name.
      */
     public static async createInstance(modelLabel: string): Promise<string> {
         await this.executeAction(modelLabel, 'Create New Instance');
-
-        // Handle input box for instance name
-        const input = await InputBox.create();
+        
+        await new Promise(res => setTimeout(res, 500));
+        await InputBox.create();
         const instanceName = `${modelLabel}-inst`;
-        await input.setText(instanceName);
-        await input.confirm();
-
+        await this.safeSetInputText(instanceName);
+        const driver = VSBrowser.instance.driver;
+        await driver.actions().sendKeys(Key.ENTER).perform();
+        
         await new Promise(res => setTimeout(res, 2000));
         return instanceName;
     }
 
     /**
-     * Starts a model via context menu.
+     * Starts a model instance via context menu.
      */
     public static async startModel(labelOrItem: string | TreeItem): Promise<void> {
         try {
@@ -217,7 +357,7 @@ export class SidebarHelpers {
     }
 
     /**
-     * Stops a model via context menu.
+     * Stops a model instance via context menu.
      */
     public static async stopModel(labelOrItem: string | TreeItem): Promise<void> {
         try {
@@ -231,102 +371,73 @@ export class SidebarHelpers {
     }
 
     /**
-     * Deletes a model via context menu and confirms the deletion.
+     * Deletes a model via context menu and confirms the modal dialog.
      */
     public static async deleteModel(labelOrItem: string | TreeItem): Promise<void> {
-        const labelStr = typeof labelOrItem === 'string' ? labelOrItem : await labelOrItem.getLabel();
-
         try {
             await this.executeAction(labelOrItem, 'Delete');
         } catch {
+            const labelStr = typeof labelOrItem === 'string' ? labelOrItem : await labelOrItem.getLabel();
             console.log(`Fallback: Executing delete command via workbench for ${labelStr}`);
             if (typeof labelOrItem !== 'string') { await labelOrItem.select(); }
             const workbench = new Workbench();
             await workbench.executeCommand('ollamaView.delete');
         }
+        
+        // The extension shows a modal warning dialog with a "Delete" confirmation button
+        await this.confirmDialog('Delete');
+    }
 
-        console.log(`Waiting for deletion confirmation for '${labelStr}'...`);
-        let confirmed = false;
+    // ─────────────────────────────────────────────────────────────────
+    //  Composite setup helpers
+    // ─────────────────────────────────────────────────────────────────
 
-        // Short loop for confirmation - everything should be fast.
-        for (let i = 0; i < 5; i++) {
-            // Check for Modal Dialog
-            try {
-                const dialog = new ModalDialog();
-                const msg = await dialog.getMessage();
-                console.log(`DEBUG: Found ModalDialog with message: "${msg}"`);
-                const buttons = await dialog.getButtons();
-                const btnLabels = await Promise.all(buttons.map(async (b) => await b.getText()));
-                console.log(`DEBUG: Available buttons: ${btnLabels.join(', ')}`);
+    /**
+     * Full setup sequence: adds a model to the mock, refreshes the tree,
+     * creates an instance, and returns the instance name and tree item.
+     * This encapsulates the most common test setup pattern.
+     */
+    public static async setupInstance(modelName: string): Promise<{
+        instanceName: string;
+        instanceItem: TreeItem;
+    }> {
+        const instanceName = await this.createInstance(modelName);
+        
+        const instanceItem = await this.waitForItem(
+            () => this.findInstanceItem(modelName, instanceName),
+            `instance '${instanceName}' under '${modelName}'`,
+        );
+        
+        return { instanceName, instanceItem };
+    }
 
-                // We'll click the button that contains "Delete"
-                for (let j = 0; j < buttons.length; j++) {
-                    if (btnLabels[j].trim() === 'Delete') {
-                        console.log(`Clicking 'Delete' button in ModalDialog`);
-                        await buttons[j].click();
-                        confirmed = true;
-                        break;
-                    }
+    /**
+     * Full setup + start sequence: creates an instance, starts it,
+     * and returns the running instance item.
+     */
+    public static async setupRunningInstance(modelName: string): Promise<{
+        instanceName: string;
+        instanceItem: TreeItem;
+    }> {
+        const { instanceName, instanceItem } = await this.setupInstance(modelName);
+        
+        await this.startModel(instanceItem);
+        
+        // Wait for the tree to reflect "Running" status
+        const runningItem = await this.waitForItem(
+            async () => {
+                const item = await this.findInstanceItem(modelName, instanceName);
+                if (!item) { return undefined; }
+                const label = await item.getLabel();
+                const tooltip = await item.getTooltip();
+                if (label?.includes('Running') || tooltip?.includes('Running')) {
+                    return item;
                 }
-
-                if (!confirmed) {
-                    console.log(`Attempting pushButton('Delete') as fallback...`);
-                    await dialog.pushButton('Delete');
-                    confirmed = true;
-                }
-            } catch {
-                // Not found via ModalDialog, try raw driver
-                try {
-                    const workbench = new Workbench();
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const driver = (workbench as any).driver;
-                    if (driver) {
-                        const deleteButtons = await driver.findElements(By.xpath("//*[text()='Delete']"));
-                        for (const btn of deleteButtons) {
-                            if (await btn.isDisplayed()) {
-                                console.log("DEBUG: Found 'Delete' element via XPath, clicking it.");
-                                await btn.click();
-                                confirmed = true;
-                                break;
-                            }
-                        }
-                    }
-                } catch {
-                    // Ignore
-                }
-            }
-
-            if (confirmed) { break; }
-
-            // Check for Notifications
-            try {
-                const center = await new Workbench().openNotificationsCenter();
-                const notifications = await center.getNotifications(NotificationType.Any);
-                for (const notification of notifications) {
-                    const text = await notification.getMessage();
-                    if (text.toLowerCase().includes('delete') || text.includes(labelStr)) {
-                        const actions = await notification.getActions();
-                        for (const action of actions) {
-                            if (await action.getTitle() === 'Delete') {
-                                await action.click();
-                                confirmed = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (confirmed) { break; }
-                }
-                await center.close();
-            } catch {
-                // Ignore
-            }
-
-            if (confirmed) { break; }
-            await new Promise(res => setTimeout(res, 1000));
-        }
-
-        if (!confirmed) {
-            throw new Error(`Could not confirm deletion for '${labelStr}' within timeout`);
-        }
+                return undefined;
+            },
+            `instance '${instanceName}' to show as Running`,
+        );
+        
+        return { instanceName, instanceItem: runningItem };
     }
 }
