@@ -67,6 +67,12 @@ export enum ViewColumn {
     Three = 3,
 }
 
+export enum ProgressLocation {
+    SourceControl = 1,
+    Window = 10,
+    Notification = 15
+}
+
 export class Uri {
     static file(path: string) {
         return { fsPath: path };

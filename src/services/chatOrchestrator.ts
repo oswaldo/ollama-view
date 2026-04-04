@@ -1,3 +1,6 @@
+import * as vscode from 'vscode';
+
+import { validateChatImport } from '../chatImportValidator';
 import { IOllamaClient } from '../contracts/IOllamaClient';
 import { ChatService, MessageMetadata } from './chatService';
 import { FramingService } from './framingService';
@@ -151,5 +154,102 @@ export class ChatOrchestrator {
         };
 
         await this.chatService.addMessage(chat.id, 'user', text.trim(), metadata);
+    }
+
+    /**
+     * Orchestrates importing a chat from JSON, including validation, model resolution, and collision handling.
+     */
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    async handleChatImport(jsonString: string, targetModelName?: string): Promise<any> {
+        const validationResult = validateChatImport(jsonString);
+
+        if (!validationResult.chat) {
+            await vscode.window.showErrorMessage(
+                `Failed to import chat:\n${validationResult.errors.join('\n')}`
+            );
+            return undefined;
+        }
+
+        const importedChat = validationResult.chat;
+
+        if (validationResult.warnings.length > 0) {
+            const proceed = await vscode.window.showWarningMessage(
+                `Chat import has warnings:\n${validationResult.warnings.join('\n')}`,
+                { modal: true },
+                'Proceed (Best Effort)',
+                'Abort'
+            );
+            if (proceed !== 'Proceed (Best Effort)') {
+                return undefined;
+            }
+        }
+
+        if (targetModelName) {
+            importedChat.modelName = targetModelName;
+        } else {
+            // Check if model exists locally
+            const localModels = await this.ollamaClient.listModels();
+            const modelExists = localModels.some((m) => m.name === importedChat.modelName || m.name === `${importedChat.modelName}:latest`);
+
+            if (!modelExists) {
+                const action = await vscode.window.showInformationMessage(
+                    `The model '${importedChat.modelName}' is not available locally. What would you like to do?`,
+                    { modal: true },
+                    'Download & Import',
+                    'Import Anyway',
+                    'Cancel'
+                );
+
+                if (action === 'Cancel' || !action) {
+                    return undefined;
+                }
+
+                if (action === 'Download & Import') {
+                    try {
+                        await vscode.window.withProgress(
+                            {
+                                location: vscode.ProgressLocation.Notification,
+                                title: `Downloading ${importedChat.modelName}...`,
+                                cancellable: false,
+                            },
+                            async (progress) => {
+                                await this.ollamaClient.pullModel(importedChat.modelName, (status, completed, total) => {
+                                    if (completed && total) {
+                                        const p = Math.round((completed / total) * 100);
+                                        progress.report({ message: `${p}% - ${status}` });
+                                    } else {
+                                        progress.report({ message: status });
+                                    }
+                                });
+                            }
+                        );
+                    } catch (e: any) {
+                        await vscode.window.showErrorMessage(`Failed to download model: ${e.message}`);
+                        return undefined;
+                    }
+                }
+            }
+        }
+
+        const existingChat = this.chatService.getChat(importedChat.id);
+        let collisionAction: 'overwrite' | 'new' | 'abort' = 'new';
+
+        if (existingChat) {
+            const action = await vscode.window.showInformationMessage(
+                `A chat with this ID already exists. Do you want to overwrite it or import as a new chat?`,
+                { modal: true },
+                'Overwrite',
+                'Import as New',
+                'Cancel'
+            );
+
+            if (action === 'Cancel' || !action) {
+                return undefined;
+            }
+
+            collisionAction = action === 'Overwrite' ? 'overwrite' : 'new';
+        }
+
+        return await this.chatService.importChat(importedChat, collisionAction);
     }
 }
