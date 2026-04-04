@@ -2,6 +2,12 @@
 
 All notable changes to the `ollama-view` extension will be documented in this file.
 
+## [Unreleased]
+
+- **Chat Export**: Users can now easily export full chat histories to a portable JSON file containing all Markdown metadata.
+- **Security Updates**: Audited and updated critical node dependencies to address known vulnerabilities and ensure a safer local workspace.
+- **Improved E2E Stability**: Fully restored and refactored the end-to-end browser test suite against a stable, mock local server pattern, guaranteeing tests run reliably without timing flakiness.
+
 ## [0.1.0] - Architecture Refactor, Advanced Config & Model Instances
 
 - **Advanced Model Configuration**: Create and manage multiple named instances of the same model.

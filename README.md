@@ -61,6 +61,7 @@ You can install this extension from the following sources:
     - **Copy**: Copy response content to clipboard.
     - **Regenerate**: Re-generate the answer. If it's not the last message, this will truncate the conversation.
     - **Fork**: Create a new chat branching from this point.
+- **Export Data**: Easily export full chat histories to a JSON file for sharing or backup. Alternatively, chats can be exported to a lighter, human readable text file using the Markdown syntax.
 - **Prompt Debugging**: Visibility toggle to show/hide "hidden" system turns and prompt injections in the chat history.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
@@ -91,7 +92,7 @@ If you are interested in how the extension is built or want to contribute, pleas
 
 I'm constantly improving the extension mostly based on my experiments and needs, but feel free to suggest new features or report issues on the [GitHub Issues](https://github.com/oswaldo/ollama-view/issues) page. My current focus areas for upcoming releases include:
 
-- **Chat Export/Import**: Capabilities to easily export and import existing chat histories.
+- **Chat Import**: Complementing our newly released Export feature, this will add capabilities to easily import existing chat histories back into the extension.
 - **Context Manipulation**: Experimenting with ways to allow users to manually override past messages, exploring how altering the historical context shifts the model's follow-up responses.
 
 ## Support & Feedback

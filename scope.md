@@ -41,6 +41,7 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 6.  [x] **UI Polish**: Timestamps, Sender labels.
 7.  [x] **Message Editing**: Edit user messages to Truncate (overwrite future history) or Fork (create new chat branch).
 8.  [x] **Chat Naming**: Unique names for new, renamed, and forked chats.
+9.  [x] **Chat Export**: Capability to export full conversation histories to a generic JSON/Markdown format.
 
 ## Suggestions (Antigravity)
 
@@ -66,3 +67,6 @@ Create a Visual Studio Code extension to manage a locally installed Ollama insta
 
 - **Model Management & Setup**:
     - [ ] **Template Gallery**: Provide a selection of common system prompts (e.g., "Software Engineer", "Creative Writer", "Concise Assistant") in the model setup screen.
+
+- **Data Portability**:
+    - [ ] **Chat Import**: Capabilities to easily import existing chat histories, complementary to the newly released export feature.
