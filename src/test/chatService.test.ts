@@ -169,4 +169,92 @@ suite('ChatService Test Suite', () => {
         assert.strictEqual(page.messages[4].content, '9');
         assert.strictEqual(page.total, 10);
     });
+
+    test('importChat should import without collision', async () => {
+        const chatData: Chat = {
+            id: 'new-id',
+            modelName: 'llama3',
+            name: 'Imported Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockRepo.getAll.returns([]);
+        
+        const imported = await chatService.importChat(chatData, 'abort');
+        assert.ok(imported);
+        assert.strictEqual(imported?.id, 'new-id');
+        assert.strictEqual(imported?.name, 'Imported Chat');
+        assert.ok(mockRepo.save.calledOnce);
+    });
+
+    test('importChat should overwrite existing on collision when action is overwrite', async () => {
+        const existingChat: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Existing Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        const chatData: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Imported Chat',
+            messages: [{ role: 'user', content: 'test', timestamp: 123 }],
+            createdAt: Date.now(),
+        };
+        mockRepo.getAll.returns([existingChat]);
+        
+        const imported = await chatService.importChat(chatData, 'overwrite');
+        assert.ok(imported);
+        assert.strictEqual(imported?.id, 'col-id');
+        assert.strictEqual(imported?.name, 'Imported Chat');
+        assert.strictEqual(imported?.messages.length, 1);
+        assert.ok(mockRepo.save.calledOnce);
+    });
+
+    test('importChat should create new chat on collision when action is new', async () => {
+        const existingChat: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Chat Name',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        const chatData: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Chat Name',
+            messages: [{ role: 'user', content: 'test', timestamp: 123 }],
+            createdAt: Date.now(),
+        };
+        mockRepo.getAll.returns([existingChat]);
+        
+        const imported = await chatService.importChat(chatData, 'new');
+        assert.ok(imported);
+        assert.notStrictEqual(imported?.id, 'col-id');
+        assert.strictEqual(imported?.name, 'Chat Name (1)');
+        assert.ok(mockRepo.save.calledOnce);
+    });
+
+    test('importChat should do nothing on collision when action is abort', async () => {
+        const existingChat: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Chat Name',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        const chatData: Chat = {
+            id: 'col-id',
+            modelName: 'llama3',
+            name: 'Imported Chat',
+            messages: [],
+            createdAt: Date.now(),
+        };
+        mockRepo.getAll.returns([existingChat]);
+        
+        const imported = await chatService.importChat(chatData, 'abort');
+        assert.strictEqual(imported, undefined);
+        assert.ok(mockRepo.save.notCalled);
+    });
 });

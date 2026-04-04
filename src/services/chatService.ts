@@ -65,6 +65,39 @@ export class ChatService {
         return newChat;
     }
 
+    async importChat(chatData: Chat, collisionAction: 'overwrite' | 'new' | 'abort'): Promise<Chat | undefined> {
+        const chats = this.repository.getAll();
+        const existingChatIndex = chats.findIndex((c) => c.id === chatData.id);
+
+        if (existingChatIndex === -1) {
+            // No collision, just import
+            chats.push(chatData);
+            await this.repository.save(chats);
+            return chatData;
+        }
+
+        // Collision occurred
+        if (collisionAction === 'abort') {
+            return undefined;
+        }
+
+        if (collisionAction === 'overwrite') {
+            chats[existingChatIndex] = chatData;
+            await this.repository.save(chats);
+            return chatData;
+        }
+
+        if (collisionAction === 'new') {
+            const newChat = { ...chatData, id: uuidv4() };
+            newChat.name = this.getUniqueChatName(chatData.name, chats);
+            chats.push(newChat);
+            await this.repository.save(chats);
+            return newChat;
+        }
+
+        return undefined;
+    }
+
     getChatsForModel(modelName: string): Chat[] {
         const chats = this.repository.getAll();
         return chats.filter((c) => c.modelName === modelName).sort((a, b) => b.createdAt - a.createdAt);
