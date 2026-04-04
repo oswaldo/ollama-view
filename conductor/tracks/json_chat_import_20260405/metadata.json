@@ -1,0 +1,8 @@
+{
+  "track_id": "json_chat_import_20260405",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-05T00:00:00Z",
+  "updated_at": "2026-04-05T00:00:00Z",
+  "description": "Implement JSON chat import (the format is the same as the internal chat representation as we already have the export functionality that is mainly a dump of a chat stored in the IDE)."
+}
