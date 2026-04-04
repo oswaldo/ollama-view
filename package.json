@@ -138,6 +138,12 @@
                 "icon": "$(trash)"
             },
             {
+                "command": "ollamaView.importChat",
+                "title": "Import Chat...",
+                "category": "ollama-view",
+                "icon": "$(import)"
+            },
+            {
                 "command": "ollamaView.exportChat",
                 "title": "Export Chat...",
                 "category": "ollama-view",
@@ -174,6 +180,12 @@
             }
         ],
         "menus": {
+            "explorer/context": [
+                {
+                    "command": "ollamaView.importChat",
+                    "when": "resourceExtname == .json"
+                }
+            ],
             "view/title": [
                 {
                     "command": "ollamaView.refresh",

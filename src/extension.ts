@@ -159,6 +159,9 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ollamaView.exportChat', (node: OllamaChatItem) =>
             chatCommands.exportChat(node),
         ),
+        vscode.commands.registerCommand('ollamaView.importChat', (uri?: vscode.Uri) =>
+            chatCommands.importChat(uri),
+        ),
         vscode.commands.registerCommand('ollamaView.openChat', (node: OllamaChatItem) => chatCommands.openChat(node)),
 
         vscode.commands.registerCommand('ollamaView.createInstance', (node: OllamaModelItem | OllamaInstanceItem) =>

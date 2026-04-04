@@ -129,4 +129,63 @@ suite('ChatCommands Test Suite', () => {
         const writtenUri = writeFileStub.firstCall.args[0] as vscode.Uri;
         assert.strictEqual(writtenUri.fsPath, vscode.Uri.file('/tmp/test-chat.json').fsPath);
     });
+
+    suite('importChat', () => {
+        let showOpenDialogStub: sinon.SinonStub;
+        let readFileStub: sinon.SinonStub;
+        let handleChatImportStub: sinon.SinonStub;
+        let showErrorMessageStub: sinon.SinonStub;
+
+        setup(() => {
+            showOpenDialogStub = sandbox.stub(vscode.window, 'showOpenDialog').resolves();
+            readFileStub = sandbox.stub(vscode.workspace.fs, 'readFile').resolves(Buffer.from('{"id":"1"}'));
+            showErrorMessageStub = sandbox.stub(vscode.window, 'showErrorMessage').resolves();
+            chatOrchestrator.handleChatImport = sandbox.stub().resolves();
+            handleChatImportStub = chatOrchestrator.handleChatImport as sinon.SinonStub;
+        });
+
+        test('should import from selected URI if triggered from Command Palette', async () => {
+            const uri = vscode.Uri.file('/tmp/chat.json');
+            showOpenDialogStub.resolves([uri]);
+            handleChatImportStub.resolves({ id: 'imported', name: 'Chat' });
+
+            await chatCommands.importChat();
+
+            assert.ok(showOpenDialogStub.calledOnce);
+            assert.ok(readFileStub.calledWith(uri));
+            assert.ok(handleChatImportStub.calledWith('{"id":"1"}', undefined));
+        });
+
+        test('should import from provided URI if triggered from Explorer context menu', async () => {
+            const uri = vscode.Uri.file('/tmp/chat2.json');
+            handleChatImportStub.resolves({ id: 'imported', name: 'Chat' });
+
+            await chatCommands.importChat(uri);
+
+            assert.ok(showOpenDialogStub.notCalled);
+            assert.ok(readFileStub.calledWith(uri));
+            assert.ok(handleChatImportStub.calledWith('{"id":"1"}', undefined));
+        });
+
+        test('should do nothing if dialog is cancelled', async () => {
+            showOpenDialogStub.resolves(undefined);
+
+            await chatCommands.importChat();
+
+            assert.ok(readFileStub.notCalled);
+            assert.ok(handleChatImportStub.notCalled);
+        });
+
+        test('should catch and log read errors', async () => {
+            const uri = vscode.Uri.file('/tmp/chat.json');
+            showOpenDialogStub.resolves([uri]);
+            readFileStub.rejects(new Error('Permission denied'));
+
+            await chatCommands.importChat();
+
+            assert.ok(showErrorMessageStub.calledOnce);
+            assert.ok(showErrorMessageStub.calledWith(sinon.match(/Failed to read file/)));
+            assert.ok(handleChatImportStub.notCalled);
+        });
+    });
 });

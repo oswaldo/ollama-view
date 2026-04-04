@@ -319,6 +319,50 @@ export class ChatCommands {
         }
     }
 
+    async importChat(uri?: vscode.Uri) {
+        let fileUri = uri;
+
+        if (!fileUri) {
+            const result = await vscode.window.showOpenDialog({
+                canSelectMany: false,
+                openLabel: 'Import Chat',
+                filters: {
+                    'JSON': ['json']
+                }
+            });
+
+            if (!result || result.length === 0) {
+                return;
+            }
+
+            fileUri = result[0];
+        }
+
+        try {
+            const uint8Array = await vscode.workspace.fs.readFile(fileUri);
+            const content = Buffer.from(uint8Array).toString('utf8');
+            const importedChat = await this.chatOrchestrator.handleChatImport(content);
+
+            if (importedChat) {
+                this.ollamaProvider.refresh();
+                ChatPanel.createOrShow(
+                    this.extensionUri,
+                    importedChat,
+                    this.chatService,
+                    this.ollamaProvider,
+                    this.modelService,
+                    this.framingService,
+                    this.chatOrchestrator,
+                    () => this.ollamaProvider.refresh(),
+                );
+            }
+        } catch (err: unknown) {
+            const error = err as Error;
+            Logger.error(`Failed to read file ${fileUri.fsPath}: ${error.message}`, error);
+            vscode.window.showErrorMessage(`Failed to read file: ${error.message}`);
+        }
+    }
+
     openChat(node: OllamaChatItem) {
         if (!node) {
             return;
