@@ -7,12 +7,12 @@
 - [x] Task: Implement JSON validation utility and best-effort parsing logic. f8a3f91
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Core Import Logic & Validation' (Protocol in workflow.md) cf03cb8
 
-## Phase 2: Orchestration & Model Resolution
+## Phase 2: Orchestration & Model Resolution [checkpoint: 2f8c815]
 - [x] Task: Write tests for `ChatOrchestrator.handleChatImport` including model resolution logic. e0008ac
 - [x] Task: Implement `ChatOrchestrator.handleChatImport` to orchestrate file reading, validation, user prompts for collision, and model resolution (download missing or confirm without). e0008ac
 - [x] Task: Write tests for binding an imported chat to a specific model. e0008ac
 - [x] Task: Implement logic in Orchestrator to force a specific model during import if requested. e0008ac
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Orchestration & Model Resolution' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Orchestration & Model Resolution' (Protocol in workflow.md) 2f8c815
 
 ## Phase 3: VS Code Integration & UI
 - [ ] Task: Write tests for Command Palette and File Explorer context menu commands for importing a chat.
