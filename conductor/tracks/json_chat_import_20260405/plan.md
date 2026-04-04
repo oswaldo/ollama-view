@@ -1,8 +1,8 @@
 # Implementation Plan: JSON Chat Import
 
 ## Phase 1: Core Import Logic & Validation
-- [ ] Task: Write tests for `ChatService.importChat` collision handling and logic (Overwrite, New, Abort).
-- [ ] Task: Implement `ChatService.importChat` to support the three collision behaviors and reuse rename logic.
+- [x] Task: Write tests for `ChatService.importChat` collision handling and logic (Overwrite, New, Abort). 03c848b
+- [x] Task: Implement `ChatService.importChat` to support the three collision behaviors and reuse rename logic. 03c848b
 - [ ] Task: Write tests for JSON validation and best-effort parsing.
 - [ ] Task: Implement JSON validation utility and best-effort parsing logic.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Core Import Logic & Validation' (Protocol in workflow.md)
