@@ -14,12 +14,12 @@
 - [x] Task: Implement logic in Orchestrator to force a specific model during import if requested. e0008ac
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Orchestration & Model Resolution' (Protocol in workflow.md) 2f8c815
 
-## Phase 3: VS Code Integration & UI
+## Phase 3: VS Code Integration & UI [checkpoint: c1c9fff]
 - [x] Task: Write tests for Command Palette and File Explorer context menu commands for importing a chat. 00c6acf
 - [x] Task: Implement `package.json` contributions and command handlers in `chatCommands.ts` for Command Palette and File Explorer. 00c6acf
 - [x] Task: Write tests for UI model-specific and general panel import actions. 4a0f4dd
 - [x] Task: Implement context menus in `package.json` for Ollama View panel (general and model-specific) and the corresponding handlers. 4a0f4dd
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: VS Code Integration & UI' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: VS Code Integration & UI' (Protocol in workflow.md) c1c9fff
 
 ## Phase 4: End-to-End Testing
 - [ ] Task: Write E2E tests for importing a chat via Command Palette and verifying it appears in the panel.
