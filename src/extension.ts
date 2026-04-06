@@ -36,6 +36,12 @@ const getModelActions = (): ModelAction[] => [
         command: 'ollamaView.setup',
         description: 'Configure model settings',
     },
+    {
+        label: '$(sign-in) Import Chat...',
+        id: 'importChat',
+        command: 'ollamaView.importChat',
+        description: 'Import a JSON chat history',
+    },
     { label: '$(trash) Delete', id: 'delete', command: 'ollamaView.delete', description: 'Permanently remove model' },
 ];
 

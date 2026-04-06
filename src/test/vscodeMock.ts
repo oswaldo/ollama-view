@@ -33,6 +33,7 @@ export const window = {
     showErrorMessage: async () => {},
     showQuickPick: async () => {},
     showSaveDialog: async () => {},
+    showOpenDialog: async () => {},
     createWebviewPanel: () => ({}),
     createOutputChannel: () => ({
         appendLine: () => {},
@@ -51,6 +52,7 @@ export const workspace = {
     }),
     fs: {
         writeFile: async () => {},
+        readFile: async () => {},
     },
     onDidChangeConfiguration: new EventEmitter<any>().event,
 };

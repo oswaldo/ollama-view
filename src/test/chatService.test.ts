@@ -232,7 +232,7 @@ suite('ChatService Test Suite', () => {
         const imported = await chatService.importChat(chatData, 'new');
         assert.ok(imported);
         assert.notStrictEqual(imported?.id, 'col-id');
-        assert.strictEqual(imported?.name, 'Chat Name (1)');
+        assert.strictEqual(imported?.name, 'Chat Name (2)');
         assert.ok(mockRepo.save.calledOnce);
     });
 

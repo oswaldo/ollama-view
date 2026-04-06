@@ -141,7 +141,7 @@
                 "command": "ollamaView.importChat",
                 "title": "Import Chat...",
                 "category": "ollama-view",
-                "icon": "$(import)"
+                "icon": "$(sign-in)"
             },
             {
                 "command": "ollamaView.exportChat",
@@ -189,7 +189,6 @@
             "view/title": [
                 {
                     "command": "ollamaView.importChat",
-                    "group": "navigation",
                     "when": "view == ollama-models-view"
                 },
                 {
@@ -266,6 +265,11 @@
                     "command": "ollamaView.exportChat",
                     "when": "viewItem == ollama-chat",
                     "group": "ollama@4"
+                },
+                {
+                    "command": "ollamaView.importChat",
+                    "when": "viewItem == variable-running || viewItem == variable-stopped || viewItem == ollama-model || viewItem == variable-running-root || viewItem == variable-stopped-root",
+                    "group": "ollama@5"
                 },
                 {
                     "command": "ollamaView.createFraming",
