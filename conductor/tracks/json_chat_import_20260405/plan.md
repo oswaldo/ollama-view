@@ -22,6 +22,6 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: VS Code Integration & UI' (Protocol in workflow.md) c1c9fff
 
 ## Phase 4: End-to-End Testing
-- [ ] Task: Write E2E tests for importing a chat via Command Palette and verifying it appears in the panel.
-- [ ] Task: Write E2E tests for collision handling prompts and best-effort import warnings during the import process.
+- [~] Task: Write E2E tests for importing a chat via Command Palette and verifying it appears in the panel.
+- [~] Task: Write E2E tests for collision handling prompts and best-effort import warnings during the import process.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: End-to-End Testing' (Protocol in workflow.md)
