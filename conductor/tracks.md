@@ -31,8 +31,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [~] **Track: Welcome / What's New Tab**
 *Link: [./tracks/welcome_tab_20260306/](./tracks/welcome_tab_20260306/)*
-
----
-
-- [x] **Track: Implement JSON chat import**
-*Link: [./tracks/json_chat_import_20260405/](./tracks/json_chat_import_20260405/)*
