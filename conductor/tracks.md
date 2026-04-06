@@ -34,5 +34,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Implement JSON chat import**
+- [x] **Track: Implement JSON chat import**
 *Link: [./tracks/json_chat_import_20260405/](./tracks/json_chat_import_20260405/)*
