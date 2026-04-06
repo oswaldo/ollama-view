@@ -188,6 +188,11 @@
             ],
             "view/title": [
                 {
+                    "command": "ollamaView.importChat",
+                    "group": "navigation",
+                    "when": "view == ollama-models-view"
+                },
+                {
                     "command": "ollamaView.refresh",
                     "group": "navigation"
                 },

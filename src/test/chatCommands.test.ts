@@ -4,7 +4,7 @@ import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 
 import { ChatCommands } from '../commands/chatCommands';
-import { OllamaChatItem } from '../ollamaProvider';
+import { OllamaChatItem, OllamaInstanceItem, OllamaModelItem } from '../ollamaProvider';
 import { Chat } from '../services/chatService';
 import { ExportService } from '../services/exportService';
 
@@ -165,6 +165,34 @@ suite('ChatCommands Test Suite', () => {
             assert.ok(showOpenDialogStub.notCalled);
             assert.ok(readFileStub.calledWith(uri));
             assert.ok(handleChatImportStub.calledWith('{"id":"1"}', undefined));
+        });
+
+        test('should pass targetModelName if triggered from model context menu', async () => {
+            const uri = vscode.Uri.file('/tmp/chat3.json');
+            showOpenDialogStub.resolves([uri]);
+            handleChatImportStub.resolves({ id: 'imported', name: 'Chat' });
+
+            const modelItem = new OllamaModelItem({ name: 'llama3' } as any);
+
+            await chatCommands.importChat(modelItem);
+
+            assert.ok(showOpenDialogStub.calledOnce);
+            assert.ok(readFileStub.calledWith(uri));
+            assert.ok(handleChatImportStub.calledWith('{"id":"1"}', 'llama3'));
+        });
+
+        test('should pass targetModelName if triggered from instance context menu', async () => {
+            const uri = vscode.Uri.file('/tmp/chat4.json');
+            showOpenDialogStub.resolves([uri]);
+            handleChatImportStub.resolves({ id: 'imported', name: 'Chat' });
+
+            const instanceItem = new OllamaInstanceItem({ modelName: 'llama3' } as any, false);
+
+            await chatCommands.importChat(instanceItem);
+
+            assert.ok(showOpenDialogStub.calledOnce);
+            assert.ok(readFileStub.calledWith(uri));
+            assert.ok(handleChatImportStub.calledWith('{"id":"1"}', 'llama3'));
         });
 
         test('should do nothing if dialog is cancelled', async () => {

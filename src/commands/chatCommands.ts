@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { ChatPanel } from '../chatPanel';
 import { Logger } from '../logger';
 import { OllamaModel } from '../ollamaApi';
-import { OllamaChatItem, OllamaInstanceItem, OllamaProvider } from '../ollamaProvider';
+import { OllamaChatItem, OllamaInstanceItem, OllamaModelItem, OllamaProvider } from '../ollamaProvider';
 import { ChatOrchestrator } from '../services/chatOrchestrator';
 import { ChatService } from '../services/chatService';
 import { ExportService } from '../services/exportService';
@@ -319,8 +319,19 @@ export class ChatCommands {
         }
     }
 
-    async importChat(uri?: vscode.Uri) {
-        let fileUri = uri;
+    async importChat(arg?: vscode.Uri | OllamaModelItem | OllamaInstanceItem) {
+        let fileUri: vscode.Uri | undefined = undefined;
+        let targetModelName: string | undefined = undefined;
+
+        if (arg instanceof vscode.Uri) {
+            fileUri = arg;
+        } else if (arg instanceof OllamaModelItem) {
+            targetModelName = arg.model.name;
+        } else if (arg instanceof OllamaInstanceItem) {
+            targetModelName = arg.instance.modelName;
+        } else if (arg && typeof (arg as any).fsPath === 'string') {
+            fileUri = arg as vscode.Uri;
+        }
 
         if (!fileUri) {
             const result = await vscode.window.showOpenDialog({
@@ -341,7 +352,7 @@ export class ChatCommands {
         try {
             const uint8Array = await vscode.workspace.fs.readFile(fileUri);
             const content = Buffer.from(uint8Array).toString('utf8');
-            const importedChat = await this.chatOrchestrator.handleChatImport(content);
+            const importedChat = await this.chatOrchestrator.handleChatImport(content, targetModelName);
 
             if (importedChat) {
                 this.ollamaProvider.refresh();
@@ -358,7 +369,7 @@ export class ChatCommands {
             }
         } catch (err: unknown) {
             const error = err as Error;
-            Logger.error(`Failed to read file ${fileUri.fsPath}: ${error.message}`, error);
+            Logger.error(`Failed to read file ${fileUri?.fsPath}: ${error.message}`, error);
             vscode.window.showErrorMessage(`Failed to read file: ${error.message}`);
         }
     }
