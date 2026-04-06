@@ -9,7 +9,7 @@ The primary purpose of this Visual Studio Code extension is to provide a compreh
 *   **Model Setup**: Configure model-specific system prompts and injection templates (prefixes/suffixes). Includes the ability to apply saved configurations for quick configuration.
 *   **Advanced Configuration**: Deep control over Ollama model parameters, including Hardware (GPU/Threads/Memory) and Inference (Temperature/Context/Predict) limits.
 *   **Model Framing**: Create, edit, and manage a library of system configurations (system prompts, injections) organized by tags. Built-in framings provide a starting point for specialized AI personas.
-*   **Interactive Chat**: Engage in persistent, multi-turn conversations with Ollama models directly within VS Code, including message editing, regeneration, conversation branching, chat-level framing overrides, and exporting chat history to Markdown or JSON formats.
+*   **Interactive Chat**: Engage in persistent, multi-turn conversations with Ollama models directly within VS Code, including message editing, regeneration, conversation branching, chat-level framing overrides, and importing/exporting chat history in JSON and Markdown formats.
 *   **Prompt Engineering Tools**: Visibility toggle for hidden system turns and injections, providing transparency for advanced prompt debugging.
 *   **User Interface**: Intuitive side panel view with model list, status indicators, and context menus for quick actions.
 *   **Seamless Integration**: Designed to integrate smoothly with the VS Code workflow, offering commands and views that feel native to the editor.
