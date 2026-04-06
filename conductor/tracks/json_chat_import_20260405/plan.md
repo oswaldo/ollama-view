@@ -15,10 +15,10 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Orchestration & Model Resolution' (Protocol in workflow.md) 2f8c815
 
 ## Phase 3: VS Code Integration & UI
-- [ ] Task: Write tests for Command Palette and File Explorer context menu commands for importing a chat.
-- [ ] Task: Implement `package.json` contributions and command handlers in `chatCommands.ts` for Command Palette and File Explorer.
-- [ ] Task: Write tests for UI model-specific and general panel import actions.
-- [ ] Task: Implement context menus in `package.json` for Ollama View panel (general and model-specific) and the corresponding handlers.
+- [x] Task: Write tests for Command Palette and File Explorer context menu commands for importing a chat. 00c6acf
+- [x] Task: Implement `package.json` contributions and command handlers in `chatCommands.ts` for Command Palette and File Explorer. 00c6acf
+- [x] Task: Write tests for UI model-specific and general panel import actions. 4a0f4dd
+- [x] Task: Implement context menus in `package.json` for Ollama View panel (general and model-specific) and the corresponding handlers. 4a0f4dd
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: VS Code Integration & UI' (Protocol in workflow.md)
 
 ## Phase 4: End-to-End Testing
