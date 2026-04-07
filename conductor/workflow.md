@@ -189,8 +189,8 @@ npm run lint
 # Format the entire codebase
 npx prettier --write .
 
-# Optional: Check for known security vulnerabilities
-npm run security-check
+# Required: Check for known security vulnerabilities and dependencies (SCA/SAST)
+npm run security:audit
 ```
 
 ## Testing Requirements
@@ -253,6 +253,9 @@ Before requesting review:
    - Interactions feel native
 
 ## Commit Guidelines
+
+### Strategy
+- **Linear History**: Prefer a linear Git history. Use `git rebase` instead of `git merge` to integrate upstream changes, and use "Rebase and Merge" or "Squash and Merge" for feature branches. Avoid merge commits.
 
 ### Message Format
 ```
@@ -324,7 +327,7 @@ A task is complete when:
 - [ ] All tests passing
 - [ ] Coverage >80%
 - [ ] No linting errors
-- [ ] Security audit passes (`npm run security-check`)
+- [ ] Security audit passes (`npm run security:audit`)
 - [ ] Dependencies reviewed (`npm run check-updates`)
 - [ ] Mobile testing complete
 - [ ] Environment variables configured
@@ -332,7 +335,7 @@ A task is complete when:
 - [ ] Backup created
 
 ### Deployment Steps
-1. Merge feature branch to main
+1. Rebase feature branch onto main (prefer linear history, avoid merge commits)
 2. Tag release with version
 3. Push to deployment service
 4. Run database migrations
@@ -361,7 +364,7 @@ A task is complete when:
 ## Publishing and Versioning
 
 ### 1. Release Preparation
-- **Security Audit**: Run `npm run security-check` to ensure there are no active vulnerabilities (`audit-level=high`).
+- **Security Audit**: Run `npm run security:audit` to ensure zero vulnerabilities across AST (`JS-X-Ray`) and composition (`OSV-Scanner`).
 - **Dependencies**: Run `npm run check-updates` to review outdated packages and plan upgrades.
 - **Version Bump**: Update `"version"` in `package.json`.
 - **Release Notes**: Add a section in `README.md` under "Release Notes".

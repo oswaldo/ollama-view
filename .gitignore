@@ -9,4 +9,4 @@ node_modules
 tmp
 coverage/
 .gemini/
-*.skill
+*.skillnsecure-result.json

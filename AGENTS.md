@@ -19,9 +19,30 @@
     - **Service Layer**: Pure domain logic and state management.
     - **Orchestration Layer**: End-to-end workflow management (`ChatOrchestrator`).
     - **UI Layer**: VS Code `TreeDataProvider` and Webview controllers.
-- **Detailed Standards**: Refer to `conductor/tech-stack.md` for specific implementation guidelines and architectural deep-dives.
 
-## 3. Development Workflow
+## 3. Screen Architecture Reference
+
+This section maps user-visible screens to their primary source code control points for faster debugging and reference.
+
+**1. Chat Interface View**
+
+- **Purpose**: Core interaction area for chatting with models.
+- **Key Elements**: Message History, Chat Input Field, Send Button, Message Controls (Copy, Options).
+- **Related Files**: `src/webview/chat.ts` (Handles logic); `src/contracts/IChatWebviewMessages.ts` (Contract).
+
+**2. Model Setup Panel View**
+
+- **Purpose**: Configuring model connection parameters and settings.
+- **Key Elements**: Model Selector, Settings Form (e.g., `num_gpu`, `temperature`, `top_p`), Framing Selector.
+- **Related Files**: `src/panels/setupPanel.ts` (Manages lifecycle).
+
+**3. Welcome/Onboarding View**
+
+- **Purpose**: Initial user entry point and guidance.
+- **Key Elements**: Welcome Message, Action Buttons (Configure, Start Chat), Status Display.
+- **Related Files**: `src/panels/welcomePanel.ts` (Manages lifecycle); `src/webview/welcome.ts` (Handles frontend logic).
+
+## 4. Development Workflow
 
 ### Setup
 
@@ -40,7 +61,7 @@
 - **Linting**: `npm run lint` (ESLint) - **MUST PASS** before any commit.
 - **Formatting**: `npx prettier --write .`
 
-## 4. Coding Standards
+## 5. Coding Standards
 
 - **Style**: Follow existing TypeScript patterns. Use Prettier for formatting.
 - **Async/Await**: Prefer `async/await` over raw Promises.
@@ -49,7 +70,7 @@
 - **Webview UI**: For the chat interface, ensure a "Premium" look and feel (Modern CSS, responsiveness) as per general agent design guidelines, while respecting VS Code theming (`var(--vscode-*)` CSS variables).
 - **Backward Compatibility**: Essential for this project. New features must maintain compatibility with existing workflows and data. All structural changes must be verified with unit tests.
 
-## 5. File Structure and Navigation
+## 6. File Structure and Navigation
 
 - `src/`: Source code.
     - `extension.ts`: Entry point.
@@ -58,7 +79,7 @@
 - `package.json`: Manifest, command definitions, and view containers.
 - `scope.md`: Tracks project goals, requirements, and completed features. **Check this before starting new tasks.**
 
-## 6. Agent Rules
+## 7. Agent Rules
 
 - **Context Awareness & Scope**: Always read `scope.md` to understand the current feature set and roadmap.
     - **Feature Implementation**: Verify if new features are planned in `scope.md`. If not, add them to `scope.md` for consistency.
@@ -67,10 +88,11 @@
 - **Safety**: Do not commit secrets. This is a local-first extension, so avoid external API calls unless the user explicitly configures them.
 - **User Feedback**: Creating new files or significant refactors requires user approval via `implementation_plan.md`.
 - **Documentation & Release**:
+    - **Security Audit**: Ensure to run `npm run security:audit` locally and confirm 0 vulnerabilities before preparing any release bundle or merging new features to main.
     - **Keep README Current**: Update `README.md` to reflect any relevant changes (new features, config options) when preparing a release.
     - **Release Notes**: Update the "Release Notes" section in `README.md` with a header `### [Version] - [Short Description]` and bullet points describing key changes.
 
-## 7. Data Compatibility & Migration
+## 8. Data Compatibility & Migration
 
 - **Chat Data Versioning**: The initial internal JSON representation of chats is implicitly **Version 1**.
     - If no `chatFormat` element is present, the data is assumed to be **Version 1**.

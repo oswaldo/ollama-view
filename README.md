@@ -65,6 +65,15 @@ You can install this extension from the following sources:
 - **Prompt Debugging**: Visibility toggle to show/hide "hidden" system turns and prompt injections in the chat history.
 - **Context-Aware Commands**: Run Start/Stop/Delete from the Command Palette (`Ctrl+Shift+P`) to see a interactive list of models if you haven't selected one in the view.
 
+## Privacy & Security by Design
+
+Ollama View operates entirely locally, ensuring absolute **data privacy and sovereignty**—your chat history, prompts, and model configurations never leave your machine.
+
+Furthermore, we voluntarily align with the principles of the upcoming **European Cyber Resilience Act (CRA)**. While this remains a personal open-source project provided "as-is", we aim for secure-by-design development practices:
+- **Zero Telemetry**: No tracking, analytics, or external data collection.
+- **Deep Static Analysis**: Our build pipeline utilizes AST-level static security testing (`JS-X-Ray`) to detect suspicious code patterns.
+- **Software Composition Analysis**: We routinely audit our dependency graph using Google's `OSV-Scanner` to intercept vulnerable upstream packages.
+
 ## Architecture
 
 If you are interested in how the extension is built or want to contribute, please check out our [Contributing Guidelines and Architecture overview](https://github.com/oswaldo/ollama-view/blob/main/CONTRIBUTING.md#architecture).
